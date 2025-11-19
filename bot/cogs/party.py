@@ -283,7 +283,7 @@ class PartyCog(commands.Cog):
         if random.randrange(0, 5) == 0:
             get_connection().execute_arbitrary_sql(
                 """UPDATE boards SET fish=? WHERE board_id=? AND phase=?""",
-                (board.fish, board.board_id, board.get_turn_string()),
+                (board.fish, board.board_id, board.turn.get_indexed_name()),
             )
 
         if debumblify:

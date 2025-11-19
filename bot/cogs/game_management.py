@@ -181,7 +181,7 @@ class GameManagementCog(commands.Cog):
                     # HACK: ping role in case of no players
                     users.add(role)
 
-                if turn.is_builds(board.turn):
+                if board.turn.is_builds():
                     count = len(player.centers) - len(player.units)
 
                     current = player.waived_orders

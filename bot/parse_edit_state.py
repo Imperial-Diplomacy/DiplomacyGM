@@ -264,7 +264,7 @@ def _create_unit(keywords: list[str], board: Board) -> None:
 
 
 def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
-    if turn.is_retreats(board.turn):
+    if board.turn.is_retreats():
         unit_type = get_unit_type(keywords[0])
         player = board.get_player(keywords[1])
         province, coast = board.get_province_and_coast(keywords[2])
@@ -358,7 +358,7 @@ def _move_unit(keywords: list[str], board: Board) -> None:
 
 
 def _dislodge_unit(keywords: list[str], board: Board) -> None:
-    if turn.is_retreats(board.turn):
+    if board.turn.is_retreats():
         province = board.get_province(keywords[0])
         if province.dislodged_unit != None:
             raise RuntimeError("Dislodged unit already exists in province")

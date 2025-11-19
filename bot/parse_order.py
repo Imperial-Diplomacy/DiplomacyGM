@@ -296,7 +296,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
     movement = []
     orderoutput = []
     errors = []
-    if turn.is_builds(board.turn):
+    if board.turn.is_builds():
         generator.set_state(board, player_restriction)
         for order in orderlist:
             if not order.strip():
@@ -316,7 +316,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                 errors.append(f"`{order}`: Please fix this order and try again")
         database = get_connection()
         database.save_build_orders_for_players(board, player_restriction)
-    elif turn.is_moves(board.turn) or turn.is_retreats(board.turn):
+    elif board.turn.is_moves() or board.turn.is_retreats():
         if board.turn.is_moves():
             parser = movement_parser
         else:
