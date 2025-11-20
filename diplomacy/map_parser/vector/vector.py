@@ -11,7 +11,7 @@ from lxml import etree
 
 from diplomacy.map_parser.vector.transform import TransGL3
 from diplomacy.map_parser.vector.utils import get_element_color, get_unit_coordinates, get_svg_element, parse_path, initialize_province_resident_data
-from diplomacy.persistence import phase
+from diplomacy.persistence.turn import Turn
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, ProvinceType, Coast
@@ -148,11 +148,11 @@ class Parser:
                     logger.warning(f"{self.datafile}: Province {coast.name} has no retreat coord. Setting to 0,0 ...")
                     coast.retreat_unit_coordinate = (0, 0)
         
-        initial_phase = phase.initial()
+        initial_turn = Turn(self.year_offset, "Spring Moves", self.year_offset)
         if "adju flags" in self.data and "initial builds" in self.data["adju flags"]:
-            initial_phase = phase._winter_builds
+            initial_turn = initial_turn.get_previous_turn()
 
-        return Board(self.players, provinces, units, initial_phase, self.data, self.datafile, self.fow, self.year_offset)
+        return Board(self.players, provinces, units, initial_turn, self.data, self.datafile, self.fow, self.year_offset)
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
         if self.cache_provinces is None:
@@ -190,8 +190,8 @@ class Parser:
         self.name_to_province[province.name] = province
         return provinces
 
-    def json_cheats(self, provinces: set[Province]) -> set[Province]:
-        if not "overrides" in self.data:
+    def json_cheats(self, provinces: set[Province]) -> set[Province] | None:
+        if "overrides" not in self.data:
             return
         if "high provinces" in self.data["overrides"]:
             for name, data in self.data["overrides"]["high provinces"].items():
@@ -543,8 +543,8 @@ class Parser:
         coast_names = {" (nc)", " (sc)", " (ec)", " (wc)"}
 
         for coast_name in coast_names:
-            if province_name[len(province_name) - 5 :] == coast_name:
-                province_name = province_name[: len(province_name) - 5]
+            if province_name.endswith(coast_name):
+                province_name = province_name[:-5]
                 coast_suffix = coast_name[2:4]
                 break
 
@@ -574,7 +574,7 @@ class Parser:
             f.close()
         return adjacencies
 
-    def get_element_player(self, element: Element, province_name: str="") -> Player:
+    def get_element_player(self, element: Element, province_name: str="") -> Player | None:
         color = get_element_color(element)
         #FIXME: only works if there's one person per province
         if self.autodetect_players:

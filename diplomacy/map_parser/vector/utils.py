@@ -19,7 +19,7 @@ def get_svg_element(svg_root: ElementTree, element_id: str) -> Element:
     except:
         logger.error(f"{element_id} isn't contained in svg_root")
 
-def get_element_color(element: Element, prefix="fill:") -> str:
+def get_element_color(element: Element, prefix="fill:") -> str | None:
     style_string = element.get("style")
     if style_string is None:
         return None

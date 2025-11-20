@@ -10,7 +10,7 @@ from discord.utils import find as discord_find
 from bot import config
 from bot import perms
 from bot import utils
-from bot.utils import get_player_by_name, send_message_and_file
+from bot.utils import get_player_by_name, send_message_and_file, svg_to_png
 from diplomacy.persistence.manager import Manager
 
 logger = logging.getLogger(__name__)
@@ -167,7 +167,7 @@ class SlashSubstituteCog(commands.Cog):
         out = (
             f"Period: {timestamp_msg}\n"
             f"Game: {guild.name}\n"
-            f"Phase: {board.phase.name} {board.get_year_str()}\n"
+            f"Phase: {board.turn}\n"
             f"Power: {power_role.name}\n"
             f"SC Count: {len(player.centers)}\n"
             f"VSCC: {round(player.score() * 100, 2)}%\n"
@@ -179,6 +179,7 @@ class SlashSubstituteCog(commands.Cog):
         file, file_name = manager.draw_map_for_board(
             board, player_restriction=None, draw_moves=False, color_mode="standard"
         )
+        file, file_name = await svg_to_png(file, file_name)
 
         link = await send_message_and_file(
             channel=locations["advertise_channel"],
@@ -186,7 +187,6 @@ class SlashSubstituteCog(commands.Cog):
             message=out,
             file=file,
             file_name=file_name,
-            convert_svg=True,
         )
         try:
             msg = await locations["advertise_channel"].send(interested_sub_role.mention)
@@ -423,13 +423,12 @@ class SlashSubstituteCog(commands.Cog):
 
         # OUTPUT TO REPUTATION TRACKER
         board = manager.get_board(guild.id)
-        phase = f"{board.phase.name} {board.get_year_str()}"
         out = (
             f"Game: {guild.name}\n"
             f"- GuildID: {guild.id}\n"
             f"In: {incoming_user.mention}[{incoming_user.name}]\n"
             f"Out: {outgoing_user.mention if outgoing_user else '(null)'}[{outgoing_username}]\n"
-            f"Phase: {phase}\n"
+            f"Phase: {board.turn}\n"
             f"Reason: {reason}"
         )
 

@@ -6,7 +6,7 @@ from typing import Optional
 # TODO: Find a better way to do this
 # maybe use a copy from manager?
 from diplomacy.map_parser.vector.vector import get_parser
-from diplomacy.persistence import phase
+from diplomacy.persistence.turn import Turn
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
     Core,
@@ -75,19 +75,15 @@ class _DatabaseConnection:
             split_index = phase_string.index(" ")
             year = int(phase_string[:split_index])
             phase_name = phase_string[split_index:].strip()
-            current_phase = phase.get(phase_name)
-            next_phase = current_phase.next
-            next_phase_year = year
-            if next_phase.name == "Spring Moves":
-                next_phase_year += 1
-            if (board_id, f"{next_phase_year} {next_phase.name}") in board_keys:
+            current_turn = Turn(year, phase_name)
+            if (board_id, str(current_turn.get_next_turn())) in board_keys:
                 continue
 
             if fish is None:
                 fish = 0
 
             board = self._get_board(
-                board_id, current_phase, year, fish, name, data_file, cursor
+                board_id, phase_name, year, fish, name, data_file, cursor
             )
 
             boards[board_id] = board
@@ -99,7 +95,7 @@ class _DatabaseConnection:
     def get_board(
         self,
         board_id: int,
-        board_phase: phase.Phase,
+        board_phase: str,
         year: int,
         fish: int,
         name: str | None,
@@ -110,7 +106,7 @@ class _DatabaseConnection:
 
         board_data = cursor.execute(
             "SELECT * FROM boards WHERE board_id=? and phase=?",
-            (board_id, f"{year} {board_phase.name}"),
+            (board_id, f"{year} {board_phase}"),
         ).fetchone()
         if not board_data:
             cursor.close()
@@ -149,7 +145,7 @@ class _DatabaseConnection:
     def _get_board(
         self,
         board_id: int,
-        board_phase: phase.Phase,
+        board_phase: str,
         year: int,
         fish: int,
         name: str | None,
@@ -161,8 +157,7 @@ class _DatabaseConnection:
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
         board = get_parser(data_file).parse()
-        board.phase = board_phase
-        board.year = year
+        board.turn = Turn(board.year_offset + year, board_phase, board.year_offset)
         board.fish = fish
         board.name = name
         board.board_id = board_id
@@ -194,10 +189,10 @@ class _DatabaseConnection:
             player.units = set()
             player.centers = set()
             # TODO - player build orders
-        if phase.is_builds(board_phase):
+        if board.turn.is_builds():
             builds_data = cursor.execute(
                 "SELECT player, location, is_build, is_army FROM builds WHERE board_id=? and phase=?",
-                (board_id, board.get_phase_and_year_string()),
+                (board_id, board.turn.get_indexed_name()),
             ).fetchall()
 
             def get_player_by_name(player_name) -> Player | None:
@@ -227,7 +222,7 @@ class _DatabaseConnection:
 
             vassals_data = cursor.execute(
                 "SELECT player, target_player, order_type FROM vassal_orders WHERE board_id=? and phase=?",
-                (board_id, board.get_phase_and_year_string()),
+                (board_id, board.turn.get_indexed_name()),
             ).fetchall()
 
             order_classes = [
@@ -254,7 +249,7 @@ class _DatabaseConnection:
 
         province_data = cursor.execute(
             "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
-            (board_id, board.get_phase_and_year_string()),
+            (board_id, board.turn.get_indexed_name()),
         ).fetchall()
         province_info_by_name = {
             province_name: (owner, core, half_core)
@@ -263,11 +258,11 @@ class _DatabaseConnection:
         
         if clear_status:
             cursor.execute("UPDATE units SET failed_order=False WHERE board_id=? and phase=?",
-                (board_id, board.get_phase_and_year_string()))
+                (board_id, board.turn.get_indexed_name()))
         
         unit_data = cursor.execute(
             "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source, failed_order FROM units WHERE board_id=? and phase=?",
-            (board_id, board.get_phase_and_year_string()),
+            (board_id, board.turn.get_indexed_name()),
         ).fetchall()
         for province in board.provinces:
             if province.name not in province_info_by_name:
@@ -318,7 +313,7 @@ class _DatabaseConnection:
             if is_dislodged:
                 retreat_ops = cursor.execute(
                     "SELECT retreat_loc FROM retreat_options WHERE board_id=? and phase=? and origin=?",
-                    (board_id, board.get_phase_and_year_string(), location),
+                    (board_id, board.turn.get_indexed_name(), location),
                 )
                 retreat_options = set(
                     map(board.get_location, set().union(*retreat_ops))
@@ -412,7 +407,7 @@ class _DatabaseConnection:
         cursor = self._connection.cursor()
         cursor.execute(
             "INSERT INTO boards (board_id, phase, data_file, fish, name) VALUES (?, ?, ?, ?, ?)",
-            (board_id, board.get_phase_and_year_string(), board.datafile, board.fish, board.name),
+            (board_id, board.turn.get_indexed_name(), board.datafile, board.fish, board.name),
         )
         cursor.executemany(
             "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT "
@@ -460,7 +455,7 @@ class _DatabaseConnection:
             [
                 (
                     board_id,
-                    board.get_phase_and_year_string(),
+                    board.turn.get_indexed_name(),
                     province.name,
                     province.owner.name if province.owner else None,
                     province.core.name if province.core else None,
@@ -474,7 +469,7 @@ class _DatabaseConnection:
             [
                 (
                     board_id,
-                    board.get_phase_and_year_string(),
+                    board.turn.get_indexed_name(),
                     player.name,
                     build_order.location.name,
                     isinstance(build_order, Build),
@@ -490,7 +485,7 @@ class _DatabaseConnection:
             [
                 (
                     board_id,
-                    board.get_phase_and_year_string(),
+                    board.turn.get_indexed_name(),
                     unit.location().name,
                     unit == unit.province.dislodged_unit,
                     unit.player.name,
@@ -522,7 +517,7 @@ class _DatabaseConnection:
             [
                 (
                     board_id,
-                    board.get_phase_and_year_string(),
+                    board.turn.get_indexed_name(),
                     unit.location().name,
                     retreat_option.name,
                 )
@@ -554,7 +549,7 @@ class _DatabaseConnection:
                     ),
                     unit.order.hasFailed if unit.order is not None else False,
                     board.board_id,
-                    board.get_phase_and_year_string(),
+                    board.turn.get_indexed_name(),
                     unit.location().name,
                     unit.province.dislodged_unit == unit,
                 )
@@ -566,7 +561,7 @@ class _DatabaseConnection:
             [
                 (
                     board.board_id,
-                    board.get_phase_and_year_string(),
+                    board.turn.get_indexed_name(),
                     unit.location().name,
                 )
                 for unit in units
@@ -578,7 +573,7 @@ class _DatabaseConnection:
             [
                 (
                     board.board_id,
-                    board.get_phase_and_year_string(),
+                    board.turn.get_indexed_name(),
                     unit.location().name,
                     retreat_option.name,
                 )
@@ -602,7 +597,7 @@ class _DatabaseConnection:
             [
                 (
                     board.board_id,
-                    board.get_phase_and_year_string(),
+                    board.turn.get_indexed_name(),
                     player.name,
                     build_order.location.name,
                     isinstance(build_order, Build),
@@ -619,7 +614,7 @@ class _DatabaseConnection:
             [
                 (
                     board.board_id,
-                    board.get_phase_and_year_string(),
+                    board.turn.get_indexed_name(),
                     player.name,
                     build_order.player.name,
                     build_order.__class__.__name__,
@@ -664,27 +659,27 @@ class _DatabaseConnection:
         cursor = self._connection.cursor()
         cursor.execute(
             "DELETE FROM boards WHERE board_id=? AND phase=?",
-            (board.board_id, board.get_phase_and_year_string()),
+            (board.board_id, board.turn.get_indexed_name()),
         )
         cursor.execute(
             "DELETE FROM provinces WHERE board_id=? AND phase=?",
-            (board.board_id, board.get_phase_and_year_string()),
+            (board.board_id, board.turn.get_indexed_name()),
         )
         cursor.execute(
             "DELETE FROM units WHERE board_id=? AND phase=?",
-            (board.board_id, board.get_phase_and_year_string()),
+            (board.board_id, board.turn.get_indexed_name()),
         )
         cursor.execute(
             "DELETE FROM builds WHERE board_id=? AND phase=?",
-            (board.board_id, board.get_phase_and_year_string()),
+            (board.board_id, board.turn.get_indexed_name()),
         )
         cursor.execute(
             "DELETE FROM retreat_options WHERE board_id=? AND phase=?",
-            (board.board_id, board.get_phase_and_year_string()),
+            (board.board_id, board.turn.get_indexed_name()),
         )
         cursor.execute(
             "DELETE FROM vassal_orders WHERE board_id=? AND phase=?",
-            (board.board_id, board.get_phase_and_year_string()),
+            (board.board_id, board.turn.get_indexed_name()),
         )
         cursor.close()
         self._connection.commit()

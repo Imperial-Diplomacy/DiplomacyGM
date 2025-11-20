@@ -41,7 +41,7 @@ class AdminCog(commands.Cog):
             message += f"\n- {server.name}"
             if server.id in guilds_with_games:
                 board = manager.get_board(server.id)
-                message += f" - {board.phase.name} {board.get_year_str()}"
+                message += f" - {board.turn}"
             else:
                 message += f" - no active game"
 
@@ -97,7 +97,7 @@ class AdminCog(commands.Cog):
             if server.id in servers_with_games:
                 servers_with_games.remove(server.id)
                 board = manager.get_board(server.id)
-                board_state = f" - {board.phase.name} {board.get_year_str()}"
+                board_state = f" - {board.turn}"
             else:
                 board_state = f" - no active game"
 

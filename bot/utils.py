@@ -15,11 +15,10 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from bot import config
-from diplomacy.adjudicator.utils import svg_to_png, png_to_jpg
-from diplomacy.persistence import phase
+from bot.config import SIMULATRANEOUS_SVG_EXPORT_LIMIT
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
-from diplomacy.persistence.phase import Phase
+from diplomacy.persistence.turn import Turn
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
 
@@ -53,6 +52,11 @@ discord_message_limit = 2000
 discord_file_limit = 10 * (2**20)
 discord_embed_description_limit = 4096
 discord_embed_total_limit = 6000
+
+limit = SIMULATRANEOUS_SVG_EXPORT_LIMIT
+if limit is None:
+    limit = 4
+external_task_limit = asyncio.Semaphore(int(limit))
 
 
 def is_moderator(author: commands.Context.author) -> bool:
@@ -279,6 +283,48 @@ def log_command_no_ctx(
         level, f"[{guild}][#{channel}]({invoker}) - " f"'{command}' -> " f"{message}"
     )
 
+async def svg_to_png(svg: bytes, file_name: str):
+    async with external_task_limit:
+        # https://gitlab.com/inkscape/inkscape/-/issues/4716
+        os_env = os.environ.copy()
+        os_env["SELF_CALL"] = "xxx"
+        p = await asyncio.create_subprocess_shell(
+            "inkscape --pipe --export-type=png --export-dpi=200",
+            stdout=PIPE,
+            stdin=PIPE,
+            stderr=PIPE,
+            env=os_env,
+        )
+        data, error = await p.communicate(input=svg)
+
+        # Stupid inkscape error fix, not good but works
+        # Inkscape can throw warnings in stdout, this should remove those warnings, leaving us with a valid png
+
+        # This should indicate the start of the png, see https://www.w3.org/TR/2003/REC-PNG-20031110/#5PNG-file-signature
+        png_start = b"\x89PNG\r\n\x1a\n"
+
+        if data[:8] != png_start:
+            logger.critical(f"failed to assert png code: {png_start}")
+            logger.critical(data[:30])
+
+            data = data[data.find(png_start) :]
+
+            if data[:8] != png_start:
+                logger.critical(data[:30])
+                raise RuntimeError("Something went wrong with making the png.")
+
+        base = os.path.splitext(file_name)[0]
+        return bytes(data), base + ".png"
+
+
+async def png_to_jpg(png: bytes, file_name: str) -> (bytes, str, str):
+    async with external_task_limit:
+        p = await asyncio.create_subprocess_shell(
+            "convert png:- jpg:-", stdout=PIPE, stdin=PIPE, stderr=PIPE
+        )
+        data, error = await p.communicate(input=png)
+        base = os.path.splitext(file_name)[0]
+        return bytes(data), base + ".jpg", error
 
 async def send_message_and_file(
     *,
@@ -293,15 +339,11 @@ async def send_message_and_file(
     footer_content: str | None = None,
     footer_datetime: datetime.datetime | None = None,
     fields: List[Tuple[str, str]] | None = None,
-    convert_svg: bool = False,
     **_,
 ) -> Message:
 
     if not embed_colour:
         embed_colour = config.EMBED_STANDARD_COLOUR
-
-    if convert_svg and file and file_name:
-        file, file_name = await svg_to_png(file, file_name)
 
     # Checks embed title and bodies are within limits.
     if fields:
@@ -468,7 +510,7 @@ def get_orders(
         response = []
     else:
         response = ""
-    if phase.is_builds(board.phase):
+    if board.turn.is_builds():
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
             if not player_restriction and (
                 len(player.centers) + len(player.units) == 0
@@ -525,7 +567,7 @@ def get_orders(
             ):
                 continue
 
-            if phase.is_retreats(board.phase):
+            if board.turn.is_retreats():
                 in_moves = lambda u: u == u.province.dislodged_unit
             else:
                 in_moves = lambda _: True
@@ -567,7 +609,7 @@ def get_orders(
 
 def get_filtered_orders(board: Board, player_restriction: Player) -> str:
     visible = board.get_visible_provinces(player_restriction)
-    if phase.is_builds(board.phase):
+    if board.turn.is_builds():
         response = ""
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
             if not player_restriction or player == player_restriction:
@@ -586,7 +628,7 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
         response = ""
 
         for player in board.players:
-            if phase.is_retreats(board.phase):
+            if board.turn.is_retreats():
                 in_moves = lambda u: u == u.province.dislodged_unit
             else:
                 in_moves = lambda _: True
@@ -620,7 +662,7 @@ def fish_pop_model(Fish, t, growth_rate, carrying_capacity):
 
 def parse_season(
     arguments: list[str], default_year: str
-) -> tuple[str, phase.Phase] | None:
+) -> Turn | None:
     year, season, retreat = default_year, None, False
     for s in arguments:
         if s.isnumeric() and int(s) > 1640:
@@ -639,10 +681,9 @@ def parse_season(
     if season is None:
         return None
     if season == "Winter":
-        parsed_phase = phase.get("Winter Builds")
+        return Turn(year, "Winter Builds")
     else:
-        parsed_phase = phase.get(season + " " + ("Retreats" if retreat else "Moves"))
-    return (year, parsed_phase)
+        return Turn(year, season + " " + ("Retreats" if retreat else "Moves"))
 
 def get_value_from_timestamp(timestamp: str) -> int | None:
     if len(timestamp) == 10 and timestamp.isnumeric():
@@ -654,13 +695,10 @@ def get_value_from_timestamp(timestamp: str) -> int | None:
 
     return None
 
-async def upload_map_to_archive(ctx: commands.Context, server_id: int, board: Board, map: str, turn: tuple[str, phase] | None = None) -> None:
+async def upload_map_to_archive(ctx: commands.Context, server_id: int, board: Board, map: str, turn: Turn | None = None) -> None:
     if "maps_sas_token" not in os.environ:
         return
-    if turn is None:
-        turnstr = f"{(board.year + board.year_offset) % 100}{board.phase.shortname}"
-    else:
-        turnstr = f"{int(turn[0]) % 100}{turn[1].shortname}"
+    turnstr = board.turn.get_short_name() if turn is None else turn.get_short_name()
     url = None
     with open("gamelist.tsv", "r") as gamefile:
         for server in gamefile:

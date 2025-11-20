@@ -3,7 +3,7 @@ import logging
 import time
 
 from bot.sanitize import sanitize_name
-from diplomacy.persistence.phase import Phase
+from diplomacy.persistence.turn import Turn
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, ProvinceType, Coast, Location, get_adjacent_provinces
 from diplomacy.persistence.unit import Unit, UnitType
@@ -13,13 +13,12 @@ logger = logging.getLogger(__name__)
 
 class Board:
     def __init__(
-        self, players: set[Player], provinces: set[Province], units: set[Unit], phase: Phase, data, datafile: str, fow: bool, year_offset: int = 1642
+        self, players: set[Player], provinces: set[Province], units: set[Unit], turn: Turn, data, datafile: str, fow: bool, year_offset: int = 1642
     ):
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
         self.units: set[Unit] = units
-        self.phase: Phase = phase
-        self.year = 0
+        self.turn: Turn = turn
         self.year_offset = year_offset
         self.board_id = 0
         self.fish = 0
@@ -44,14 +43,14 @@ class Board:
             for coast in location.coasts:
                 self.name_to_coast[coast.name.lower()] = coast
 
-    def get_player(self, name: str) -> Player:
+    def get_player(self, name: str) -> Player | None:
         if name.lower() == "none":
             return None
         if name.lower() not in self.name_to_player:
             raise ValueError(f"Player {name} not found")
         return self.name_to_player.get(name.lower())
 
-    def get_cleaned_player(self, name: str) -> Player:
+    def get_cleaned_player(self, name: str) -> Player | None:
         if name.lower() == "none":
             return None
         if name.lower() not in self.cleaned_name_to_player:
@@ -59,7 +58,6 @@ class Board:
         return self.cleaned_name_to_player.get(sanitize_name(name.lower()))
 
 
-    # TODO: break ties in a fixed manner
     def get_players_by_score(self) -> list[Player]:
         return sorted(self.players, key=lambda sort_player: (-sort_player.score(), sort_player.name.lower()))
 
@@ -152,9 +150,6 @@ class Board:
         build_counts = sorted(build_counts, key=lambda counts: counts[1])
         return build_counts
 
-    def get_phase_and_year_string(self):
-        return f"{self.year} {self.phase.name}"
-
     def change_owner(self, province: Province, player: Player):
         if province.has_supply_center:
             if province.owner:
@@ -243,7 +238,7 @@ class Board:
         self.units = set()
 
     def get_year_int(self) -> int:
-        return self.year_offset + self.year
+        return self.turn.year
 
     @staticmethod
     def convert_year_int_to_str(year: int) -> str:
@@ -254,7 +249,10 @@ class Board:
             return str(year)
 
     def get_year_str(self) -> str:
-        return self.convert_year_int_to_str(self.get_year_int())
+        if self.turn.year <= 0:
+            return f"{str(1-self.turn.year)} BC"
+        else:
+            return str(self.turn.year)
         
     def is_chaos(self) -> bool:
         return self.data["players"] == "chaos"

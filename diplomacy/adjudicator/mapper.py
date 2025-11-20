@@ -13,7 +13,7 @@ import math
 # from diplomacy.map_parser.vector import config_svg as svgcfg
 
 from diplomacy.map_parser.vector.utils import get_element_color, get_svg_element, get_unit_coordinates, initialize_province_resident_data
-from diplomacy.persistence import phase
+from diplomacy.persistence import turn
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import logger
 from diplomacy.persistence.order import (
@@ -116,20 +116,20 @@ class Mapper:
             return False
         if self.player_restriction and unit.player.name != self.player_restriction.name:
             return False
-        if phase.is_retreats(self.current_phase) and unit.province.dislodged_unit != unit:
+        if self.current_turn.is_retreats() and unit.province.dislodged_unit != unit:
             return False
         return True
 
-    def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None, movement_only: bool = False) -> tuple[str, str]:
+    def draw_moves_map(self, current_turn: turn.Turn, player_restriction: Player | None, movement_only: bool = False) -> tuple[str, str]:
         logger.info("mapper.draw_moves_map")
 
         self._reset_moves_map()
         self.player_restriction = player_restriction
-        self.current_phase = current_phase
+        self.current_turn = current_turn
 
         t = self._moves_svg.getroot()
         arrow_layer = get_svg_element(t, self.board.data["svg config"]["arrow_output"])
-        if not phase.is_builds(current_phase):
+        if not current_turn.is_builds():
             units = sorted(self.board.units, key=lambda unit: 0 if unit.order is None else unit.order.display_priority)
             for unit in units:
                 if not self.is_moveable(unit):
@@ -140,7 +140,7 @@ class Mapper:
                     isinstance(unit.order, (RetreatMove, Move)) and not unit.order.hasFailed):
                     continue
                     
-                if phase.is_retreats(current_phase):
+                if current_turn.is_retreats():
                     unit_locs = unit.location().all_rets
                 else:
                     unit_locs = unit.location().all_locs
@@ -153,7 +153,7 @@ class Mapper:
                     unit_locs = new_locs
                 try:
                     for loc in unit_locs:
-                        val = self._draw_order(unit, loc, current_phase)
+                        val = self._draw_order(unit, loc, current_turn)
                         if val is not None:
                             # if something returns, that means it could potentially go across the edge
                             # copy it 3 times (-1, 0, +1)
@@ -183,12 +183,12 @@ class Mapper:
 
         self.clean_layers(self._moves_svg)
 
-        svg_file_name = f"{self.board.phase.name}_{self.board.get_year_str().replace(' ', '_')}_moves_map.svg"
+        svg_file_name = f"{str(self.board.turn).replace(' ', '_')}_moves_map.svg"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
 
-    def draw_gui_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> tuple[str, str]:
+    def draw_gui_map(self, current_turn: turn.Turn, player_restriction: Player | None) -> tuple[str, str]:
         self.player_restriction = player_restriction
-        self.current_phase = current_phase
+        self.current_turn = current_turn
         self._reset_moves_map()
         self.clean_layers(self._moves_svg)
         get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["sidebar"]).clear()
@@ -282,7 +282,7 @@ class Mapper:
                 province_data.set("oncontextmenu", f'obj_clicked(event, "{name}", false)')
 
 
-        return elementToString(self._moves_svg.getroot(), encoding="utf-8"), f"{self.board.phase.name}_{self.board.year + 1642}_gui.svg"
+        return elementToString(self._moves_svg.getroot(), encoding="utf-8"), f"{str(self.board.turn).replace(' ', '_')}_gui.svg"
 
 
     def load_colors(self, color_mode: str | None = None) -> None:
@@ -359,12 +359,8 @@ class Mapper:
 
     def draw_current_map(self) -> tuple[str, str]:
         logger.info("mapper.draw_current_map")
-        svg_file_name = f"{self.board.phase.name}_{self.board.get_year_str().replace(' ', '_')}_map.svg"
+        svg_file_name = f"{str(self.board.turn).replace(' ', '_')}_map.svg"
         return elementToString(self.state_svg.getroot(), encoding="utf-8"), svg_file_name
-
-    def get_pretty_date(self) -> str:
-        # TODO: Get the start date from somewhere in the board/in a config file
-        return self.board.phase.name + " " + self.board.get_year_str()
 
     def draw_side_panel(self, svg: ElementTree) -> None:
         self._draw_side_panel_date(svg)
@@ -424,12 +420,12 @@ class Mapper:
         game_name = self.board.name
         name_text = "" if game_name is None else f"{game_name} — "
         # TODO: this is hacky; I don't know a better way
-        date[0][0].text = name_text + self.get_pretty_date()
+        date[0][0].text = name_text + str(self.board.turn)
 
     def _reset_moves_map(self):
         self._moves_svg = copy.deepcopy(self.board_svg)
 
-    def _draw_order(self, unit: Unit, coordinate: tuple[float, float], current_phase: phase.Phase) -> None:
+    def _draw_order(self, unit: Unit, coordinate: tuple[float, float], current_turn: turn.Turn) -> None:
         order = unit.order
         if isinstance(order, Hold):
             self._draw_hold(coordinate, order.hasFailed)
@@ -450,7 +446,7 @@ class Mapper:
         elif isinstance(order, RetreatDisband):
             self._draw_force_disband(coordinate, self._moves_svg)
         else:
-            if phase.is_moves(current_phase):
+            if current_turn.is_moves():
                 self._draw_hold(coordinate, False)
             else:
                 self._draw_force_disband(coordinate, self._moves_svg)

@@ -124,7 +124,7 @@ class RetreatDisband(UnitOrder):
         super().__init__()
 
     def __str__(self):
-        return f"Disbands"
+        return "Disbands"
 
 
 class PlayerOrder(Order):

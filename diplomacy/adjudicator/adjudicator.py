@@ -8,7 +8,7 @@ from diplomacy.adjudicator.defs import (
     AdjudicableOrder,
     OrderType,
 )
-from diplomacy.persistence import phase
+from diplomacy.persistence.turn import Turn
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
     Order,
@@ -434,7 +434,7 @@ class RetreatsAdjudicator(Adjudicator):
             unit.province = destination_province
             unit.coast = destination_coast
             destination_province.unit = unit
-            if not destination_province.has_supply_center or self._board.phase.name.startswith("Fall"):
+            if not destination_province.has_supply_center or self._board.turn.is_fall():
                 self._board.change_owner(destination_province, unit.player)
 
         for unit in units_to_delete:
@@ -446,7 +446,7 @@ class RetreatsAdjudicator(Adjudicator):
             unit.order = None
             unit.retreat_options = None
 
-        if self._board.phase.name.startswith("Fall") and "vassal system" in self._board.data.get("adju flags", []):
+        if self._board.turn.is_fall() and "vassal system" in self._board.data.get("adju flags", []):
             for player in self._board.players:
                 if player.liege in player.vassals:
                     other = player.liege
@@ -605,12 +605,12 @@ class MovesAdjudicator(Adjudicator):
                 else:
                     order.base_unit.coast = None
                 order.destination_province.unit = order.base_unit
-                if not order.destination_province.has_supply_center or self._board.phase.name.startswith("Fall"):
+                if not order.destination_province.has_supply_center or self._board.turn.is_fall():
                     self._board.change_owner(order.destination_province, order.country)
             if (order.type == OrderType.HOLD
                 and order.resolution == Resolution.SUCCEEDS
                 and order.source_province.dislodged_unit != order.base_unit):
-                if not order.destination_province.has_supply_center or self._board.phase.name.startswith("Fall"):
+                if not order.destination_province.has_supply_center or self._board.turn.is_fall():
                     self._board.change_owner(order.destination_province, order.country)
 
         for province in self._board.provinces:
@@ -636,7 +636,7 @@ class MovesAdjudicator(Adjudicator):
                     unit.retreat_options &= get_adjacent_provinces(unit.location())
 
             # Update provinces again to capture SCs in fall where units held
-            if self._board.phase.name.startswith("Fall"):
+            if self._board.turn.is_fall():
                 if unit.province.unit == unit and unit.province.owner != unit.player:
                     self._board.change_owner(unit.province, unit.player)
 
@@ -896,11 +896,11 @@ class MovesAdjudicator(Adjudicator):
 
 
 def make_adjudicator(board: Board) -> Adjudicator:
-    if phase.is_moves(board.phase):
+    if board.turn.is_moves():
         return MovesAdjudicator(board)
-    elif phase.is_retreats(board.phase):
+    elif board.turn.is_retreats():
         return RetreatsAdjudicator(board)
-    elif phase.is_builds(board.phase):
+    elif board.turn.is_builds():
         return BuildsAdjudicator(board)
     else:
         raise ValueError("Board is in invalid phase")

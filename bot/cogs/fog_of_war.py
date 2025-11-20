@@ -150,7 +150,7 @@ async def publish_map(
         if not player or (filter_player and player != filter_player):
             continue
 
-        message = f"Here is the {name} for {board.get_year_str()} {board.phase.name}"
+        message = f"Here is the {name} for {board.turn}"
         # capture local of player
         tasks.append(
             map_publish_task(

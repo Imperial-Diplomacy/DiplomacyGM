@@ -7,7 +7,7 @@ from bot.core.singleton import SingletonMeta
 from diplomacy.adjudicator.adjudicator import make_adjudicator
 from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.map_parser.vector.vector import get_parser
-from diplomacy.persistence import phase
+from diplomacy.persistence.turn import Turn
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db import database
 from diplomacy.persistence.player import Player
@@ -91,31 +91,29 @@ class Manager(metaclass=SingletonMeta):
         draw_moves: bool = False,
         player_restriction: Player | None = None,
         color_mode: str | None = None,
-        turn: tuple[str, phase] | None = None,
+        turn: Turn | None = None,
         movement_only: bool = False,
     ) -> tuple[str, str]:
         cur_board = self._boards[server_id]
         if turn is None:
             board = cur_board
-            season = board.phase
         else:
             board = self._database.get_board(
                 cur_board.board_id,
-                turn[1],
-                int(turn[0]) - cur_board.year_offset,
+                turn.get_phase(),
+                turn.get_year_index(),
                 cur_board.fish,
                 cur_board.name,
                 cur_board.datafile,
             )
             if board is None:
                 raise RuntimeError(
-                    f"There is no {turn[1].name} {turn[0]} board for this server"
+                    f"There is no {turn} board for this server"
                 )
-            season = turn[1]
             if (
-                board.year < cur_board.year
-                or board.year == cur_board.year
-                and season.index < cur_board.phase.index
+                board.turn.year < cur_board.turn.year
+                or (board.turn.year == cur_board.turn.year
+                    and board.turn.phase < cur_board.turn.phase)
             ):
                 player_restriction = None
         svg, file_name = self.draw_map_for_board(
@@ -139,7 +137,7 @@ class Manager(metaclass=SingletonMeta):
 
         if draw_moves:
             svg, file_name = Mapper(board, color_mode=color_mode).draw_moves_map(
-                board.phase,
+                board.turn,
                 player_restriction=player_restriction,
                 movement_only=movement_only,
             )
@@ -155,7 +153,7 @@ class Manager(metaclass=SingletonMeta):
 
         board = self._boards[server_id]
         old_board = self._database.get_board(
-            server_id, board.phase, board.year, board.fish, board.name, board.datafile
+            server_id, board.turn.get_phase(), board.turn.get_year_index(), board.fish, board.name, board.datafile
         )
         # mapper = Mapper(self._boards[server_id])
         # mapper.draw_moves_map(None)
@@ -163,9 +161,7 @@ class Manager(metaclass=SingletonMeta):
         adjudicator.save_orders = not test
         # TODO - use adjudicator.orders() (tells you which ones succeeded and failed) to draw a better moves map
         new_board = adjudicator.run()
-        new_board.phase = new_board.phase.next
-        if new_board.phase.name == "Spring Moves":
-            new_board.year += 1
+        new_board.turn = new_board.turn.get_next_turn()
         logger.info("Adjudicator ran successfully")
         if not test:
             self._boards[server_id] = new_board
@@ -202,10 +198,10 @@ class Manager(metaclass=SingletonMeta):
         if player_restriction:
             svg, file_name = Mapper(
                 self._boards[server_id], player_restriction, color_mode=color_mode
-            ).draw_moves_map(self._boards[server_id].phase, player_restriction)
+            ).draw_moves_map(self._boards[server_id].turn, player_restriction)
         else:
             svg, file_name = Mapper(self._boards[server_id], None).draw_moves_map(
-                self._boards[server_id].phase, None
+                self._boards[server_id].turn, None
             )
 
         elapsed = time.time() - start
@@ -219,7 +215,7 @@ class Manager(metaclass=SingletonMeta):
 
         svg, file_name = Mapper(
             self._boards[server_id], player_restriction
-        ).draw_moves_map(self._boards[server_id].phase, None)
+        ).draw_moves_map(self._boards[server_id].turn, None)
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_fow_moves_map.{server_id}.{elapsed}s")
@@ -235,7 +231,7 @@ class Manager(metaclass=SingletonMeta):
 
         svg, file_name = Mapper(
             self._boards[server_id], player_restriction, color_mode=color_mode
-        ).draw_gui_map(self._boards[server_id].phase, None)
+        ).draw_gui_map(self._boards[server_id].turn, None)
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_fow_moves_map.{server_id}.{elapsed}s")
@@ -251,7 +247,7 @@ class Manager(metaclass=SingletonMeta):
 
         svg, file_name = Mapper(
             self._boards[server_id], color_mode=color_mode
-        ).draw_gui_map(self._boards[server_id].phase, player_restriction)
+        ).draw_gui_map(self._boards[server_id].turn, player_restriction)
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
@@ -261,15 +257,12 @@ class Manager(metaclass=SingletonMeta):
         logger.info(f"Rolling back in server {server_id}")
         board = self._boards[server_id]
         # TODO: what happens if we're on the first phase?
-        last_phase = board.phase.previous
-        last_phase_year = board.year
-        if board.phase.name == "Spring Moves":
-            last_phase_year -= 1
+        last_turn = board.turn.get_previous_turn()
 
         old_board = self._database.get_board(
             board.board_id,
-            last_phase,
-            last_phase_year,
+            last_turn.get_phase(),
+            last_turn.get_year_index(),
             board.fish,
             board.name,
             board.datafile,
@@ -277,28 +270,25 @@ class Manager(metaclass=SingletonMeta):
         )
         if old_board is None:
             raise ValueError(
-                f"There is no {last_phase_year} {last_phase.name} board for this server"
+                f"There is no {last_turn} board for this server"
             )
 
         self._database.delete_board(board)
         self._boards[server_id] = old_board
         mapper = Mapper(old_board)
 
-        message = f"Rolled back to {old_board.get_phase_and_year_string()}"
+        message = f"Rolled back to {old_board.turn.get_indexed_name()}"
         file, file_name = mapper.draw_current_map()
         return {"message": message, "file": file, "file_name": file_name}
 
     def get_previous_board(self, server_id: int) -> Board | None:
         board = self._boards[server_id]
         # TODO: what happens if we're on the first phase?
-        last_phase = board.phase.previous
-        last_phase_year = board.year
-        if board.phase.name == "Spring Moves":
-            last_phase_year -= 1
+        last_turn = board.turn.get_previous_turn()
         old_board = self._database.get_board(
             board.board_id,
-            last_phase,
-            last_phase_year,
+            last_turn.get_phase(),
+            last_turn.get_year_index(),
             board.fish,
             board.name,
             board.datafile,
@@ -310,16 +300,16 @@ class Manager(metaclass=SingletonMeta):
         board = self._boards[server_id]
 
         loaded_board = self._database.get_board(
-            server_id, board.phase, board.year, board.fish, board.name, board.datafile
+            server_id, board.turn.get_phase(), board.turn.get_year_index(), board.fish, board.name, board.datafile
         )
         if loaded_board is None:
             raise ValueError(
-                f"There is no {board.year} {board.phase.name} board for this server"
+                f"There is no {board.turn} board for this server"
             )
 
         self._boards[server_id] = loaded_board
         mapper = Mapper(loaded_board)
 
-        message = f"Reloaded board for phase {loaded_board.get_phase_and_year_string()}"
+        message = f"Reloaded board for phase {loaded_board.turn.get_indexed_name()}"
         file, file_name = mapper.draw_current_map()
         return {"message": message, "file": file, "file_name": file_name}

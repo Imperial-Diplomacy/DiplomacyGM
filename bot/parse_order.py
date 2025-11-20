@@ -7,7 +7,7 @@ from lark.exceptions import VisitError
 
 from bot.config import ERROR_COLOUR, PARTIAL_ERROR_COLOUR
 from bot.utils import get_unit_type, get_keywords, _manage_coast_signature, send_message_and_file
-from diplomacy.persistence import order, phase
+from diplomacy.persistence import order, turn
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.player import Player
@@ -296,7 +296,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
     movement = []
     orderoutput = []
     errors = []
-    if phase.is_builds(board.phase):
+    if board.turn.is_builds():
         generator.set_state(board, player_restriction)
         for order in orderlist:
             if not order.strip():
@@ -316,8 +316,8 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                 errors.append(f"`{order}`: Please fix this order and try again")
         database = get_connection()
         database.save_build_orders_for_players(board, player_restriction)
-    elif phase.is_moves(board.phase) or phase.is_retreats(board.phase):
-        if phase.is_moves(board.phase):
+    elif board.turn.is_moves() or board.turn.is_retreats():
+        if board.turn.is_moves():
             parser = movement_parser
         else:
             parser = retreats_parser
@@ -395,7 +395,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     for province in provinces_with_removed_builds:
         database.execute_arbitrary_sql(
             "DELETE FROM builds WHERE board_id=? and phase=? and location=?",
-            (board.board_id, board.get_phase_and_year_string(), province),
+            (board.board_id, board.turn.get_indexed_name(), province),
         )
 
     if invalid:
@@ -429,7 +429,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
         remove_relationship_order(board, player_restriction.vassal_orders[target_player], player_restriction)
 
 
-    elif phase.is_builds(board.phase):
+    elif board.turn.is_builds():
         # remove build order
         player = province.owner
         if player_restriction is not None and player != player_restriction:
@@ -475,7 +475,7 @@ def remove_player_order_for_location(board: Board, player: Player, location: Loc
             database = get_connection()
             database.execute_arbitrary_sql(
                 "DELETE FROM builds WHERE board_id=? and phase=? and location=?",
-                (board.board_id, board.get_phase_and_year_string(), player_order.location.name),
+                (board.board_id, board.turn.get_indexed_name(), player_order.location.name),
             )
             return True
     return False
@@ -486,5 +486,5 @@ def remove_relationship_order(board: Board, order: order.RelationshipOrder, play
     database = get_connection()
     database.execute_arbitrary_sql(
         "DELETE FROM vassal_orders WHERE board_id=? and phase=? and player=? and target_player=?",
-        (board.board_id, board.get_phase_and_year_string(), player.name, order.player.name)
+        (board.board_id, board.turn.get_indexed_name(), player.name, order.player.name)
     )

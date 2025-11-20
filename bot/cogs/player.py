@@ -7,7 +7,7 @@ from discord.ext import commands
 from bot import config
 from bot import perms
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import get_orders, log_command, parse_season, send_message_and_file
+from bot.utils import get_orders, log_command, parse_season, send_message_and_file, svg_to_png
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 
@@ -121,7 +121,7 @@ class PlayerCog(commands.Cog):
             log_command(
                 logger,
                 ctx,
-                message=f"Failed for an unknown reason",
+                message="Failed for an unknown reason",
                 level=logging.ERROR,
             )
             await send_message_and_file(
@@ -133,11 +133,11 @@ class PlayerCog(commands.Cog):
         log_command(
             logger,
             ctx,
-            message=f"Success - generated orders for {board.phase.name} {board.get_year_str()}",
+            message=f"Success - generated orders for {board.turn}",
         )
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{board.phase.name} {board.get_year_str()}",
+            title=f"{board.turn}",
             message=order_text,
         )
 
@@ -169,13 +169,11 @@ class PlayerCog(commands.Cog):
         color_mode = color_arguments[0] if color_arguments else None
         movement_only = "movement" in arguments
         board = manager.get_board(ctx.guild.id)
-        season = parse_season(arguments, board.get_year_str())
-
-        year = board.get_year_str() if season is None else season[0]
-        phase_str = board.phase.name if season is None else season[1].name
+        season = parse_season(arguments, board.turn)
+        turn = board.turn if not season else season
 
         if player and not board.orders_enabled:
-            log_command(logger, ctx, f"Orders locked - not processing")
+            log_command(logger, ctx, "Orders locked - not processing")
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Orders locked!",
@@ -191,7 +189,7 @@ class PlayerCog(commands.Cog):
                     draw_moves=True,
                     player_restriction=player,
                     color_mode=color_mode,
-                    turn=season,
+                    turn=turn,
                     movement_only=movement_only,
                 )
             else:
@@ -203,7 +201,7 @@ class PlayerCog(commands.Cog):
             log_command(
                 logger,
                 ctx,
-                message=f"Failed to generate map for an unknown reason",
+                message="Failed to generate map for an unknown reason",
                 level=logging.ERROR,
             )
             await send_message_and_file(
@@ -216,14 +214,15 @@ class PlayerCog(commands.Cog):
         log_command(
             logger,
             ctx,
-            message=f"Generated moves map for {phase_str} {year}",
+            message=f"Generated moves map for {turn}",
         )
+        if convert_svg:
+            file, file_name = await svg_to_png(file, file_name)
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{phase_str} {year}",
+            title=f"{turn}",
             file=file,
             file_name=file_name,
-            convert_svg=convert_svg,
             file_in_embed=False,
         )
 
@@ -245,17 +244,17 @@ class PlayerCog(commands.Cog):
             .lower()
             .split()
         )
-        convert_svg = not ({"true", "t", "svg", "s"} & set(arguments))
+        convert_svg = (player is not None) or not (
+            {"true", "t", "svg", "s"} & set(arguments)
+        )
         color_arguments = list(config.color_options & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
         board = manager.get_board(ctx.guild.id)
         season = parse_season(arguments, board.get_year_str())
-
-        year = board.get_year_str() if season is None else season[0]
-        phase_str = board.phase.name if season is None else season[1].name
+        turn = board.turn if not season else season
 
         if player and not board.orders_enabled:
-            log_command(logger, ctx, f"Orders locked - not processing")
+            log_command(logger, ctx, "Orders locked - not processing")
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Orders locked!",
@@ -267,7 +266,7 @@ class PlayerCog(commands.Cog):
         try:
             if not board.fow:
                 file, file_name = manager.draw_map(
-                    ctx.guild.id, color_mode=color_mode, turn=season
+                    ctx.guild.id, color_mode=color_mode, turn=turn
                 )
             else:
                 file, file_name = manager.draw_fow_current_map(
@@ -278,7 +277,7 @@ class PlayerCog(commands.Cog):
             log_command(
                 logger,
                 ctx,
-                message=f"Failed to generate map for an unknown reason",
+                message="Failed to generate map for an unknown reason",
                 level=logging.ERROR,
             )
             await send_message_and_file(
@@ -290,14 +289,15 @@ class PlayerCog(commands.Cog):
         log_command(
             logger,
             ctx,
-            message=f"Generated current map for {phase_str} {year}",
+            message=f"Generated current map for {turn}",
         )
+        if convert_svg:
+            file, file_name = await svg_to_png(file, file_name)
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{phase_str} {year}",
+            title=f"{turn}",
             file=file,
             file_name=file_name,
-            convert_svg=convert_svg,
             file_in_embed=False,
         )
 
@@ -353,14 +353,13 @@ class PlayerCog(commands.Cog):
         log_command(
             logger,
             ctx,
-            message=f"Generated current map for {board.phase.name} {board.get_year_str()}",
+            message=f"Generated current map for {board.turn}",
         )
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{board.phase.name} {board.get_year_str()}",
+            title=f"{board.turn}",
             file=file,
             file_name=file_name,
-            convert_svg=False,
             file_in_embed=False,
         )
 
