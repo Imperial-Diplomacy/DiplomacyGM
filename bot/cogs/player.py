@@ -7,7 +7,7 @@ from discord.ext import commands
 from bot import config
 from bot import perms
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import get_orders, log_command, parse_season, send_message_and_file
+from bot.utils import get_orders, log_command, parse_season, send_message_and_file, svg_to_png
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 
@@ -121,7 +121,7 @@ class PlayerCog(commands.Cog):
             log_command(
                 logger,
                 ctx,
-                message=f"Failed for an unknown reason",
+                message="Failed for an unknown reason",
                 level=logging.ERROR,
             )
             await send_message_and_file(
@@ -173,7 +173,7 @@ class PlayerCog(commands.Cog):
         turn = board.turn if not season else season
 
         if player and not board.orders_enabled:
-            log_command(logger, ctx, f"Orders locked - not processing")
+            log_command(logger, ctx, "Orders locked - not processing")
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Orders locked!",
@@ -201,7 +201,7 @@ class PlayerCog(commands.Cog):
             log_command(
                 logger,
                 ctx,
-                message=f"Failed to generate map for an unknown reason",
+                message="Failed to generate map for an unknown reason",
                 level=logging.ERROR,
             )
             await send_message_and_file(
@@ -216,12 +216,13 @@ class PlayerCog(commands.Cog):
             ctx,
             message=f"Generated moves map for {turn}",
         )
+        if convert_svg:
+            file, file_name = await svg_to_png(file, file_name)
         await send_message_and_file(
             channel=ctx.channel,
             title=f"{turn}",
             file=file,
             file_name=file_name,
-            convert_svg=convert_svg,
             file_in_embed=False,
         )
 
@@ -243,7 +244,9 @@ class PlayerCog(commands.Cog):
             .lower()
             .split()
         )
-        convert_svg = not ({"true", "t", "svg", "s"} & set(arguments))
+        convert_svg = (player is not None) or not (
+            {"true", "t", "svg", "s"} & set(arguments)
+        )
         color_arguments = list(config.color_options & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
         board = manager.get_board(ctx.guild.id)
@@ -251,7 +254,7 @@ class PlayerCog(commands.Cog):
         turn = board.turn if not season else season
 
         if player and not board.orders_enabled:
-            log_command(logger, ctx, f"Orders locked - not processing")
+            log_command(logger, ctx, "Orders locked - not processing")
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Orders locked!",
@@ -274,7 +277,7 @@ class PlayerCog(commands.Cog):
             log_command(
                 logger,
                 ctx,
-                message=f"Failed to generate map for an unknown reason",
+                message="Failed to generate map for an unknown reason",
                 level=logging.ERROR,
             )
             await send_message_and_file(
@@ -288,12 +291,13 @@ class PlayerCog(commands.Cog):
             ctx,
             message=f"Generated current map for {turn}",
         )
+        if convert_svg:
+            file, file_name = await svg_to_png(file, file_name)
         await send_message_and_file(
             channel=ctx.channel,
             title=f"{turn}",
             file=file,
             file_name=file_name,
-            convert_svg=convert_svg,
             file_in_embed=False,
         )
 
@@ -356,7 +360,6 @@ class PlayerCog(commands.Cog):
             title=f"{board.turn}",
             file=file,
             file_name=file_name,
-            convert_svg=False,
             file_in_embed=False,
         )
 

@@ -190,8 +190,8 @@ class Parser:
         self.name_to_province[province.name] = province
         return provinces
 
-    def json_cheats(self, provinces: set[Province]) -> set[Province]:
-        if not "overrides" in self.data:
+    def json_cheats(self, provinces: set[Province]) -> set[Province] | None:
+        if "overrides" not in self.data:
             return
         if "high provinces" in self.data["overrides"]:
             for name, data in self.data["overrides"]["high provinces"].items():
@@ -543,8 +543,8 @@ class Parser:
         coast_names = {" (nc)", " (sc)", " (ec)", " (wc)"}
 
         for coast_name in coast_names:
-            if province_name[len(province_name) - 5 :] == coast_name:
-                province_name = province_name[: len(province_name) - 5]
+            if province_name.endswith(coast_name):
+                province_name = province_name[:-5]
                 coast_suffix = coast_name[2:4]
                 break
 
@@ -574,7 +574,7 @@ class Parser:
             f.close()
         return adjacencies
 
-    def get_element_player(self, element: Element, province_name: str="") -> Player:
+    def get_element_player(self, element: Element, province_name: str="") -> Player | None:
         color = get_element_color(element)
         #FIXME: only works if there's one person per province
         if self.autodetect_players:

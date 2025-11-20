@@ -83,7 +83,7 @@ class Manager(metaclass=ManagerMeta):
         self._spec_requests[server_id].append(obj)
         self._database.save_spec_request(obj)
 
-        return f"Approved request Logged!"
+        return "Approved request Logged!"
 
     def get_board(self, server_id: int) -> Board:
         board = self._boards.get(server_id)

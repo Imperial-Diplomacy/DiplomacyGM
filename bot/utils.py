@@ -15,7 +15,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from bot import config
-from diplomacy.adjudicator.utils import svg_to_png, png_to_jpg
+from bot.config import SIMULATRANEOUS_SVG_EXPORT_LIMIT
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.turn import Turn
@@ -52,6 +52,11 @@ discord_message_limit = 2000
 discord_file_limit = 10 * (2**20)
 discord_embed_description_limit = 4096
 discord_embed_total_limit = 6000
+
+limit = SIMULATRANEOUS_SVG_EXPORT_LIMIT
+if limit is None:
+    limit = 4
+external_task_limit = asyncio.Semaphore(int(limit))
 
 
 def is_moderator(author: commands.Context.author) -> bool:
@@ -278,6 +283,48 @@ def log_command_no_ctx(
         level, f"[{guild}][#{channel}]({invoker}) - " f"'{command}' -> " f"{message}"
     )
 
+async def svg_to_png(svg: bytes, file_name: str):
+    async with external_task_limit:
+        # https://gitlab.com/inkscape/inkscape/-/issues/4716
+        os_env = os.environ.copy()
+        os_env["SELF_CALL"] = "xxx"
+        p = await asyncio.create_subprocess_shell(
+            "inkscape --pipe --export-type=png --export-dpi=200",
+            stdout=PIPE,
+            stdin=PIPE,
+            stderr=PIPE,
+            env=os_env,
+        )
+        data, error = await p.communicate(input=svg)
+
+        # Stupid inkscape error fix, not good but works
+        # Inkscape can throw warnings in stdout, this should remove those warnings, leaving us with a valid png
+
+        # This should indicate the start of the png, see https://www.w3.org/TR/2003/REC-PNG-20031110/#5PNG-file-signature
+        png_start = b"\x89PNG\r\n\x1a\n"
+
+        if data[:8] != png_start:
+            logger.critical(f"failed to assert png code: {png_start}")
+            logger.critical(data[:30])
+
+            data = data[data.find(png_start) :]
+
+            if data[:8] != png_start:
+                logger.critical(data[:30])
+                raise RuntimeError("Something went wrong with making the png.")
+
+        base = os.path.splitext(file_name)[0]
+        return bytes(data), base + ".png"
+
+
+async def png_to_jpg(png: bytes, file_name: str) -> (bytes, str, str):
+    async with external_task_limit:
+        p = await asyncio.create_subprocess_shell(
+            "convert png:- jpg:-", stdout=PIPE, stdin=PIPE, stderr=PIPE
+        )
+        data, error = await p.communicate(input=png)
+        base = os.path.splitext(file_name)[0]
+        return bytes(data), base + ".jpg", error
 
 async def send_message_and_file(
     *,
@@ -292,15 +339,11 @@ async def send_message_and_file(
     footer_content: str | None = None,
     footer_datetime: datetime.datetime | None = None,
     fields: List[Tuple[str, str]] | None = None,
-    convert_svg: bool = False,
     **_,
 ) -> Message:
 
     if not embed_colour:
         embed_colour = config.EMBED_STANDARD_COLOUR
-
-    if convert_svg and file and file_name:
-        file, file_name = await svg_to_png(file, file_name)
 
     # Checks embed title and bodies are within limits.
     if fields:

@@ -43,14 +43,14 @@ class Board:
             for coast in location.coasts:
                 self.name_to_coast[coast.name.lower()] = coast
 
-    def get_player(self, name: str) -> Player:
+    def get_player(self, name: str) -> Player | None:
         if name.lower() == "none":
             return None
         if name.lower() not in self.name_to_player:
             raise ValueError(f"Player {name} not found")
         return self.name_to_player.get(name.lower())
 
-    def get_cleaned_player(self, name: str) -> Player:
+    def get_cleaned_player(self, name: str) -> Player | None:
         if name.lower() == "none":
             return None
         if name.lower() not in self.cleaned_name_to_player:
@@ -58,7 +58,6 @@ class Board:
         return self.cleaned_name_to_player.get(sanitize_name(name.lower()))
 
 
-    # TODO: break ties in a fixed manner
     def get_players_by_score(self) -> list[Player]:
         return sorted(self.players, key=lambda sort_player: (-sort_player.score(), sort_player.name.lower()))
 

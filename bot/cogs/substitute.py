@@ -164,13 +164,13 @@ class SubstituteCog(commands.Cog):
         """
 
         file, file_name = manager.draw_map(guild.id, color_mode="standard")
+        file, file_name = await svg_to_png(file, file_name)
         await send_message_and_file(
             channel=advertise_channel,
             title=title,
             message=out,
             file=file,
             file_name=file_name,
-            convert_svg=True,
             file_in_embed=True,
         )
 

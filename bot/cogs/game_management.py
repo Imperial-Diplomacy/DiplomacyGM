@@ -23,6 +23,7 @@ from bot.utils import (
     is_gm,
     log_command,
     send_message_and_file,
+    svg_to_png,
     upload_map_to_archive,
 )
 from diplomacy.persistence import turn
@@ -449,7 +450,7 @@ class GameManagementCog(commands.Cog):
             .lower()
             .split()
         )
-        return_svg = not ({"true", "t", "svg", "s"} & set(arguments))
+        convert_image = not ({"true", "t", "svg", "s"} & set(arguments))
         color_arguments = list(config.color_options & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
         test_adjudicate = "test" in arguments
@@ -482,6 +483,8 @@ class GameManagementCog(commands.Cog):
             color_mode=color_mode,
             turn=old_turn,
         )
+        if convert_image:
+            file, file_name = await svg_to_png(file, file_name)
         title = f"{board.name} — " if board.name else ""
         title += f"{old_turn}"
         await send_message_and_file(
@@ -490,15 +493,15 @@ class GameManagementCog(commands.Cog):
             message="Test adjudication" if test_adjudicate else "",
             file=file,
             file_name=file_name,
-            convert_svg=return_svg,
         )
         if full_adjudicate:
+            if not convert_image:
+                file, file_name = await svg_to_png(file, file_name)
             map_message = await send_message_and_file(
                 channel=get_maps_channel(ctx.guild),
                 title=f"{title} Orders Map",
                 file=file,
                 file_name=file_name,
-                convert_svg=True,
             )
         #           await map_message.publish()
 
@@ -511,6 +514,8 @@ class GameManagementCog(commands.Cog):
                 turn=old_turn,
                 movement_only=True,
             )
+            if convert_image:
+                file, file_name = await svg_to_png(file, file_name)
             title = f"{board.name} — " if board.name else ""
             title += f"{old_turn}"
             await send_message_and_file(
@@ -519,26 +524,27 @@ class GameManagementCog(commands.Cog):
                 message="Test adjudication" if test_adjudicate else "",
                 file=file,
                 file_name=file_name,
-                convert_svg=return_svg,
             )
 
         file, file_name = manager.draw_map_for_board(new_board, color_mode=color_mode)
+        if convert_image:
+            file, file_name = await svg_to_png(file, file_name)
         await send_message_and_file(
             channel=ctx.channel,
             title=f"{title} Results Map",
             message="Test adjudication results" if test_adjudicate else "",
             file=file,
             file_name=file_name,
-            convert_svg=return_svg,
         )
 
         if full_adjudicate:
+            if not convert_image:
+                file, file_name = await svg_to_png(file, file_name)
             map_message = await send_message_and_file(
                 channel=get_maps_channel(ctx.guild),
                 title=f"{title} Results Map",
                 file=file,
                 file_name=file_name,
-                convert_svg=True,
             )
             #            await map_message.publish()
             await self.publish_orders(ctx)
