@@ -1,18 +1,16 @@
 #%
 import os
-import re
 
 os.environ["simultaneous_svg_exports_limit"] = "1"
 
-import main
 import numpy as np
-from diplomacy.persistence.manager import Manager, get_parser
-from diplomacy.adjudicator.mapper import Mapper
-from diplomacy.map_parser.vector.vector import initialize_province_resident_data
-from diplomacy.map_parser.vector.utils import get_svg_element
-from diplomacy.persistence.province import Province, Location, Coast, get_adjacent_provinces
+from DiploGM.manager import Manager, get_parser
+from DiploGM.adjudicator.mapper import Mapper
+from DiploGM.map_parser.vector.vector import initialize_province_resident_data
+from DiploGM.map_parser.vector.utils import get_svg_element
+from DiploGM.models.province import Province, get_adjacent_provinces
 from lxml import etree
-from diplomacy.map_parser.vector.transform import TransGL3
+from DiploGM.map_parser.vector.transform import TransGL3
 manager = Manager()
 
 try:

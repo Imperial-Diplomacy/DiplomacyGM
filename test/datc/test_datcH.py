@@ -1,11 +1,11 @@
 import unittest
 
-from diplomacy.persistence.order import (
+from DiploGM.models.order import (
     Move,
     ConvoyTransport,
     Support,
 )
-from diplomacy.persistence.unit import UnitType
+from DiploGM.models.unit import UnitType
 from test.utils import BoardBuilder
 
 

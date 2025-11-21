@@ -3,10 +3,9 @@ import os
 
 os.environ["simultaneous_svg_exports_limit"] = "1"
 
-import main
-import diplomacy.persistence.manager as manager
-from diplomacy.adjudicator.mapper import Mapper
-from diplomacy.map_parser.vector.utils import get_svg_element
+import DiploGM.manager as manager
+from DiploGM.adjudicator.mapper import Mapper
+from DiploGM.map_parser.vector.utils import get_svg_element
 x = manager.Manager()
 
 x.create_game(1, "impdipfow.json")

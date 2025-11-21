@@ -1,8 +1,6 @@
 
-/assets
-bot/_token.py
-bot/assets/schedule.json
-/config/*.txt
+assets/schedule.json
+assets/*_adjacencies.txt
 *.pyc
 *.iml
 *.xml
@@ -22,4 +20,7 @@ gamelist.tsv
 .env
 venv
 
+*.pclprof
+
+logs/*
 config.toml

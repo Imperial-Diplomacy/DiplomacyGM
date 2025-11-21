@@ -5,11 +5,11 @@ import os
 
 from discord import Intents
 
-from bot.bot import DiploGM
+from DiploGM.bot import DiploGM
 
 # Importing config for the first time initialises it.
-import bot.config as config
-from bot.config import ConfigException
+import DiploGM.config as config
+from DiploGM.config import ConfigException
 
 match config.LOGGING_LEVEL:
     case "CRITICAL":

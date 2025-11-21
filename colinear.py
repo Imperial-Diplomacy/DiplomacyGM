@@ -5,9 +5,8 @@ import numpy as np
 os.environ["simultaneous_svg_exports_limit"] = "1"
 
 import main
-import diplomacy.persistence.manager as manager
-from diplomacy.adjudicator.mapper import Mapper
-from diplomacy.map_parser.vector.utils import get_svg_element
+import DiploGM.manager as manager
+
 x = manager.Manager()
 x.total_delete(1)
 x.create_game(1, "impdipfow.json")

@@ -63,7 +63,7 @@ deactivate
 
 Use `.help` on your server to test the bot works. It also lists all the commands available.
 
-GM commands such as `.create_game` can only be used if you have a "GM role". This is any role with the name "heavenly angel", "gm" etc (See [bot/config.py](/bot/config.py) for full list)
+GM commands such as `.create_game` can only be used if you have a "GM role". This is any role with the name "heavenly angel", "gm" etc (See [bot/config.py](/DiploGM/config.py) for full list)
 
 GM commands can also only be called in a channel named "admin-chat" in "gm channels" category.
 

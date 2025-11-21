@@ -1,0 +1,4 @@
+[submodule "variants"]
+	path = variants
+	url = https://github.com/Imperial-Diplomacy/DiplomacyGM-Variants.git
+	branch = main

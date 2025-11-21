@@ -1,3 +1,50 @@
+?.?.?
+=====
+Please never make me do a merge again.
+
+
+Contributors
+- Chloe
+- Golden Kumquat
+
+# Player Bugfixes
+- fixed `/substitute` 
+
+
+# GM Changes
+- Depreciated `.vm true` and `.vc true`
+
+
+# Developer Changes
+so a lot changed....
+
+
+## Variants Submodule
+Variants have been moved to their own private submodule at https://github.com/Imperial-Diplomacy/DiplomacyGM-Variants/. 
+Variant names have also been standardised.
+This uses a git submodule that can be updated separately. This means that the previous `config/` and `assets/` have been removed.
+
+
+## The refactor
+This is an attempt to document all the changes that are part of this.
+- Moved all functions relating to permissions out of `utils.py` into `perms.py`.
+- split up `utils.py`.
+- moved `fish_pop_model()` to the `PartyCog`.
+- moved `santise.py` into the `utils` package.
+- renamed `bot` package to `DiploGM`.
+- merged `DiploGM` and `diplomacy` packages.
+- removed both `core` packages. Events have been moved to their own `events` package and singleton into `utils`
+- `bot/assets/` has been moved to `assets/`
+- `diplomacy/persistance/db/` has been moved to `DiploGM/db/`
+- `persistance` package has been renamed `models`
+
+## Other Changes
+- renamed ordered scoreboard functions
+- Added `assets/*_adjacencies.txt`, `*.pclprof` & `logs/*` and removed `assets/`
+- depreciated `get_latest_board()`
+- `Phase` has been replaced with `Turn`
+- `IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID` is no longer a list ( this was breaking `/substitute`)
+
 1.2.1
 =====
 *Otter jumps off a diving board, throws a fish at aahoughton, performs a perfect front flip into the pool*
