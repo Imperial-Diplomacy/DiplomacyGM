@@ -316,7 +316,7 @@ class _DatabaseConnection:
                     (board_id, board.turn.get_indexed_name(), location),
                 )
                 retreat_options = set(
-                    map(board.get_location, set().union(*retreat_ops))
+                    map(board.get_province_and_coast, set().union(*retreat_ops))
                 )
             else:
                 retreat_options = None
@@ -486,7 +486,7 @@ class _DatabaseConnection:
                 (
                     board_id,
                     board.turn.get_indexed_name(),
-                    unit.location().name,
+                    unit.province.get_name(unit.coast),
                     unit == unit.province.dislodged_unit,
                     unit.player.name,
                     unit.unit_type == UnitType.ARMY,
@@ -518,8 +518,8 @@ class _DatabaseConnection:
                 (
                     board_id,
                     board.turn.get_indexed_name(),
-                    unit.location().name,
-                    retreat_option.name,
+                    unit.province.get_name(unit.coast),
+                    retreat_option[0].get_name(retreat_option[1]),
                 )
                 for unit in board.units
                 if unit.retreat_options is not None
@@ -550,7 +550,7 @@ class _DatabaseConnection:
                     unit.order.hasFailed if unit.order is not None else False,
                     board.board_id,
                     board.turn.get_indexed_name(),
-                    unit.location().name,
+                    unit.province.get_name(unit.coast),
                     unit.province.dislodged_unit == unit,
                 )
                 for unit in units
@@ -562,7 +562,7 @@ class _DatabaseConnection:
                 (
                     board.board_id,
                     board.turn.get_indexed_name(),
-                    unit.location().name,
+                    unit.province.get_name(unit.coast),
                 )
                 for unit in units
                 if unit.retreat_options is not None
@@ -574,8 +574,8 @@ class _DatabaseConnection:
                 (
                     board.board_id,
                     board.turn.get_indexed_name(),
-                    unit.location().name,
-                    retreat_option.name,
+                    unit.province.get_name(unit.coast),
+                    retreat_option[0].get_name(retreat_option[1]),
                 )
                 for unit in units
                 if unit.retreat_options is not None

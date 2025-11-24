@@ -1,7 +1,7 @@
 from enum import Enum
 
 from DiploGM.models.order import NMR, Hold, Core, Move, ConvoyMove, Support, ConvoyTransport
-from DiploGM.models.province import Province, Location
+from DiploGM.models.province import Province
 from DiploGM.models.unit import Unit, UnitType
 
 

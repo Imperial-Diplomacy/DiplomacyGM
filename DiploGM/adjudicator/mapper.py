@@ -639,7 +639,7 @@ class Mapper:
 
             if (
                 isinstance(order.destination.get_unit().order, Support)
-                and destorder.source == destorder.destination == unit.location()
+                and destorder.source == destorder.destination == unit.province
                 and order.source == order.destination
             ):
                 # This check is so we only do it once, so it doesn't overlay

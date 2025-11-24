@@ -105,7 +105,7 @@ def order_is_valid(province: Province, order: Order, strict_convoys_supports=Fal
         if source_unit == None:
             return False, f"No unit for supporting / convoying at {source}"
 
-        order.source = source_unit.location()
+        order.source = source_unit.province
 
     unit = province.unit
     if unit is None:
@@ -143,7 +143,7 @@ def order_is_valid(province: Province, order: Order, strict_convoys_supports=Fal
         destination_province = order.destination
         if destination_province.type == ProvinceType.SEA:
             return False, "Cannot convoy to a sea space"
-        if destination_province == unit.location():
+        if destination_province == unit.province:
             return False, "Cannot convoy army to its previous space"
         return (
             convoy_is_possible(

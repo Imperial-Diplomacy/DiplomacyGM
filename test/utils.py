@@ -9,10 +9,10 @@ from DiploGM.models.order import (
     Build,
     Disband,
 )
-from DiploGM.models.province import Location, Coast, Province, ProvinceType
+from DiploGM.models.province import Province, ProvinceType
 from DiploGM.models.unit import UnitType, Unit
 from DiploGM.models.player import Player
-from DiploGM.models.phase import Phase
+from DiploGM.models.turn import Turn
 from DiploGM.adjudicator.adjudicator import MovesAdjudicator, RetreatsAdjudicator, BuildsAdjudicator, ResolutionState, Resolution
 
 import unittest
@@ -25,7 +25,7 @@ class BoardBuilder():
             players=set(),
             provinces=set(),
             units=set(),
-            phase=Phase(f"{season} 1901", 0, None, None),
+            phase=Turn(1901, "Spring Moves", 1901),
             data={'adju flags': {'vassal system': None}},
             datafile=None,
             fow=False
@@ -34,10 +34,10 @@ class BoardBuilder():
         # here an illegal move is one that is caught and turned into a hold order, which includes supports and convoys 
         # which are missing the corresponding part
         # a failed move is one that is resolved by the adjudicator as failed, succeeded moved is similar
-        self._listIllegal: list[Location] = []
-        self._listNotIllegal: list[Location] = []
-        self._listFail: list[Location] = []
-        self._listSuccess: list[Location] = []
+        self._listIllegal: list[Province] = []
+        self._listNotIllegal: list[Province] = []
+        self._listFail: list[Province] = []
+        self._listSuccess: list[Province] = []
         self._listDislodge: list[Province] = []
         self._listNotDislodge: list[Province] = []
         self._listForcedDisband: list[Unit] = []
@@ -67,35 +67,23 @@ class BoardBuilder():
     def initProvinces(self):
         self.north_sea = self._sea("North Sea")
         self.picardy = self._land("Picardy")
-        self.picardy_c = self._coast("m", self.picardy)
         self.liverpool = self._land("Liverpool")
-        self.liverpool_c = self._coast("m", self.liverpool)
         self.irish_sea = self._sea("Irish Sea")
         self.kiel = self._land("Kiel", sc=True)
-        self.kiel_c = self._coast("m", self.kiel)
         self.munich = self._land("Munich", sc=True)
         self.yorkshire = self._land("Yorkshire")
-        self.yorkshire_c = self._coast("m", self.yorkshire)
         self.london = self._land("London")
-        self.london_c = self._coast("m", self.london)
         self.wales = self._land("Wales")
-        self.wales_c = self._coast("m", self.wales)
         self.belgium = self._land("Belgium")
-        self.belgium_c = self._coast("m", self.belgium)
         self.venice = self._land("Venice")
-        self.venice_c = self._coast("m", self.venice)
         self.trieste = self._land("Trieste")
-        self.trieste_c = self._coast("m", self.trieste)
         self.tyrolia = self._land("Tyrolia")
         self.rome = self._land("Rome")
-        self.rome_c = self._coast("m", self.rome)
         self.adriatic_sea = self._sea("Adriatic Sea")
         self.tyrrhenian_sea = self._sea("Tyrrhenian Sea")
         self.apulia = self._land("Apulia")
-        self.apulia_c = self._coast("m", self.apulia)
         self.vienna = self._land("Vienna")
         self.gascony = self._land("Gascony")
-        self.gascony_c = self._coast("m", self.gascony)
         self.spain = self._land("Spain")
         self.spain_nc = self._coast("nc", self.spain)
         self.spain_sc = self._coast("sc", self.spain)
@@ -106,7 +94,6 @@ class BoardBuilder():
         self.st_petersburg_nc = self._coast("nc", self.st_petersburg)
         self.st_petersburg_sc = self._coast("sc", self.st_petersburg)
         self.marseilles = self._land("Marseilles")
-        self.marseilles_c = self._coast("m", self.marseilles)
         self.western_mediterranean = self._sea("Western Mediteranean")
         self.eastern_mediterranean = self._sea("Eastern Mediteranean")
         self.gulf_of_lyon = self._sea("Gulf of Lyon")
@@ -117,61 +104,42 @@ class BoardBuilder():
         self.aegean_sea = self._sea("Aegean Sea")
         self.black_sea = self._sea("Black Sea")
         self.constantinople = self._land("Constantinople")
-        self.constantinople_c = self._coast("m", self.constantinople)
         self.ankara = self._land("Ankara")
-        self.ankara_c = self._coast("m", self.ankara)
         self.smyrna = self._land("Smyrna")
         self.serbia = self._land("Serbia")
         self.ionian_sea = self._sea("Ionian Sea")
         self.naples = self._land("Naples")
-        self.naples_c = self._coast("m", self.naples)
         self.tunis = self._land("Tunis")
-        self.tunis_c = self._coast("m", self.tunis)
         self.english_channel = self._sea("English Channel")
         self.burgundy = self._land("Burgundy")
         self.berlin = self._land("Berlin")
-        self.berlin_c = self._coast("m", self.berlin)
         self.prussia = self._land("Prussia")
-        self.prussia_c = self._coast("m", self.prussia)
         self.baltic_sea = self._sea("Baltic Sea")
         self.silesia = self._land("Silesia")
         self.sweden = self._land("Sweden")
-        self.sweden_c = self._coast("m", self.sweden)
         self.livonia = self._land("Livonia")
-        self.livonia_c = self._coast("m", self.livonia)
         self.finland = self._land("Finland")
-        self.finland_c = self._coast("m", self.finland)
         self.greece = self._land("Greece")
-        self.greece_c = self._coast("m", self.greece)
         self.albania = self._land("Albania")
-        self.albania_c = self._coast("m", self.albania)
         self.warsaw = self._land("Warsaw", sc=True)
         self.armenia = self._land("Armenia")
         self.denmark = self._land("Denmark")
-        self.denmark_c = self._coast("m", self.denmark)
         self.rumania = self._land("Rumania")
-        self.rumania_c = self._coast("m", self.rumania)
         self.budapest = self._land("Budapest")
         self.holland = self._land("Holland", sc=True)
-        self.holland_c = self._coast("m", self.holland)
         self.edinburgh = self._land("Edinburgh")
-        self.edinburgh_c = self._coast("m", self.edinburgh)
         self.galicia = self._land("Galicia")
         self.ruhr = self._land("Ruhr")
         self.norwegian_sea = self._sea("Norwegian Sea")
         self.helgoland_bight = self._sea("Helgoland Bight")
         self.skagerrak = self._sea("Skagerrak")
         self.norway = self._land("Norway")
-        self.norway_c = self._coast("m", self.norway)
         self.portugal = self._land("Portugal")
-        self.portugal_c = self._coast("m", self.portugal)
         self.sevastopol = self._land("Sevastopol")
         self.brest = self._land("Brest")
-        self.brest_c = self._coast("m", self.brest)
         self.paris = self._land("Paris")
         self.north_africa = self._land("North Africa")
         self.clyde = self._land("Clyde")
-        self.clyde_c = self._coast("m", self.clyde)
         self.bohemia = self._land("Bohemia")
         self.moscow = self._land("Moscow", sc=True)
 
@@ -439,7 +407,7 @@ class BoardBuilder():
     def convoy(self, player: Player, place: Location, source: Unit, to: Location) -> Unit:
         unit = self.fleet(place, player)
         
-        order = ConvoyTransport(source.location(), to)
+        order = ConvoyTransport(source.province, to)
         unit.order = order
 
         return unit
@@ -450,7 +418,7 @@ class BoardBuilder():
         else:
             unit = self.army(place, player)
 
-        order = Support(source.location(), to)
+        order = Support(source.province, to)
         unit.order = order
 
         return unit
@@ -472,7 +440,7 @@ class BoardBuilder():
         else:
             unit = self.army(place, player)
 
-        order = Support(source.location(), source.location())
+        order = Support(source.province, source.province)
         unit.order = order
 
         return unit
@@ -494,44 +462,32 @@ class BoardBuilder():
 
     def assertIllegal(self, *units: Unit):
         for unit in units:
-            loc = unit.location()
-            if (isinstance(loc, Coast)):
-                loc = loc.province
+            loc = unit.province
             self._listIllegal.append(loc)
 
     def assertNotIllegal(self, *units: Unit):
         for unit in units:
-            loc = unit.location()
-            if (isinstance(loc, Coast)):
-                loc = loc.province
+            loc = unit.province
             self._listNotIllegal.append(loc)
 
     def assertFail(self, *units: Unit):
         for unit in units:
-            loc = unit.location()
-            if (isinstance(loc, Coast)):
-                loc = loc.province
+            loc = unit.province
             self._listFail.append(loc)
 
     def assertSuccess(self, *units: Unit):
         for unit in units:
-            loc = unit.location()
-            if (isinstance(loc, Coast)):
-                loc = loc.province
+            loc = unit.province
             self._listSuccess.append(loc)
 
     def assertDislodge(self, *units: Unit):
         for unit in units:
-            loc = unit.location()
-            if (isinstance(loc, Coast)):
-                loc = loc.province
+            loc = unit.province
             self._listDislodge.append(loc)
 
     def assertNotDislodge(self, *units: Unit):
         for unit in units:
-            loc = unit.location()
-            if (isinstance(loc, Coast)):
-                loc = loc.province
+            loc = unit.province
             self._listNotDislodge.append(loc)
 
     # used for retreat testing

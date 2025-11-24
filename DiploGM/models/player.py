@@ -84,7 +84,7 @@ class Player:
     def info(self, variant: str = "standard") -> str:
         bullet = "\n- "
 
-        units = list(sorted(self.units, key=lambda u: (u.unit_type.value, u.location().name)))
+        units = list(sorted(self.units, key=lambda u: (u.unit_type.value, u.province.get_name(u.coast))))
         centers = list(sorted(self.centers, key=lambda c: c.name))
         
         if variant == "chaos":
@@ -93,7 +93,7 @@ class Player:
                 + f"Points: {self.points}\n"
                 + f"Vassals: {', '.join(map(str,self.vassals))}\n"
                 + f"Liege: {self.liege if self.liege else 'None'}\n"
-                + f"Units ({len(units)}): {(bullet + bullet.join([unit.location().name for unit in units])) if len(units) > 0 else 'None'}\n"
+                + f"Units ({len(units)}): {(bullet + bullet.join([unit.province.get_name(unit.coast) for unit in units])) if len(units) > 0 else 'None'}\n"
                 + f"Centers ({len(centers)}): {(bullet + bullet.join([center.name for center in centers])) if len(centers) > 0 else 'None'}\n"
             )
             return out
@@ -110,7 +110,7 @@ class Player:
 
         unit_str = "Units:"
         for unit in units:
-            unit_str += f"{bullet}({unit.unit_type.value}) {unit.location().name}"
+            unit_str += f"{bullet}({unit.unit_type.value}) {unit.province}"
             
         out = (
             ""

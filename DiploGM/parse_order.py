@@ -93,7 +93,7 @@ class TreeToOrder(Transformer):
             u = s[0]
         else:
             u = s[2]
-        return u.location(), u.player, order.Disband(u.province)
+        return u.province, u.player, order.Disband(u.province)
     
     def waive_order(self, s):
         if self.player_restriction is None:
