@@ -150,7 +150,9 @@ class Mapper:
                 # TODO: Maybe there's a better way to handle convoys?
                 if isinstance(unit.order, (RetreatMove, Move, Support)):
                     new_locs = []
-                    if unit.order.destination_coast:
+                    if unit.unit_type not in unit.order.destination.all_locs:
+                        e_list = next(iter(unit.order.destination.all_locs.values()))
+                    elif unit.order.destination_coast:
                         e_list = unit.order.destination.all_locs[unit.unit_type][unit.order.destination_coast]
                     else:
                         e_list = unit.order.destination.all_locs[unit.unit_type]
@@ -1141,9 +1143,15 @@ class Mapper:
             coast = loc.get_unit().coast
 
         if use_retreats:
-            coords = loc.all_rets[unit_type]
+            if unit_type not in loc.all_rets:
+                coords = next(iter(loc.all_rets.values()))
+            else:
+                coords = loc.all_rets[unit_type]
         else:
-            coords = loc.all_locs[unit_type]
+            if unit_type not in loc.all_locs:
+                coords = next(iter(loc.all_locs.values()))
+            else:
+                coords = loc.all_locs[unit_type]
         if coast:
             coords = coords[coast]
         

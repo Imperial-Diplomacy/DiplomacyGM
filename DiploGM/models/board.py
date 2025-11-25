@@ -1,18 +1,19 @@
+from __future__ import annotations
 import re
 import logging
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, TYPE_CHECKING
 
 from discord import Thread
 from discord.ext import commands
 
-from DiploGM.utils.sanitise import sanitise_name
-from DiploGM.models.turn import Turn
-from DiploGM.models.player import Player
-from DiploGM.models.province import Province, ProvinceType
-from DiploGM.models.unit import Unit, UnitType
 from DiploGM.config import player_channel_suffix, is_player_category
-from DiploGM.utils import simple_player_name
+from DiploGM.models.unit import Unit, UnitType
+
+if TYPE_CHECKING:
+    from DiploGM.models.turn import Turn
+    from DiploGM.models.player import Player
+    from DiploGM.models.province import Province, ProvinceType
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,9 @@ class Board:
     def __init__(
         self, players: set[Player], provinces: set[Province], units: set[Unit], turn: Turn, data, datafile: str, fow: bool, year_offset: int = 1642
     ):
+        from DiploGM.utils.sanitise import sanitise_name
+        from DiploGM.utils import simple_player_name
+
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
         self.units: set[Unit] = units

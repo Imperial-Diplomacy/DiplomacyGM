@@ -52,7 +52,7 @@ class TreeToOrder(Transformer):
 
     def retreat_unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
-        unit = s[-1].dislodged_unit
+        unit = s[-1][0].dislodged_unit
         if unit is None:
             raise ValueError(f"No dislodged unit in {s[-1]}")
         if not isinstance(unit, Unit):
@@ -211,7 +211,7 @@ class TreeToOrder(Transformer):
             raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 
     def retreat_order(self, s):
-        return s[0], order.RetreatMove(s[-1])
+        return s[0], order.RetreatMove(s[-1][0], s[-1][1])
 
     def disband_order(self, s):
         return s[0], order.RetreatDisband()
@@ -275,7 +275,6 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             except VisitError as e:
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
-                errors.append(f"`{order}`: {str(e)}")
             except UnexpectedEOF as e:
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
