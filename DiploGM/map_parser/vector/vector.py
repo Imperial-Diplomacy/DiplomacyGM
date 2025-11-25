@@ -557,17 +557,13 @@ class Parser:
         province_name = province_name.replace("(", "").replace(")", "")
 
         for coast_name in coast_names:
-            if province_name[-3:] == coast_name:
+            if province_name.endswith(coast_name):
                 province_name = province_name[:-3]
                 coast_suffix = coast_name[1:]
                 break
 
         province = self.name_to_province[province_name]
-        coast = None
-        if coast_suffix and coast_suffix in province.fleet_adjacent:
-            coast = coast_suffix
-
-        return province, coast
+        return province, coast_suffix
 
     # Returns province adjacency set
     def _get_adjacencies(self, provinces: set[Province]) -> set[tuple[str, str]]:

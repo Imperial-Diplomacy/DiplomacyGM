@@ -151,9 +151,13 @@ class Mapper:
                 if isinstance(unit.order, (RetreatMove, Move, Support)):
                     new_locs = []
                     if unit.order.destination_coast:
-                        e_list = unit.order.destination.all_locs[unit.unit_type][unit.coast]
+                        e_list = unit.order.destination.all_locs[unit.unit_type][unit.order.destination_coast]
                     else:
                         e_list = unit.order.destination.all_locs[unit.unit_type]
+                    
+                    # Unspecified coast, so default to army location
+                    if isinstance(e_list, dict):
+                        e_list = unit.order.destination.all_locs[UnitType.ARMY]
                     for endpoint in e_list:
                         new_locs += [self.normalize(self.get_closest_loc(unit_locs, endpoint))]
                     unit_locs = new_locs
@@ -585,7 +589,7 @@ class Mapper:
             p = [coordinate]
             start = coordinate
             for loc in path[1:]:
-                p += [self.loc_to_point(loc, unit.unit_type, loc.unit.coast if loc.unit else None, start)]
+                p += [self.loc_to_point(loc, unit.unit_type, unit.order.destination_coast if unit.order else None, start)]
                 start = p[-1]
 
             if path[-1].get_unit():
@@ -624,7 +628,14 @@ class Mapper:
         y1 = coordinate[1]
         v2 = self.loc_to_point(order.source, unit.unit_type, order.source.unit.coast, coordinate)
         x2, y2 = v2
-        v3 = self.loc_to_point(order.destination, order.source.unit.unit_type, order.destination_coast, v2)
+        if (isinstance(order.source.unit.order, (Move, ConvoyMove))
+            and order.source.unit.order.destination == order.destination
+            and (not order.destination_coast 
+                 or order.source.unit.order.destination_coast == order.destination_coast)):
+            dest_coast = order.source.unit.order.destination_coast
+        else:
+            dest_coast = order.destination_coast
+        v3 = self.loc_to_point(order.destination, order.source.unit.unit_type, dest_coast, v2)
         x3, y3 = v3
         marker_start = ""
         ball_type = "redball" if hasFailed else "ball"
@@ -945,10 +956,10 @@ class Mapper:
         if not unit.retreat_options:
             self._draw_force_disband(unit.province.get_retreat_unit_coordinates(unit.unit_type, unit.coast), svg)
 
-        for retreat_province in unit.retreat_options:
+        for retreat_province, retreat_coast in unit.retreat_options:
             root.append(
                 self._draw_retreat_move(
-                    RetreatMove(retreat_province), unit.province.get_retreat_unit_coordinates(unit.unit_type, unit.coast), use_moves_svg=False
+                    RetreatMove(retreat_province, retreat_coast), unit.unit_type, unit.province.get_retreat_unit_coordinates(unit.unit_type, unit.coast), use_moves_svg=False
                 )
             )
 
@@ -1098,7 +1109,7 @@ class Mapper:
 
     # returns closest point in a set
     # will wrap horizontally
-    def get_closest_loc(self, possibilities: tuple[tuple[float, float]], coord: tuple[float, float]):
+    def get_closest_loc(self, possibilities: tuple[tuple[float, float]] | dict, coord: tuple[float, float]):
         possibilities = list(possibilities)
         crossed_pos = []
         crossed = []
@@ -1135,6 +1146,9 @@ class Mapper:
             coords = loc.all_locs[unit_type]
         if coast:
             coords = coords[coast]
+        
+        if isinstance(coords, dict):
+            coords = loc.all_locs[UnitType.ARMY]
 
         return self.get_closest_loc(coords, current)
 

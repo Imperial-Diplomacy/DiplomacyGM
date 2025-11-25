@@ -128,8 +128,8 @@ def order_is_valid(province: Province, order: Order, strict_convoys_supports=Fal
                 return False, "Armies cannot move to sea provinces"
         elif unit.unit_type == UnitType.FLEET:
             destination_coast = order.destination_coast if strict_coast_movement else None
-            if not province.is_coastally_adjacent((destination_province, destination_coast), unit.coast):
-                return False, f"{province.get_name(unit.coast)} does not border {order.get_destination_and_coast()}"
+            if not province.is_coastally_adjacent(order.get_destination_and_coast(), unit.coast):
+                return False, f"{province.get_name(unit.coast)} does not border {order.get_destination_str()}"
             if strict_coast_movement and not destination_coast:
                 reachable_coasts = {c for c in order.destination.get_multiple_coasts() if province.is_coastally_adjacent((order.destination, c), unit.coast)}
                 if len(reachable_coasts) > 1:
@@ -205,7 +205,12 @@ def order_is_valid(province: Province, order: Order, strict_convoys_supports=Fal
             if (
                 is_support_hold and corresponding_order_is_move
             ) or (
-                not is_support_hold and (not corresponding_order_is_move or order.source.get_unit().order.destination != order.destination)
+                not is_support_hold and 
+                (
+                    not corresponding_order_is_move or
+                    order.source.get_unit().order.destination != order.destination or
+                    (order.destination_coast is not None and order.source.get_unit().order.destination_coast != order.destination_coast)
+                )
             ):
                 return False, f"Supported unit {order.source} did not make corresponding order"
 

@@ -12,6 +12,7 @@ from DiploGM.utils import (
 )
 from DiploGM.manager import Manager
 from DiploGM.models.player import Player
+from DiploGM.models.province import ProvinceType
 
 
 logger = logging.getLogger(__name__)
@@ -282,17 +283,20 @@ class CommandCog(commands.Cog):
         coasts = province.get_multiple_coasts()
         coast_info = ""
         adjacent_coasts = ""
+        adjacent_list = []
         if coasts:
             coast_info = f"Coasts: {len(coasts)}\n"
             for c in coasts:
-                adjacent_coasts += "Adjacent Coastal Provinces ({c}):"
+                adjacent_coasts += f"Adjacent Coastal Provinces ({c}):\n- "
                 for adj in province.get_coastal_adjacent(c):
-                    adjacent_coasts += f"\n- {adj[0] if isinstance(adj, tuple) else adj}"
+                    adjacent_list.append(f"{adj[0] if isinstance(adj, tuple) else adj}")
+                adjacent_coasts += "\n- ".join(sorted(adjacent_list))
                 adjacent_coasts += "\n"
-        elif province.get_coastal_adjacent():
+        elif province.type == ProvinceType.LAND and province.get_coastal_adjacent():
             adjacent_coasts = "Adjacent Coastal Provinces:\n- "
             for adj in province.get_coastal_adjacent():
-                adjacent_coasts += f"\n- {adj[0] if isinstance(adj, tuple) else adj}"
+                adjacent_list.append(f"{adj[0] if isinstance(adj, tuple) else adj}")
+            adjacent_coasts += "\n- ".join(sorted(adjacent_list))
             adjacent_coasts += "\n"
         out = f"Type: {province.type.name}\n" + \
             f"{coast_info}" + \

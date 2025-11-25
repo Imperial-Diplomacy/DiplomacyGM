@@ -86,9 +86,10 @@ class Move(UnitOrder):
 class ConvoyMove(UnitOrder):
     display_priority: int = 30
     
-    def __init__(self, destination: Province):
+    def __init__(self, destination: Province, destination_coast: str | None = None):
         super().__init__()
         self.destination: Province = destination
+        self.destination_coast: None = None
 
     def __str__(self):
         return f"Convoys - {self.destination}"
@@ -101,7 +102,7 @@ class ConvoyMove(UnitOrder):
 
 
 class ConvoyTransport(ComplexOrder):
-    def __init__(self, source: Province, destination: Province):
+    def __init__(self, source: Province, destination: Province, destination_coast: str | None = None):
         super().__init__(source)
         self.destination: Province = destination
 

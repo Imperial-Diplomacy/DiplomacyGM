@@ -148,7 +148,7 @@ class Province():
         adjacencies = self.get_coastal_adjacent(coast)
         
         for province in adjacencies:
-            if province == other or isinstance(province, tuple) and province[0] == dest:
+            if province == dest or (isinstance(province, tuple) and province[0] == dest):
                 return True
         return False
 
