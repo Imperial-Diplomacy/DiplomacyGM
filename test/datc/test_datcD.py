@@ -19,10 +19,10 @@ class TestDATC_D(unittest.TestCase):
             The support of Tyrolia prevents that the army in Venice is dislodged. The army in Trieste will not move.
         """
         b = BoardBuilder()
-        a_trieste = b.move(b.austria, UnitType.ARMY, b.trieste, b.venice)
-        f_adriatic_sea = b.supportMove(b.austria, UnitType.FLEET, b.adriatic_sea, a_trieste, b.venice)
-        a_venice = b.hold(b.italy, UnitType.ARMY, b.venice)
-        a_tyrolia = b.supportHold(b.italy, UnitType.ARMY, b.tyrolia, a_venice)
+        a_trieste = b.move(b.austria, UnitType.ARMY, "Trieste", "Venice")
+        f_adriatic_sea = b.supportMove(b.austria, UnitType.FLEET, "Adriatic Sea", a_trieste, "Venice")
+        a_venice = b.hold(b.italy, UnitType.ARMY, "Venice")
+        a_tyrolia = b.supportHold(b.italy, UnitType.ARMY, "Tyrolia", a_venice)
 
         b.assertNotDislodge(a_venice)
         b.assertSuccess(f_adriatic_sea, a_tyrolia)
@@ -41,11 +41,11 @@ class TestDATC_D(unittest.TestCase):
             army from Trieste.
         """
         b = BoardBuilder()
-        a_trieste = b.move(b.austria, UnitType.ARMY, b.trieste, b.venice)
-        f_adriatic_sea = b.supportMove(b.austria, UnitType.FLEET, b.adriatic_sea, a_trieste, b.venice)
-        a_vienna = b.move(b.austria, UnitType.ARMY, b.vienna, b.tyrolia)
-        a_venice = b.hold(b.italy, UnitType.ARMY, b.venice)
-        a_tyrolia = b.supportHold(b.italy, UnitType.ARMY, b.tyrolia, a_venice)
+        a_trieste = b.move(b.austria, UnitType.ARMY, "Trieste", "Venice")
+        f_adriatic_sea = b.supportMove(b.austria, UnitType.FLEET, "Adriatic Sea", a_trieste, "Venice")
+        a_vienna = b.move(b.austria, UnitType.ARMY, "Vienna", "Tyrolia")
+        a_venice = b.hold(b.italy, UnitType.ARMY, "Venice")
+        a_tyrolia = b.supportHold(b.italy, UnitType.ARMY, "Tyrolia", a_venice)
 
         b.assertDislodge(a_venice)
         b.assertSuccess(a_trieste)
@@ -63,10 +63,10 @@ class TestDATC_D(unittest.TestCase):
             dislodged and the army in Trieste stays in Trieste.
         """
         b = BoardBuilder()
-        a_trieste = b.move(b.austria, UnitType.ARMY, b.trieste, b.venice)
-        f_adriatic_sea = b.supportMove(b.austria, UnitType.FLEET, b.adriatic_sea, a_trieste, b.venice)
-        a_venice = b.hold(b.italy, UnitType.ARMY, b.venice)
-        f_ionian_sea = b.move(b.italy, UnitType.FLEET, b.ionian_sea, b.adriatic_sea)
+        a_trieste = b.move(b.austria, UnitType.ARMY, "Trieste", "Venice")
+        f_adriatic_sea = b.supportMove(b.austria, UnitType.FLEET, "Adriatic Sea", a_trieste, "Venice")
+        a_venice = b.hold(b.italy, UnitType.ARMY, "Venice")
+        f_ionian_sea = b.move(b.italy, UnitType.FLEET, "Ionian Sea", "Adriatic Sea")
 
         b.assertNotDislodge(a_venice)
         b.assertFail(a_trieste, f_ionian_sea, f_adriatic_sea)
@@ -82,12 +82,12 @@ class TestDATC_D(unittest.TestCase):
             The Russian move from Prussia to Berlin fails.
         """
         b = BoardBuilder()
-        a_berlin = b.army(b.berlin, b.germany)
-        f_kiel = b.fleet(b.kiel_c, b.germany)
-        a_berlin.order = Support(b.kiel_c, b.kiel_c)
-        f_kiel.order = Support(b.berlin, b.berlin)
-        a_prussia = b.move(b.russia, UnitType.ARMY, b.prussia, b.berlin)
-        f_baltic_sea = b.supportMove(b.russia, UnitType.FLEET, b.baltic_sea, a_prussia, b.berlin)
+        a_berlin = b.army("Berlin", b.germany)
+        f_kiel = b.fleet("Kiel", b.germany)
+        a_berlin.order = b.supportHold(b.germany, UnitType.ARMY, "Berlin", f_kiel)
+        f_kiel.order = b.supportHold(b.germany, UnitType.ARMY, "Kiel", a_berlin)
+        a_prussia = b.move(b.russia, UnitType.ARMY, "Prussia", "Berlin")
+        f_baltic_sea = b.supportMove(b.russia, UnitType.FLEET, "Baltic Sea", a_prussia, "Berlin")
 
         b.assertFail(a_prussia, a_berlin)
         b.assertSuccess(f_kiel)
@@ -104,13 +104,13 @@ class TestDATC_D(unittest.TestCase):
             The Russian move from Prussia to Berlin fails.
         """
         b = BoardBuilder()
-        a_munich = b.move(b.germany, UnitType.ARMY, b.munich, b.silesia)
-        a_berlin = b.supportMove(b.germany, UnitType.ARMY, b.berlin, a_munich, b.silesia)
-        f_kiel = b.supportHold(b.germany, UnitType.FLEET, b.kiel_c, a_berlin)
-        a_berlin.order = Support(b.kiel_c, b.kiel_c)
-        f_kiel.order = Support(b.berlin, b.berlin)
-        a_prussia = b.move(b.russia, UnitType.ARMY, b.prussia, b.berlin)
-        f_baltic_sea = b.supportMove(b.russia, UnitType.FLEET, b.baltic_sea, a_prussia, b.berlin)
+        a_munich = b.move(b.germany, UnitType.ARMY, "Munich", "Silesia")
+        a_berlin = b.supportMove(b.germany, UnitType.ARMY, "Berlin", a_munich, "Silesia")
+        f_kiel = b.supportHold(b.germany, UnitType.FLEET, "Kiel", a_berlin)
+        a_berlin.order = b.supportHold(b.germany, UnitType.ARMY, "Berlin", f_kiel)
+        f_kiel.order = b.supportHold(b.germany, UnitType.ARMY, "Kiel", a_berlin)
+        a_prussia = b.move(b.russia, UnitType.ARMY, "Prussia", "Berlin")
+        f_baltic_sea = b.supportMove(b.russia, UnitType.FLEET, "Baltic Sea", a_prussia, "Berlin")
 
         b.assertFail(a_berlin, a_prussia)
         b.assertSuccess(f_kiel, a_munich)
@@ -127,11 +127,11 @@ class TestDATC_D(unittest.TestCase):
             The Russian move from Livonia to the Baltic Sea fails. The convoy from Berlin to Sweden succeeds.
         """
         b = BoardBuilder()
-        a_berlin = b.move(b.germany, UnitType.ARMY, b.berlin, b.sweden)
-        f_baltic_sea = b.convoy(b.germany, b.baltic_sea, a_berlin, b.sweden)
-        f_prussia = b.supportHold(b.germany, UnitType.FLEET, b.prussia_c, f_baltic_sea)
-        f_livonia = b.move(b.russia, UnitType.FLEET, b.livonia_c, b.baltic_sea)
-        f_gulf_of_bothnia = b.supportMove(b.russia, UnitType.FLEET, b.gulf_of_bothnia, f_livonia, b.baltic_sea)
+        a_berlin = b.move(b.germany, UnitType.ARMY, "Berlin", "Sweden")
+        f_baltic_sea = b.convoy(b.germany, "Baltic Sea", a_berlin, "Sweden")
+        f_prussia = b.supportHold(b.germany, UnitType.FLEET, "Prussia", f_baltic_sea)
+        f_livonia = b.move(b.russia, UnitType.FLEET, "Livonia", "Baltic Sea")
+        f_gulf_of_bothnia = b.supportMove(b.russia, UnitType.FLEET, "Gulf of Bothnia", f_livonia, "Baltic Sea")
         
         b.assertFail(f_livonia)
         b.assertSuccess(f_prussia, f_baltic_sea, a_berlin)
@@ -149,11 +149,11 @@ class TestDATC_D(unittest.TestCase):
             in Finland and will be dislodged by the Russian fleet from Livonia when it returns to the Baltic Sea.
         """
         b = BoardBuilder()
-        f_baltic_sea = b.move(b.germany, UnitType.FLEET, b.baltic_sea, b.sweden_c)
-        f_prussia = b.supportHold(b.germany, UnitType.FLEET, b.prussia_c, f_baltic_sea)
-        f_livonia = b.move(b.russia, UnitType.FLEET, b.livonia_c, b.baltic_sea)
-        f_gulf_of_bothnia = b.supportMove(b.russia, UnitType.FLEET, b.gulf_of_bothnia, f_livonia, b.baltic_sea)
-        a_finland = b.move(b.russia, UnitType.ARMY, b.finland, b.sweden)
+        f_baltic_sea = b.move(b.germany, UnitType.FLEET, "Baltic Sea", "Sweden")
+        f_prussia = b.supportHold(b.germany, UnitType.FLEET, "Prussia", f_baltic_sea)
+        f_livonia = b.move(b.russia, UnitType.FLEET, "Livonia", "Baltic Sea")
+        f_gulf_of_bothnia = b.supportMove(b.russia, UnitType.FLEET, "Gulf of Bothnia", f_livonia, "Baltic Sea")
+        a_finland = b.move(b.russia, UnitType.ARMY, "Finland", "Sweden")
 
         b.assertFail(a_finland, f_baltic_sea)
         b.assertIllegal(f_prussia)
@@ -176,11 +176,11 @@ class TestDATC_D(unittest.TestCase):
             the army in Greece is dislodged by the army in Albania.
         """
         b = BoardBuilder()
-        f_ionian_sea = b.hold(b.austria, UnitType.FLEET, b.ionian_sea)
-        a_albania = b.move(b.austria, UnitType.ARMY, b.albania, b.greece)
-        a_serbia = b.supportMove(b.austria, UnitType.ARMY, b.serbia, a_albania, b.greece)
-        a_greece = b.move(b.turkey, UnitType.ARMY, b.greece, b.naples)
-        a_bulgaria = b.supportHold(b.turkey, UnitType.ARMY, b.bulgaria, a_greece)
+        f_ionian_sea = b.hold(b.austria, UnitType.FLEET, "Ionian Sea")
+        a_albania = b.move(b.austria, UnitType.ARMY, "Albania", "Greece")
+        a_serbia = b.supportMove(b.austria, UnitType.ARMY, "Serbia", a_albania, "Greece")
+        a_greece = b.move(b.turkey, UnitType.ARMY, "Greece", "Naples")
+        a_bulgaria = b.supportHold(b.turkey, UnitType.ARMY, "Bulgaria", a_greece)
 
         b.assertIllegal(a_greece)
         b.assertSuccess(f_ionian_sea, a_albania, a_serbia)
@@ -198,10 +198,10 @@ class TestDATC_D(unittest.TestCase):
             The support of the army in Albania fails and the army in Trieste is dislodged by the army from Venice.
         """
         b = BoardBuilder()
-        a_venice = b.move(b.italy, UnitType.ARMY, b.venice, b.trieste)
-        a_tyrolia = b.supportMove(b.italy, UnitType.ARMY, b.tyrolia, a_venice, b.trieste)
-        a_trieste = b.hold(b.austria, UnitType.ARMY, b.trieste)
-        a_albania = b.supportMove(b.austria, UnitType.ARMY, b.albania, a_trieste, b.serbia)
+        a_venice = b.move(b.italy, UnitType.ARMY, "Venice", "Trieste")
+        a_tyrolia = b.supportMove(b.italy, UnitType.ARMY, "Tyrolia", a_venice, "Trieste")
+        a_trieste = b.hold(b.austria, UnitType.ARMY, "Trieste")
+        a_albania = b.supportMove(b.austria, UnitType.ARMY, "Albania", a_trieste, "Serbia")
 
         b.assertIllegal(a_albania)
         b.assertDislodge(a_trieste)
@@ -216,9 +216,9 @@ class TestDATC_D(unittest.TestCase):
             Move to Berlin fails.
         """
         b = BoardBuilder()
-        a_berlin = b.hold(b.germany, UnitType.ARMY, b.berlin)
-        f_kiel = b.move(b.germany, UnitType.FLEET, b.kiel_c, b.berlin_c)
-        a_munich = b.supportMove(b.germany, UnitType.ARMY, b.munich, f_kiel, b.berlin_c)
+        a_berlin = b.hold(b.germany, UnitType.ARMY, "Berlin")
+        f_kiel = b.move(b.germany, UnitType.FLEET, "Kiel", "Berlin")
+        a_munich = b.supportMove(b.germany, UnitType.ARMY, "Munich", f_kiel, "Berlin")
 
         b.assertFail(f_kiel)
         b.assertSuccess(a_berlin, a_munich)
@@ -234,10 +234,10 @@ class TestDATC_D(unittest.TestCase):
             Army in Berlin bounces, but is not dislodged by own unit.
         """
         b = BoardBuilder()
-        a_berlin = b.move(b.germany, UnitType.ARMY, b.berlin, b.prussia)
-        f_kiel = b.move(b.germany, UnitType.FLEET, b.kiel_c, b.berlin_c)
-        a_munich = b.supportMove(b.germany, UnitType.ARMY, b.munich, f_kiel, b.berlin_c)
-        a_prussia = b.move(b.russia, UnitType.ARMY, b.warsaw, b.prussia)
+        a_berlin = b.move(b.germany, UnitType.ARMY, "Berlin", "Prussia")
+        f_kiel = b.move(b.germany, UnitType.FLEET, "Kiel", "Berlin")
+        a_munich = b.supportMove(b.germany, UnitType.ARMY, "Munich", f_kiel, "Berlin")
+        a_prussia = b.move(b.russia, UnitType.ARMY, "Warsaw", "Prussia")
 
         b.assertFail(f_kiel, a_berlin, a_prussia)
         b.assertSuccess(a_munich)
@@ -253,9 +253,9 @@ class TestDATC_D(unittest.TestCase):
             No dislodgment of fleet in Trieste.
         """
         b = BoardBuilder()
-        a_venice = b.move(b.italy, UnitType.ARMY, b.venice, b.trieste)
-        f_trieste = b.hold(b.austria, UnitType.FLEET, b.trieste_c)
-        a_vienna = b.supportMove(b.austria, UnitType.ARMY, b.vienna, a_venice, b.trieste)
+        a_venice = b.move(b.italy, UnitType.ARMY, "Venice", "Trieste")
+        f_trieste = b.hold(b.austria, UnitType.FLEET, "Trieste")
+        a_vienna = b.supportMove(b.austria, UnitType.ARMY, "Vienna", a_venice, "Trieste")
 
         b.assertFail(a_venice)
         b.assertNotDislodge(f_trieste)
@@ -271,10 +271,10 @@ class TestDATC_D(unittest.TestCase):
             No dislodgment of fleet in Trieste.
         """
         b = BoardBuilder()
-        a_venice = b.move(b.italy, UnitType.ARMY, b.venice, b.trieste)
-        f_apulia = b.move(b.italy, UnitType.FLEET, b.apulia_c, b.adriatic_sea)
-        f_trieste = b.move(b.austria, UnitType.FLEET, b.trieste_c, b.adriatic_sea)
-        a_vienna = b.supportMove(b.austria, UnitType.ARMY, b.vienna, a_venice, b.trieste)
+        a_venice = b.move(b.italy, UnitType.ARMY, "Venice", "Trieste")
+        f_apulia = b.move(b.italy, UnitType.FLEET, "Apulia", "Adriatic Sea")
+        f_trieste = b.move(b.austria, UnitType.FLEET, "Trieste", "Adriatic Sea")
+        a_vienna = b.supportMove(b.austria, UnitType.ARMY, "Vienna", a_venice, "Trieste")
 
         b.assertFail(a_venice, f_trieste, f_apulia)
         b.assertNotDislodge(f_trieste)
@@ -292,11 +292,11 @@ class TestDATC_D(unittest.TestCase):
             The fleet in Trieste is dislodged.
         """
         b = BoardBuilder()
-        f_trieste = b.hold(b.austria, UnitType.FLEET, b.trieste_c)
-        a_venice = b.move(b.italy, UnitType.ARMY, b.venice, b.trieste)
-        a_vienna = b.supportMove(b.austria, UnitType.ARMY, b.vienna, a_venice, b.trieste)
-        a_tyrolia = b.supportMove(b.italy, UnitType.ARMY, b.tyrolia, a_venice, b.trieste)
-        f_adriatic_sea = b.supportMove(b.italy, UnitType.FLEET, b.adriatic_sea, a_venice, b.trieste)
+        f_trieste = b.hold(b.austria, UnitType.FLEET, "Trieste")
+        a_venice = b.move(b.italy, UnitType.ARMY, "Venice", "Trieste")
+        a_vienna = b.supportMove(b.austria, UnitType.ARMY, "Vienna", a_venice, "Trieste")
+        a_tyrolia = b.supportMove(b.italy, UnitType.ARMY, "Tyrolia", a_venice, "Trieste")
+        f_adriatic_sea = b.supportMove(b.italy, UnitType.FLEET, "Adriatic Sea", a_venice, "Trieste")
 
         b.assertDislodge(f_trieste)
         b.assertSuccess(a_venice, a_vienna, f_trieste, a_tyrolia, f_adriatic_sea)
@@ -312,9 +312,9 @@ class TestDATC_D(unittest.TestCase):
             The support of Constantinople is not cut and the fleet in Ankara is dislodged by the fleet in the Black Sea.
         """
         b = BoardBuilder()
-        f_black_sea = b.move(b.russia, UnitType.FLEET, b.black_sea, b.ankara_c)
-        f_constantinople = b.supportMove(b.russia, UnitType.FLEET, b.constantinople_c, f_black_sea, b.ankara_c)
-        f_ankara = b.move(b.turkey, UnitType.FLEET, b.ankara_c, b.constantinople_c)
+        f_black_sea = b.move(b.russia, UnitType.FLEET, "Black Sea", "Ankara")
+        f_constantinople = b.supportMove(b.russia, UnitType.FLEET, "Constantinople", f_black_sea, "Ankara")
+        f_ankara = b.move(b.turkey, UnitType.FLEET, "Ankara", "Constantinople")
 
         b.assertSuccess(f_constantinople, f_black_sea)
         b.assertFail(f_ankara)
@@ -331,10 +331,10 @@ class TestDATC_D(unittest.TestCase):
             The English army in London is dislodged by the French army coming from Belgium.
         """
         b = BoardBuilder()
-        a_london = b.hold(b.england, UnitType.ARMY, b.london)
-        a_belgium = b.move(b.france, UnitType.ARMY, b.belgium, b.london)
-        f_north_sea = b.convoy(b.england, b.north_sea, a_belgium, b.london)
-        f_english_channel = b.supportMove(b.france, UnitType.FLEET, b.english_channel, a_belgium, b.london)
+        a_london = b.hold(b.england, UnitType.ARMY, "London")
+        a_belgium = b.move(b.france, UnitType.ARMY, "Belgium", "London")
+        f_north_sea = b.convoy(b.england, "North Sea", a_belgium, "London")
+        f_english_channel = b.supportMove(b.france, UnitType.FLEET, "English Channel", a_belgium, "London")
 
         b.assertDislodge(a_london)
         b.assertSuccess(a_london, a_belgium, f_north_sea, f_english_channel)
@@ -352,11 +352,11 @@ class TestDATC_D(unittest.TestCase):
             Black Sea will bounce with the army from Armenia.
         """
         b = BoardBuilder()
-        f_black_sea = b.move(b.russia, UnitType.FLEET, b.black_sea, b.ankara_c)
-        f_constantinople = b.supportMove(b.russia, UnitType.FLEET, b.constantinople_c, f_black_sea, b.ankara_c)
-        f_ankara = b.move(b.turkey, UnitType.FLEET, b.ankara_c, b.constantinople_c)
-        a_smyrna = b.supportMove(b.turkey, UnitType.ARMY, b.smyrna, f_ankara, b.constantinople_c)
-        a_armenia = b.move(b.turkey, UnitType.ARMY, b.armenia, b.ankara)
+        f_black_sea = b.move(b.russia, UnitType.FLEET, "Black Sea", "Ankara")
+        f_constantinople = b.supportMove(b.russia, UnitType.FLEET, "Constantinople", f_black_sea, "Ankara")
+        f_ankara = b.move(b.turkey, UnitType.FLEET, "Ankara", "Constantinople")
+        a_smyrna = b.supportMove(b.turkey, UnitType.ARMY, "Smyrna", f_ankara, "Constantinople")
+        a_armenia = b.move(b.turkey, UnitType.ARMY, "Armenia", "Ankara")
         
         b.assertDislodge(f_constantinople)
         b.assertFail(f_black_sea, a_armenia)
@@ -374,12 +374,12 @@ class TestDATC_D(unittest.TestCase):
             The Russian fleet in the Black Sea will dislodge the Turkish fleet in Ankara.
         """
         b = BoardBuilder()
-        f_black_sea = b.move(b.russia, UnitType.FLEET, b.black_sea, b.ankara_c)
-        f_constantinople = b.supportMove(b.russia, UnitType.FLEET, b.constantinople_c, f_black_sea, b.ankara_c)
-        a_bulgaria = b.supportHold(b.russia, UnitType.ARMY, b.bulgaria, f_constantinople)
-        f_ankara = b.move(b.turkey, UnitType.FLEET, b.ankara_c, b.constantinople_c)
-        a_smyrna = b.supportMove(b.turkey, UnitType.ARMY, b.smyrna, f_ankara, b.constantinople_c)
-        a_armenia = b.move(b.turkey, UnitType.ARMY, b.armenia, b.ankara)
+        f_black_sea = b.move(b.russia, UnitType.FLEET, "Black Sea", "Ankara")
+        f_constantinople = b.supportMove(b.russia, UnitType.FLEET, "Constantinople", f_black_sea, "Ankara")
+        a_bulgaria = b.supportHold(b.russia, UnitType.ARMY, "Bulgaria", f_constantinople)
+        f_ankara = b.move(b.turkey, UnitType.FLEET, "Ankara", "Constantinople")
+        a_smyrna = b.supportMove(b.turkey, UnitType.ARMY, "Smyrna", f_ankara, "Constantinople")
+        a_armenia = b.move(b.turkey, UnitType.ARMY, "Armenia", "Ankara")
 
         b.assertDislodge(f_ankara)
         b.assertFail(a_armenia)
@@ -397,10 +397,10 @@ class TestDATC_D(unittest.TestCase):
             The support from Black Sea to Ankara will sustain and the fleet in Ankara will be dislodged.
         """        
         b = BoardBuilder()
-        f_black_sea = b.move(b.russia, UnitType.FLEET, b.black_sea, b.ankara_c)
-        f_constantinople = b.supportMove(b.russia, UnitType.FLEET, b.constantinople_c, f_black_sea, b.ankara_c)
-        f_ankara = b.move(b.turkey, UnitType.FLEET, b.ankara_c, b.constantinople_c)
-        a_smyrna = b.supportMove(b.russia, UnitType.ARMY, b.smyrna, f_ankara, b.constantinople_c)
+        f_black_sea = b.move(b.russia, UnitType.FLEET, "Black Sea", "Ankara")
+        f_constantinople = b.supportMove(b.russia, UnitType.FLEET, "Constantinople", f_black_sea, "Ankara")
+        f_ankara = b.move(b.turkey, UnitType.FLEET, "Ankara", "Constantinople")
+        a_smyrna = b.supportMove(b.russia, UnitType.ARMY, "Smyrna", f_ankara, "Constantinople")
 
         b.assertDislodge(f_ankara)
         b.assertNotDislodge(f_constantinople)
@@ -419,10 +419,10 @@ class TestDATC_D(unittest.TestCase):
             fleet in the North Sea.
         """
         b = BoardBuilder()
-        f_north_sea = b.move(b.england, UnitType.FLEET, b.north_sea, b.english_channel)
-        f_london = b.supportMove(b.england, UnitType.FLEET, b.london_c, f_north_sea, b.english_channel)
-        a_yorkshire = b.move(b.england, UnitType.ARMY, b.yorkshire, b.london)
-        f_english_channel = b.hold(b.france, UnitType.FLEET, b.english_channel)
+        f_north_sea = b.move(b.england, UnitType.FLEET, "North Sea", "English Channel")
+        f_london = b.supportMove(b.england, UnitType.FLEET, "London", f_north_sea, "English Channel")
+        a_yorkshire = b.move(b.england, UnitType.ARMY, "Yorkshire", "London")
+        f_english_channel = b.hold(b.france, UnitType.FLEET, "English Channel")
 
         b.assertFail(a_yorkshire)
         b.assertSuccess(f_london, f_north_sea)
@@ -443,12 +443,12 @@ class TestDATC_D(unittest.TestCase):
             Fleet is not dislodged.
         """
         b = BoardBuilder()
-        f_trieste = b.hold(b.austria, UnitType.FLEET, b.trieste_c)
-        a_venice = b.move(b.italy, UnitType.ARMY, b.venice, b.trieste)
-        a_tyrolia = b.supportMove(b.italy, UnitType.ARMY, b.tyrolia, a_venice, b.trieste)
-        a_munich = b.move(b.germany, UnitType.ARMY, b.munich, b.tyrolia)
-        a_silesia = b.move(b.russia, UnitType.ARMY, b.silesia, b.munich)
-        a_berlin = b.supportMove(b.russia, UnitType.ARMY, b.berlin, a_silesia, b.munich)
+        f_trieste = b.hold(b.austria, UnitType.FLEET, "Trieste")
+        a_venice = b.move(b.italy, UnitType.ARMY, "Venice", "Trieste")
+        a_tyrolia = b.supportMove(b.italy, UnitType.ARMY, "Tyrolia", a_venice, "Trieste")
+        a_munich = b.move(b.germany, UnitType.ARMY, "Munich", "Tyrolia")
+        a_silesia = b.move(b.russia, UnitType.ARMY, "Silesia", "Munich")
+        a_berlin = b.supportMove(b.russia, UnitType.ARMY, "Berlin", a_silesia, "Munich")
 
         b.assertDislodge(a_munich)
         b.assertFail(a_tyrolia, a_venice, a_munich)
@@ -471,10 +471,10 @@ class TestDATC_D(unittest.TestCase):
             incorrect interpretation.
         """
         b = BoardBuilder()
-        f_kiel = b.move(b.germany, UnitType.FLEET, b.kiel_c, b.munich)
-        a_burgundy = b.supportMove(b.germany, UnitType.ARMY, b.burgundy, f_kiel, b.munich)
-        a_munich = b.move(b.russia, UnitType.ARMY, b.munich, b.kiel)
-        a_berlin = b.supportMove(b.russia, UnitType.ARMY, b.berlin, a_munich, b.kiel)
+        f_kiel = b.move(b.germany, UnitType.FLEET, "Kiel", "Munich")
+        a_burgundy = b.supportMove(b.germany, UnitType.ARMY, "Burgundy", f_kiel, "Munich")
+        a_munich = b.move(b.russia, UnitType.ARMY, "Munich", "Kiel")
+        a_berlin = b.supportMove(b.russia, UnitType.ARMY, "Berlin", a_munich, "Kiel")
 
         b.assertIllegal(f_kiel, a_burgundy)
         b.assertSuccess(a_munich, a_berlin)
@@ -492,10 +492,10 @@ class TestDATC_D(unittest.TestCase):
             from Marseilles fails and the fleet in Spain is dislodged.
         """
         b = BoardBuilder()
-        f_gulf_of_lyon = b.move(b.italy, UnitType.FLEET, b.gulf_of_lyon, b.spain_sc)
-        f_western_mediterranean = b.supportMove(b.italy, UnitType.FLEET, b.western_mediterranean, f_gulf_of_lyon, b.spain_sc)
-        f_spain_nc = b.move(b.france, UnitType.FLEET, b.spain_nc, b.gulf_of_lyon)
-        f_marseilles = b.supportMove(b.france, UnitType.FLEET, b.marseilles_c, f_spain_nc, b.gulf_of_lyon)
+        f_gulf_of_lyon = b.move(b.italy, UnitType.FLEET, "Gulf of Lyon", "Spain sc")
+        f_western_mediterranean = b.supportMove(b.italy, UnitType.FLEET, "Western Mediterranean Sea", f_gulf_of_lyon, "Spain sc")
+        f_spain_nc = b.move(b.france, UnitType.FLEET, "Spain nc", "Gulf of Lyon")
+        f_marseilles = b.supportMove(b.france, UnitType.FLEET, "Marseilles", f_spain_nc, "Gulf of Lyon")
 
         b.assertIllegal(f_spain_nc, f_marseilles)
         b.assertSuccess(f_gulf_of_lyon, f_western_mediterranean)
@@ -516,11 +516,11 @@ class TestDATC_D(unittest.TestCase):
             dislodged by the Turkish fleet in the Western Mediterranean.
         """
         b = BoardBuilder()
-        a_marseilles = b.move(b.france, UnitType.ARMY, b.marseilles, b.gulf_of_lyon)
-        a_spain_sc = b.supportMove(b.france, UnitType.FLEET, b.spain_sc, a_marseilles, b.gulf_of_lyon)
-        f_gulf_of_lyon = b.hold(b.italy, UnitType.FLEET, b.gulf_of_lyon)
-        f_western_mediterranean = b.move(b.turkey, UnitType.FLEET, b.western_mediterranean, b.gulf_of_lyon)
-        f_tyrrhenian_sea = b.supportMove(b.turkey, UnitType.FLEET, b.tyrrhenian_sea, f_western_mediterranean, b.gulf_of_lyon)
+        a_marseilles = b.move(b.france, UnitType.ARMY, "Marseilles", "Gulf of Lyon")
+        a_spain_sc = b.supportMove(b.france, UnitType.FLEET, "Spain sc", a_marseilles, "Gulf of Lyon")
+        f_gulf_of_lyon = b.hold(b.italy, UnitType.FLEET, "Gulf of Lyon")
+        f_western_mediterranean = b.move(b.turkey, UnitType.FLEET, "Western Mediterranean Sea", "Gulf of Lyon")
+        f_tyrrhenian_sea = b.supportMove(b.turkey, UnitType.FLEET, "Tyrrhenian Sea", f_western_mediterranean, "Gulf of Lyon")
 
         b.assertIllegal(a_marseilles, a_spain_sc)
         b.assertDislodge(f_gulf_of_lyon)
@@ -540,10 +540,10 @@ class TestDATC_D(unittest.TestCase):
             Berlin is still valid. So, Berlin will not be dislodged.
         """
         b = BoardBuilder()
-        a_prussia = b.move(b.russia, UnitType.ARMY, b.prussia, b.berlin)
-        f_baltic_sea = b.supportMove(b.russia, UnitType.FLEET, b.baltic_sea, a_prussia, b.berlin)
-        a_berlin = b.supportHold(b.germany, UnitType.ARMY, b.berlin, a_prussia)
-        f_kiel = b.supportHold(b.germany, UnitType.FLEET, b.kiel_c, a_berlin)
+        a_prussia = b.move(b.russia, UnitType.ARMY, "Prussia", "Berlin")
+        f_baltic_sea = b.supportMove(b.russia, UnitType.FLEET, "Baltic Sea", a_prussia, "Berlin")
+        a_berlin = b.supportHold(b.germany, UnitType.ARMY, "Berlin", a_prussia)
+        f_kiel = b.supportHold(b.germany, UnitType.FLEET, "Kiel", a_berlin)
 
         b.assertIllegal(a_berlin)
         b.assertFail(a_prussia)
@@ -561,10 +561,10 @@ class TestDATC_D(unittest.TestCase):
             Again, Berlin will not be dislodged.
         """
         b = BoardBuilder()
-        a_prussia = b.move(b.russia, UnitType.ARMY, b.prussia, b.berlin)
-        f_baltic_sea = b.supportMove(b.russia, UnitType.FLEET, b.baltic_sea, a_prussia, b.berlin)
-        a_berlin = b.supportMove(b.germany, UnitType.ARMY, b.berlin, a_prussia, b.silesia)
-        f_kiel = b.supportHold(b.germany, UnitType.FLEET, b.kiel_c, a_berlin)
+        a_prussia = b.move(b.russia, UnitType.ARMY, "Prussia", "Berlin")
+        f_baltic_sea = b.supportMove(b.russia, UnitType.FLEET, "Baltic Sea", a_prussia, "Berlin")
+        a_berlin = b.supportMove(b.germany, UnitType.ARMY, "Berlin", a_prussia, "Silesia")
+        f_kiel = b.supportHold(b.germany, UnitType.FLEET, "Kiel", a_berlin)
 
         b.assertIllegal(a_berlin)
         b.assertFail(a_prussia)
@@ -584,11 +584,11 @@ class TestDATC_D(unittest.TestCase):
             is still valid and the fleet in the Baltic Sea is not dislodged.
         """
         b = BoardBuilder()
-        f_sweden = b.move(b.england, UnitType.FLEET, b.sweden_c, b.baltic_sea)
-        f_denmark = b.supportMove(b.england, UnitType.FLEET, b.denmark_c, f_sweden, b.baltic_sea)
-        a_berlin = b.hold(b.germany, UnitType.ARMY, b.berlin)
-        f_baltic_sea = b.convoy(b.russia, b.baltic_sea, a_berlin, b.livonia)
-        f_prussia = b.supportHold(b.russia, UnitType.FLEET, b.prussia_c, f_baltic_sea)
+        f_sweden = b.move(b.england, UnitType.FLEET, "Sweden", "Baltic Sea")
+        f_denmark = b.supportMove(b.england, UnitType.FLEET, "Denmark", f_sweden, "Baltic Sea")
+        a_berlin = b.hold(b.germany, UnitType.ARMY, "Berlin")
+        f_baltic_sea = b.convoy(b.russia, "Baltic Sea", a_berlin, "Livonia")
+        f_prussia = b.supportHold(b.russia, UnitType.FLEET, "Prussia", f_baltic_sea)
 
         b.assertIllegal(f_baltic_sea)
         b.assertSuccess(f_prussia, f_denmark)
@@ -613,10 +613,10 @@ class TestDATC_D(unittest.TestCase):
             Note that we treat impossible moves as unsupportable, so the test case has been adjusted accordingly.
         """ 
         b = BoardBuilder()
-        f_rumania = b.move(b.russia, UnitType.FLEET, b.rumania_c, b.holland_c)
-        a_budapest = b.supportHold(b.austria, UnitType.ARMY, b.budapest, f_rumania)
-        f_black_sea = b.move(b.turkey, UnitType.FLEET, b.black_sea, b.rumania_c)
-        a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, b.bulgaria, f_black_sea, b.rumania)
+        f_rumania = b.move(b.russia, UnitType.FLEET, "Rumania", "Holland")
+        a_budapest = b.supportHold(b.austria, UnitType.ARMY, "Budapest", f_rumania)
+        f_black_sea = b.move(b.turkey, UnitType.FLEET, "Black Sea", "Rumania")
+        a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, "Bulgaria", f_black_sea, "Rumania")
 
         b.assertIllegal(f_rumania)
         b.assertSuccess(f_black_sea)
@@ -641,10 +641,10 @@ class TestDATC_D(unittest.TestCase):
             Note that we treat impossible moves as unsupportable, so the test case has been adjusted accordingly.
         """
         b = BoardBuilder()
-        f_rumania = b.move(b.russia, UnitType.FLEET, b.rumania_c, b.bulgaria_sc)
-        a_budapest = b.supportHold(b.austria, UnitType.ARMY, b.budapest, f_rumania)
-        f_black_sea = b.move(b.turkey, UnitType.FLEET, b.black_sea, b.rumania_c)
-        a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, b.bulgaria, f_black_sea, b.rumania)
+        f_rumania = b.move(b.russia, UnitType.FLEET, "Rumania", "Bulgaria sc")
+        a_budapest = b.supportHold(b.austria, UnitType.ARMY, "Budapest", f_rumania)
+        f_black_sea = b.move(b.turkey, UnitType.FLEET, "Black Sea", "Rumania")
+        a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, "Bulgaria", f_black_sea, "Rumania")
 
         b.assertIllegal(f_rumania)
         b.assertSuccess(f_black_sea)
@@ -669,10 +669,10 @@ class TestDATC_D(unittest.TestCase):
             Note that we treat impossible moves as unsupportable, so the test case has been adjusted accordingly.
         """
         b = BoardBuilder()
-        f_constantinople = b.move(b.russia, UnitType.FLEET, b.constantinople_c, b.bulgaria)
-        f_aegean_sea = b.supportHold(b.italy, UnitType.FLEET, b.aegean_sea, f_constantinople)
-        f_black_sea = b.move(b.turkey, UnitType.FLEET, b.black_sea, b.constantinople_c)
-        a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, b.bulgaria, f_black_sea, b.constantinople_c)
+        f_constantinople = b.move(b.russia, UnitType.FLEET, "Constantinople", "Bulgaria")
+        f_aegean_sea = b.supportHold(b.italy, UnitType.FLEET, "Aegean Sea", f_constantinople)
+        f_black_sea = b.move(b.turkey, UnitType.FLEET, "Black Sea", "Constantinople")
+        a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, "Bulgaria", f_black_sea, "Constantinople")
 
         b.assertDislodge(f_constantinople)
         b.assertFail(f_aegean_sea)
@@ -698,8 +698,8 @@ class TestDATC_D(unittest.TestCase):
             Note that we treat impossible moves as unsupportable, so the test case has been adjusted accordingly.
         """
         b = BoardBuilder()
-        a_rumania = b.move(b.austria, UnitType.ARMY, b.rumania, b.armenia)
-        f_black_sea = b.supportMove(b.turkey, UnitType.FLEET, b.black_sea, a_rumania, b.armenia)
+        a_rumania = b.move(b.austria, UnitType.ARMY, "Rumania", "Armenia")
+        f_black_sea = b.supportMove(b.turkey, UnitType.FLEET, "Black Sea", a_rumania, "Armenia")
 
         b.assertIllegal(a_rumania, f_black_sea)
         b.moves_adjudicate(self)
@@ -721,10 +721,10 @@ class TestDATC_D(unittest.TestCase):
             ignored. The army in Yorkshire is not dislodged.
         """
         b = BoardBuilder()
-        a_liverpool = b.move(b.england, UnitType.ARMY, b.liverpool, b.yorkshire)
-        f_edinburgh = b.supportMove(b.england, UnitType.FLEET, b.edinburgh_c, a_liverpool, b.yorkshire)
-        a_yorkshire = b.move(b.germany, UnitType.ARMY, b.yorkshire, b.holland)
-        f_london = b.supportHold(b.france, UnitType.FLEET, b.london_c, a_yorkshire)
+        a_liverpool = b.move(b.england, UnitType.ARMY, "Liverpool", "Yorkshire")
+        f_edinburgh = b.supportMove(b.england, UnitType.FLEET, "Edinburgh", a_liverpool, "Yorkshire")
+        a_yorkshire = b.move(b.germany, UnitType.ARMY, "Yorkshire", "Holland")
+        f_london = b.supportHold(b.france, UnitType.FLEET, "London", a_yorkshire)
 
         b.assertDislodge(a_yorkshire)
         b.assertIllegal(a_yorkshire)
@@ -745,10 +745,10 @@ class TestDATC_D(unittest.TestCase):
             Serbia with the army in Bulgaria.
         """
         b = BoardBuilder()
-        a_serbia = b.move(b.austria, UnitType.ARMY, b.serbia, b.budapest)
-        a_vienna = b.move(b.austria, UnitType.ARMY, b.vienna, b.budapest)
-        a_galicia = b.supportMove(b.russia, UnitType.ARMY, b.galicia, a_serbia, b.budapest)
-        a_bulgaria = b.move(b.turkey, UnitType.ARMY, b.bulgaria, b.serbia)
+        a_serbia = b.move(b.austria, UnitType.ARMY, "Serbia", "Budapest")
+        a_vienna = b.move(b.austria, UnitType.ARMY, "Vienna", "Budapest")
+        a_galicia = b.supportMove(b.russia, UnitType.ARMY, "Galicia", a_serbia, "Budapest")
+        a_bulgaria = b.move(b.turkey, UnitType.ARMY, "Bulgaria", "Serbia")
 
         b.assertSuccess(a_serbia, a_bulgaria)
         b.assertFail(a_vienna)
@@ -773,12 +773,12 @@ class TestDATC_D(unittest.TestCase):
             Livonia and Berlin.
         """
         b = BoardBuilder()
-        a_berlin = b.move(b.germany, UnitType.ARMY, b.berlin, b.prussia)
-        a_silesia = b.supportMove(b.germany, UnitType.ARMY, b.silesia, a_berlin, b.prussia)
-        f_baltic_sea = b.supportMove(b.germany, UnitType.FLEET, b.baltic_sea, a_berlin, b.prussia)
-        a_prussia = b.supportMove(b.italy, UnitType.ARMY, b.prussia, a_berlin, b.prussia) # illegal
-        a_livonia = b.move(b.russia, UnitType.ARMY, b.livonia, b.prussia)
-        a_warsaw = b.supportMove(b.russia, UnitType.ARMY, b.warsaw, a_livonia, b.prussia)
+        a_berlin = b.move(b.germany, UnitType.ARMY, "Berlin", "Prussia")
+        a_silesia = b.supportMove(b.germany, UnitType.ARMY, "Silesia", a_berlin, "Prussia")
+        f_baltic_sea = b.supportMove(b.germany, UnitType.FLEET, "Baltic Sea", a_berlin, "Prussia")
+        a_prussia = b.supportMove(b.italy, UnitType.ARMY, "Prussia", a_berlin, "Prussia") # illegal
+        a_livonia = b.move(b.russia, UnitType.ARMY, "Livonia", "Prussia")
+        a_warsaw = b.supportMove(b.russia, UnitType.ARMY, "Warsaw", a_livonia, "Prussia")
 
         b.assertIllegal(a_prussia)
         b.assertSuccess(a_berlin, a_silesia, f_baltic_sea, a_warsaw)

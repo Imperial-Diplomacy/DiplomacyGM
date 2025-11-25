@@ -11,11 +11,12 @@ class TestCore(unittest.TestCase):
             Rumania shouldn't be half-cored by Germany.
         """
         b = BoardBuilder()
-        a_rumania = b.core(b.germany, UnitType.ARMY, b.rumania)
+        a_rumania = b.core(b.germany, UnitType.ARMY, "Rumania")
+        p_rumania = b.board.get_province("Rumania")
 
         b.assertIllegal(a_rumania)
         b.moves_adjudicate(self)
-        self.assertFalse(b.rumania.half_core == b.germany, "Rumania shouldn't be cored")
+        self.assertFalse(p_rumania.half_core == b.germany, "Rumania shouldn't be cored")
 
     def test_core_2(self):
         """ 
@@ -25,11 +26,12 @@ class TestCore(unittest.TestCase):
             Holland shouldn't be half-cored by Germany.
         """
         b = BoardBuilder()
-        a_holland = b.core(b.germany, UnitType.ARMY, b.holland)
+        a_holland = b.core(b.germany, UnitType.ARMY, "Holland")
+        p_holland = b.board.get_province("Holland")
 
         b.assertIllegal(a_holland)
         b.moves_adjudicate(self)
-        self.assertFalse(b.holland.half_core == b.germany, "Holland shouldn't be cored")
+        self.assertFalse(p_holland.half_core == b.germany, "Holland shouldn't be cored")
 
     def test_core_3(self):
         """ 
@@ -39,12 +41,13 @@ class TestCore(unittest.TestCase):
             Holland should be half-cored by Germany.
         """
         b = BoardBuilder()
-        b.holland.owner = b.germany
-        a_holland = b.core(b.germany, UnitType.ARMY, b.holland)
+        p_holland = b.board.get_province("Holland")
+        p_holland.owner = b.germany
+        a_holland = b.core(b.germany, UnitType.ARMY, "Holland")
 
         b.assertSuccess(a_holland)
         b.moves_adjudicate(self)
-        self.assertTrue(b.holland.half_core == b.germany, "Holland should be half-cored")
+        self.assertTrue(p_holland.half_core == b.germany, "Holland should be half-cored")
 
     def test_core_4(self):
         """ 
@@ -54,13 +57,14 @@ class TestCore(unittest.TestCase):
             Holland should be cored by Germany.
         """
         b = BoardBuilder()
-        b.holland.owner = b.germany
-        b.holland.half_core = b.germany
-        a_holland = b.core(b.germany, UnitType.ARMY, b.holland)
+        p_holland = b.board.get_province("Holland")
+        p_holland.owner = b.germany
+        p_holland.half_core = b.germany
+        a_holland = b.core(b.germany, UnitType.ARMY, "Holland")
 
         b.assertSuccess(a_holland)
         b.moves_adjudicate(self)
-        self.assertTrue(b.holland.core == b.germany, "Holland should be cored")
+        self.assertTrue(p_holland.core == b.germany, "Holland should be cored")
 
     def test_core_5(self):
         """ 
@@ -71,16 +75,17 @@ class TestCore(unittest.TestCase):
             Holland shouldn't be half-cored by Germany.
         """
         b = BoardBuilder()
-        b.holland.owner = b.germany
-        b.holland.half_core = b.germany
-        a_holland = b.core(b.germany, UnitType.ARMY, b.holland)
-        a_belgium = b.move(b.france, UnitType.ARMY, b.belgium, b.holland)
+        p_holland = b.board.get_province("Holland")
+        p_holland.owner = b.germany
+        p_holland.half_core = b.germany
+        a_holland = b.core(b.germany, UnitType.ARMY, "Holland")
+        a_belgium = b.move(b.france, UnitType.ARMY, "Belgium", "Holland")
 
         b.assertFail(a_holland, a_belgium)
         b.assertNotIllegal(a_holland, a_belgium)
         b.moves_adjudicate(self)
         
-        self.assertFalse(b.holland.core == b.germany, "Holland shouldn't be cored")
+        self.assertFalse(p_holland.core == b.germany, "Holland shouldn't be cored")
 
     def test_core_5(self):
         """ 
@@ -91,16 +96,17 @@ class TestCore(unittest.TestCase):
             Holland shouldn't be half-cored by Germany.
         """
         b = BoardBuilder()
-        b.holland.owner = b.germany
-        b.holland.half_core = b.germany
-        a_holland = b.core(b.germany, UnitType.ARMY, b.holland)
-        a_belgium = b.move(b.germany, UnitType.ARMY, b.belgium, b.holland)
+        p_holland = b.board.get_province("Holland")
+        p_holland.owner = b.germany
+        p_holland.half_core = b.germany
+        a_holland = b.core(b.germany, UnitType.ARMY, "Holland")
+        a_belgium = b.move(b.germany, UnitType.ARMY, "Belgium", "Holland")
 
         b.assertFail(a_holland, a_belgium)
         b.assertNotIllegal(a_holland, a_belgium)
         b.moves_adjudicate(self)
         
-        self.assertFalse(b.holland.core == b.germany, "Holland shouldn't be half-cored")
+        self.assertFalse(p_holland.core == b.germany, "Holland shouldn't be half-cored")
 
     def test_core_6(self):
         """ 
@@ -112,17 +118,18 @@ class TestCore(unittest.TestCase):
             Holland should be half-cored by Germany.
         """
         b = BoardBuilder()
-        b.holland.owner = b.germany
-        b.holland.half_core = b.germany
-        a_holland = b.core(b.germany, UnitType.ARMY, b.holland)
-        a_london = b.move(b.england, UnitType.ARMY, b.london, b.holland)
-        f_north_sea = b.convoy(b.england, b.north_sea, a_london, b.holland)
+        p_holland = b.board.get_province("Holland")
+        p_holland.owner = b.germany
+        p_holland.half_core = b.germany
+        a_holland = b.core(b.germany, UnitType.ARMY, "Holland")
+        a_london = b.move(b.england, UnitType.ARMY, "London", "Holland")
+        f_north_sea = b.convoy(b.england, "North Sea", a_london, "Holland")
 
         b.assertFail(a_holland, a_london)
         b.assertNotIllegal(a_holland, f_north_sea, a_london)
         b.moves_adjudicate(self)
         
-        self.assertFalse(b.holland.core == b.germany, "Holland shouldn't be half-cored")
+        self.assertFalse(p_holland.core == b.germany, "Holland shouldn't be half-cored")
 
     def test_core_7(self):
         """ 
@@ -134,17 +141,18 @@ class TestCore(unittest.TestCase):
             Holland should be half-cored by Germany.
         """
         b = BoardBuilder()
-        b.holland.owner = b.germany
-        b.holland.half_core = b.germany
-        a_holland = b.core(b.germany, UnitType.ARMY, b.holland)
-        a_london = b.move(b.germany, UnitType.ARMY, b.london, b.holland)
-        f_north_sea = b.convoy(b.england, b.north_sea, a_london, b.holland)
+        p_holland = b.board.get_province("Holland")
+        p_holland.owner = b.germany
+        p_holland.half_core = b.germany
+        a_holland = b.core(b.germany, UnitType.ARMY, "Holland")
+        a_london = b.move(b.germany, UnitType.ARMY, "London", "Holland")
+        f_north_sea = b.convoy(b.england, "North Sea", a_london, "Holland")
 
         b.assertFail(a_holland, a_london)
         b.assertNotIllegal(a_holland, f_north_sea, a_london)
         b.moves_adjudicate(self)
         
-        self.assertFalse(b.holland.core == b.germany, "Holland shouldn't be half-cored")
+        self.assertFalse(p_holland.core == b.germany, "Holland shouldn't be half-cored")
 
 
     def test_core_8(self):
@@ -156,12 +164,13 @@ class TestCore(unittest.TestCase):
             Holland should be half-cored by Germany.
         """
         b = BoardBuilder()
-        b.holland.owner = b.germany
-        b.holland.half_core = b.germany
-        a_holland = b.core(b.germany, UnitType.ARMY, b.holland)
-        a_london = b.move(b.england, UnitType.ARMY, b.london, b.holland)
+        p_holland = b.board.get_province("Holland")
+        p_holland.owner = b.germany
+        p_holland.half_core = b.germany
+        a_holland = b.core(b.germany, UnitType.ARMY, "Holland")
+        a_london = b.move(b.england, UnitType.ARMY, "London", "Holland")
 
         b.assertSuccess(a_holland)
         b.moves_adjudicate(self)
         
-        self.assertTrue(b.holland.core == b.germany, "Holland should be half-cored")
+        self.assertTrue(p_holland.core == b.germany, "Holland should be half-cored")

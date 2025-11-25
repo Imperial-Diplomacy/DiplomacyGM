@@ -255,7 +255,7 @@ class CommandCog(commands.Cog):
             )
             return
         try:
-            province, coast = board.get_province_and_coast(province_name)
+            province = board.get_province(province_name)
         except:
             log_command(logger, ctx, message=f"Province `{province_name}` not found")
             await send_message_and_file(
@@ -279,30 +279,33 @@ class CommandCog(commands.Cog):
                 return
 
         # fmt: off
-        if not coast:
-            out = f"Type: {province.type.name}\n" + \
-                f"Coasts: {len(province.coasts)}\n" + \
-                f"Owner: {province.owner.name if province.owner else 'None'}\n" + \
-                f"Unit: {(province.unit.player.name + ' ' + province.unit.unit_type.name) if province.unit else 'None'}\n" + \
-                f"Center: {province.has_supply_center}\n" + \
-                f"Core: {province.core.name if province.core else 'None'}\n" + \
-                f"Half-Core: {province.half_core.name if province.half_core else 'None'}\n" + \
-                f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent | province.impassible_adjacent])) + "\n"
-        else:
-            coast_unit = None
-            if province.unit and province.unit.coast == coast:
-                coast_unit = province.unit
-
-            out = "Type: COAST\n" + \
-                f"Coast Unit: {(coast_unit.player.name + ' ' + coast_unit.unit_type.name) if coast_unit else 'None'}\n" + \
-                f"Province Unit: {(province.unit.player.name + ' ' + province.unit.unit_type.name) if province.unit else 'None'}\n" + \
-                "Adjacent Provinces:\n" + \
-                "- " + \
-                "\n- ".join(sorted([adjacent.name for adjacent in coast.get_adjacent_locations()])) + "\n"
+        coasts = province.get_multiple_coasts()
+        coast_info = ""
+        adjacent_coasts = ""
+        if coasts:
+            coast_info = f"Coasts: {len(coasts)}\n"
+            for c in coasts:
+                adjacent_coasts += "Adjacent Coastal Provinces ({c}):"
+                for adj in province.get_coastal_adjacent(c):
+                    adjacent_coasts += f"\n- {adj[0] if isinstance(adj, tuple) else adj}"
+                adjacent_coasts += "\n"
+        elif province.get_coastal_adjacent():
+            adjacent_coasts = "Adjacent Coastal Provinces:\n- "
+            for adj in province.get_coastal_adjacent():
+                adjacent_coasts += f"\n- {adj[0] if isinstance(adj, tuple) else adj}"
+            adjacent_coasts += "\n"
+        out = f"Type: {province.type.name}\n" + \
+            f"{coast_info}" + \
+            f"Owner: {province.owner.name if province.owner else 'None'}\n" + \
+            f"Unit: {(province.unit.player.name + ' ' + province.unit.unit_type.name) if province.unit else 'None'}\n" + \
+            f"Center: {province.has_supply_center}\n" + \
+            f"Core: {province.core.name if province.core else 'None'}\n" + \
+            f"Half-Core: {province.half_core.name if province.half_core else 'None'}\n" + \
+            f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent | province.impassible_adjacent])) + "\n" + \
+            f"{adjacent_coasts}"
         # fmt: on
         log_command(logger, ctx, message=f"Got info for {province_name}")
 
-        # FIXME title should probably include what coast it is.
         await send_message_and_file(
             channel=ctx.channel, title=province.name, message=out
         )

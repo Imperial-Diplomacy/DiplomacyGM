@@ -141,14 +141,20 @@ class Mapper:
                     continue
                     
                 if current_turn.is_retreats():
-                    unit_locs = unit.province.get_primary_unit_coordinates(unit.unit_type, unit.coast)
+                    unit_locs = unit.province.all_rets[unit.unit_type]
                 else:
-                    unit_locs = unit.province.get_retreat_unit_coordinates(unit.unit_type, unit.coast)
+                    unit_locs = unit.province.all_locs[unit.unit_type]
+                if unit.coast:
+                    unit_locs = unit_locs[unit.coast]
 
                 # TODO: Maybe there's a better way to handle convoys?
                 if isinstance(unit.order, (RetreatMove, Move, Support)):
                     new_locs = []
-                    for endpoint in unit.order.destination.get_primary_unit_coordinates(unit.unit_type, unit.order.destination_coast):
+                    if unit.order.destination_coast:
+                        e_list = unit.order.destination.all_locs[unit.unit_type][unit.coast]
+                    else:
+                        e_list = unit.order.destination.all_locs[unit.unit_type]
+                    for endpoint in e_list:
                         new_locs += [self.normalize(self.get_closest_loc(unit_locs, endpoint))]
                     unit_locs = new_locs
                 try:
@@ -452,7 +458,10 @@ class Mapper:
         if isinstance(order, Build):
             self._draw_build(player, order)
         elif isinstance(order, Disband):
-            for coord in order.province.get_primary_unit_coordinates(order.province.unit.unit_type, order.province.unit.coast):
+            coord_list = order.province.all_locs[order.province.unit.unit_type]
+            if order.province.unit.coast:
+                coord_list = coord_list[order.province.unit.coast]
+            for coord in coord_list:
                 self._draw_force_disband(coord, self._moves_svg)
         else:
             logger.error(f"Could not draw player order {order}")
@@ -530,7 +539,7 @@ class Mapper:
                 and (self.player_restriction is None or possibility.unit.player == self.player_restriction)
                 and possibility.unit.unit_type == UnitType.FLEET
                 and isinstance(possibility.unit.order, ConvoyTransport)
-                and possibility.unit.order.source.as_province() is source
+                and possibility.unit.order.source is source
                 and possibility.unit.order.destination is destination
             ):
                 options += self._path_helper(source, destination, possibility, new_checked)
@@ -576,7 +585,7 @@ class Mapper:
             p = [coordinate]
             start = coordinate
             for loc in path[1:]:
-                p += [self.loc_to_point(loc, unit.unit_type, unit.coast, start)]
+                p += [self.loc_to_point(loc, unit.unit_type, loc.unit.coast if loc.unit else None, start)]
                 start = p[-1]
 
             if path[-1].get_unit():
@@ -613,9 +622,9 @@ class Mapper:
         order: Support = unit.order
         x1 = coordinate[0]
         y1 = coordinate[1]
-        v2 = self.loc_to_point(order.source, unit.unit_type, unit.coast, coordinate)
+        v2 = self.loc_to_point(order.source, unit.unit_type, order.source.unit.coast, coordinate)
         x2, y2 = v2
-        v3 = self.loc_to_point(order.destination, order.source.unit.unit_type, order.destination_coast, order.source.unit.order.v2)
+        v3 = self.loc_to_point(order.destination, order.source.unit.unit_type, order.destination_coast, v2)
         x3, y3 = v3
         marker_start = ""
         ball_type = "redball" if hasFailed else "ball"
@@ -628,10 +637,11 @@ class Mapper:
             # Draw hold around unit that can be support-held
             if order.source == order.destination:
                 if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)) and self.is_moveable(order.destination.get_unit()):
-                    destloc = order.destination
-                    if destloc.get_unit() and destloc.get_unit().coast:
-                        destloc = destloc.get_unit().coast
-                    for coord in destloc.all_locs:
+                    if order.destination.get_unit().coast:
+                        destloc = order.destination.all_locs[order.destination.unit.unit_type][order.destination.get_unit().coast]
+                    else:
+                        destloc = order.destination.all_locs[order.destination.unit.unit_type]
+                    for coord in destloc:
                         self._draw_hold(coord, False)
 
             # if two units are support-holding each other
@@ -892,9 +902,11 @@ class Mapper:
         current_coords = TransGL3(unit_element).transform(current_coords)
 
         if unit == unit.province.dislodged_unit:
-            coord_list = unit.province.get_retreat_unit_coordinates(unit.unit_type, unit.coast)
+            coord_list = unit.province.all_rets[unit.unit_type]
         else:
-            coord_list = unit.province.get_primary_unit_coordinates(unit.unit_type, unit.coast)
+            coord_list = unit.province.all_locs[unit.unit_type]
+        if unit.coast:
+            coord_list = coord_list[unit.coast]
         for desired_coords in coord_list:
             elem = copy.deepcopy(unit_element)
 
@@ -1118,9 +1130,11 @@ class Mapper:
             coast = loc.get_unit().coast
 
         if use_retreats:
-            coords = loc.get_retreat_unit_coordinates(unit_type, coast)
+            coords = loc.all_rets[unit_type]
         else:
-            coords = loc.get_primary_unit_coordinates(unit_type, coast)
+            coords = loc.all_locs[unit_type]
+        if coast:
+            coords = coords[coast]
 
         return self.get_closest_loc(coords, current)
 

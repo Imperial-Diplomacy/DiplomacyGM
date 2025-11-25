@@ -19,7 +19,7 @@ class TestDATC_A(unittest.TestCase):
             Order should fail.
         """
         b = BoardBuilder()
-        f_north_sea = b.move(b.england, UnitType.FLEET, b.north_sea, b.picardy)
+        f_north_sea = b.move(b.england, UnitType.FLEET, "North Sea", "Picardy")
 
         b.assertIllegal(f_north_sea)
         b.moves_adjudicate(self)
@@ -31,7 +31,7 @@ class TestDATC_A(unittest.TestCase):
             Order should fail.
         """
         b = BoardBuilder()
-        f_liverpool = b.move(b.england, UnitType.ARMY, b.liverpool, b.irish_sea)
+        f_liverpool = b.move(b.england, UnitType.ARMY, "Liverpool", "Irish Sea")
 
         b.assertIllegal(f_liverpool)
         b.moves_adjudicate(self)
@@ -43,7 +43,7 @@ class TestDATC_A(unittest.TestCase):
             Order should fail.
         """
         b = BoardBuilder()
-        f_kiel = b.move(b.germany, UnitType.FLEET, b.kiel_c, b.munich)
+        f_kiel = b.move(b.germany, UnitType.FLEET, "Kiel", "Munich")
         b.assertIllegal(f_kiel)
         b.moves_adjudicate(self)
 
@@ -55,7 +55,7 @@ class TestDATC_A(unittest.TestCase):
             Program should not crash.
         """
         b = BoardBuilder()
-        f_kiel = b.move(b.germany, UnitType.FLEET, b.kiel_c, b.kiel_c)
+        f_kiel = b.move(b.germany, UnitType.FLEET, "Kiel", "Kiel")
 
         b.assertIllegal(f_kiel)
         b.moves_adjudicate(self)
@@ -73,11 +73,11 @@ class TestDATC_A(unittest.TestCase):
             the support, the Germans have a stronger force. The army in London dislodges the army in Yorkshire.
         """
         b = BoardBuilder()
-        a_yorkshire = b.move(b.england, UnitType.ARMY, b.yorkshire, b.yorkshire)
-        f_north_sea = b.convoy(b.england, b.north_sea, a_yorkshire, b.yorkshire)
-        a_liverpool = b.supportMove(b.england, UnitType.ARMY, b.liverpool, a_yorkshire, b.yorkshire)
-        f_london = b.move(b.germany, UnitType.FLEET, b.london_c, b.yorkshire_c);
-        a_wales = b.supportMove(b.germany, UnitType.ARMY, b.wales, f_london, b.yorkshire)
+        a_yorkshire = b.move(b.england, UnitType.ARMY, "Yorkshire", "Yorkshire")
+        f_north_sea = b.convoy(b.england, "North Sea", a_yorkshire, "Yorkshire")
+        a_liverpool = b.supportMove(b.england, UnitType.ARMY, "Liverpool", a_yorkshire, "Yorkshire")
+        f_london = b.move(b.germany, UnitType.FLEET, "London", "Yorkshire");
+        a_wales = b.supportMove(b.germany, UnitType.ARMY, "Wales", f_london, "Yorkshire")
 
         b.assertIllegal(a_yorkshire, f_north_sea, a_liverpool)
         b.assertSuccess(f_london)
@@ -93,8 +93,8 @@ class TestDATC_A(unittest.TestCase):
             Move from London to Belgium should fail.
         """
         b = BoardBuilder()
-        f_london = b.move(b.england, UnitType.FLEET, b.london_c, b.belgium)
-        f_north_sea = b.convoy(b.england, b.north_sea, f_london, b.belgium)
+        f_london = b.move(b.england, UnitType.FLEET, "London", "Belgium")
+        f_north_sea = b.convoy(b.england, "North Sea", f_london, "Belgium")
         
         b.assertIllegal(f_london, f_north_sea)
         b.moves_adjudicate(self)
@@ -108,11 +108,10 @@ class TestDATC_A(unittest.TestCase):
             The army in Trieste should be dislodged.
         """
         b = BoardBuilder()
-        a_venice = b.move(b.italy, UnitType.ARMY, b.venice, b.trieste)
-        a_tyrolia = b.supportMove(b.italy, UnitType.ARMY, b.tyrolia, a_venice, b.trieste)
-        f_trieste = b.fleet(b.trieste_c, b.austria)
-        order = Support(b.trieste_c, b.trieste_c)
-        f_trieste.order = order
+        a_venice = b.move(b.italy, UnitType.ARMY, "Venice", "Trieste")
+        a_tyrolia = b.supportMove(b.italy, UnitType.ARMY, "Tyrolia", a_venice, "Trieste")
+        f_trieste = b.fleet("Trieste", b.austria)
+        f_trieste.order = b.supportHold(b.austria, UnitType.FLEET, "Trieste", f_trieste)
 
         b.assertDislodge(f_trieste)
         b.moves_adjudicate(self)
@@ -125,7 +124,7 @@ class TestDATC_A(unittest.TestCase):
             Move fails. An army can go from Rome to Venice, but a fleet can not.
         """
         b = BoardBuilder()
-        f_rome = b.move(b.italy, UnitType.FLEET, b.rome_c, b.venice_c)
+        f_rome = b.move(b.italy, UnitType.FLEET, "Rome", "Venice")
         
         b.assertIllegal(f_rome)
         b.moves_adjudicate(self)
@@ -140,9 +139,9 @@ class TestDATC_A(unittest.TestCase):
             Venice is not dislodged.
         """
         b = BoardBuilder()
-        a_venice = b.hold(b.austria, UnitType.ARMY, b.venice)
-        a_apulia = b.move(b.austria, UnitType.ARMY, b.apulia, b.venice)
-        f_rome = b.supportMove(b.italy, UnitType.FLEET, b.rome_c, a_apulia, b.venice)
+        a_venice = b.hold(b.austria, UnitType.ARMY, "Venice")
+        a_apulia = b.move(b.austria, UnitType.ARMY, "Apulia", "Venice")
+        f_rome = b.supportMove(b.italy, UnitType.FLEET, "Rome", a_apulia, "Venice")
 
         b.assertIllegal(f_rome)
         b.assertFail(a_apulia)
@@ -157,8 +156,8 @@ class TestDATC_A(unittest.TestCase):
             The two units bounce.
         """
         b = BoardBuilder()
-        a_vienna = b.move(b.austria, UnitType.ARMY, b.vienna, b.tyrolia)
-        a_venice = b.move(b.italy, UnitType.ARMY, b.venice, b.tyrolia)
+        a_vienna = b.move(b.austria, UnitType.ARMY, "Vienna", "Tyrolia")
+        a_venice = b.move(b.italy, UnitType.ARMY, "Venice", "Tyrolia")
 
         b.assertFail(a_vienna)
         b.assertFail(a_venice)
@@ -174,9 +173,9 @@ class TestDATC_A(unittest.TestCase):
             The three units bounce.
         """
         b = BoardBuilder()
-        a_vienna = b.move(b.austria, UnitType.ARMY, b.vienna, b.tyrolia)
-        a_venice = b.move(b.italy, UnitType.ARMY, b.venice, b.tyrolia)
-        a_munich = b.move(b.germany, UnitType.ARMY, b.munich, b.tyrolia)
+        a_vienna = b.move(b.austria, UnitType.ARMY, "Vienna", "Tyrolia")
+        a_venice = b.move(b.italy, UnitType.ARMY, "Venice", "Tyrolia")
+        a_munich = b.move(b.germany, UnitType.ARMY, "Munich", "Tyrolia")
 
         b.assertFail(a_vienna)
         b.assertFail(a_venice)

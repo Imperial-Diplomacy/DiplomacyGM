@@ -471,7 +471,7 @@ class _DatabaseConnection:
                     board_id,
                     board.turn.get_indexed_name(),
                     player.name,
-                    build_order.location.name,
+                    build_order.name,
                     isinstance(build_order, Build),
                     getattr(build_order, "unit_type", None) == UnitType.ARMY,
                 )
@@ -537,16 +537,8 @@ class _DatabaseConnection:
             [
                 (
                     unit.order.__class__.__name__ if unit.order is not None else None,
-                    (
-                        getattr(getattr(unit.order, "destination", None), "name", None)
-                        if unit.order is not None
-                        else None
-                    ),
-                    (
-                        getattr(getattr(unit.order, "source", None), "name", None)
-                        if unit.order is not None
-                        else None
-                    ),
+                    unit.order.get_destination_str() if unit.order is not None else None,
+                    unit.order.get_source_str() if unit.order is not None else None,
                     unit.order.hasFailed if unit.order is not None else False,
                     board.board_id,
                     board.turn.get_indexed_name(),
@@ -599,7 +591,7 @@ class _DatabaseConnection:
                     board.board_id,
                     board.turn.get_indexed_name(),
                     player.name,
-                    build_order.location.name,
+                    build_order.province.get_name(build_order.coast),
                     isinstance(build_order, Build),
                     getattr(build_order, "unit_type", None) == UnitType.ARMY,
                     isinstance(build_order, Build),

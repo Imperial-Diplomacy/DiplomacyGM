@@ -1,0 +1,206 @@
+Burgundy,Ruhr
+Burgundy,Paris
+Burgundy,Gascony
+Burgundy,Marseilles
+Burgundy,Belgium
+Burgundy,Munich
+Burgundy,Picardy
+Ruhr,Holland
+Ruhr,Belgium
+Ruhr,Munich
+Ruhr,Kiel
+Rome,Apulia
+Rome,Venice
+Rome,Tyrrhenian Sea
+Rome,Naples
+Rome,Tuscany
+Smyrna,Aegean Sea
+Smyrna,Constantinople
+Smyrna,Syria
+Smyrna,Armenia
+Smyrna,Ankara
+Smyrna,Eastern Mediterranean Sea
+Finland,Gulf of Bothnia
+Finland,Norway
+Finland,Sweden
+Finland,St. Petersburg
+Baltic Sea,Gulf of Bothnia
+Baltic Sea,Denmark
+Baltic Sea,Livonia
+Baltic Sea,Sweden
+Baltic Sea,Prussia
+Baltic Sea,Berlin
+Baltic Sea,Kiel
+Silesia,Prussia
+Silesia,Berlin
+Silesia,Bohemia
+Silesia,Munich
+Silesia,Galicia
+Silesia,Warsaw
+Paris,Brest
+Paris,Gascony
+Paris,Picardy
+Moscow,Livonia
+Moscow,Ukraine
+Moscow,Sevastopol
+Moscow,St. Petersburg
+Moscow,Warsaw
+Piedmont,Gulf of Lyon
+Piedmont,Venice
+Piedmont,Marseilles
+Piedmont,Tyrolia
+Piedmont,Tuscany
+Gulf of Bothnia,Livonia
+Gulf of Bothnia,Sweden
+Gulf of Bothnia,St. Petersburg
+North Sea,Denmark
+North Sea,Norwegian Sea
+North Sea,Norway
+North Sea,English Channel
+North Sea,Heligoland Bight
+North Sea,Holland
+North Sea,Belgium
+North Sea,Yorkshire
+North Sea,Edinburgh
+North Sea,London
+North Sea,Skagerrak
+Aegean Sea,Bulgaria
+Aegean Sea,Greece
+Aegean Sea,Constantinople
+Aegean Sea,Eastern Mediterranean Sea
+Aegean Sea,Ionian Sea
+Mid-Atlantic Ocean,Brest
+Mid-Atlantic Ocean,Gascony
+Mid-Atlantic Ocean,Portugal
+Mid-Atlantic Ocean,English Channel
+Mid-Atlantic Ocean,North Atlantic Ocean
+Mid-Atlantic Ocean,Western Mediterranean Sea
+Mid-Atlantic Ocean,Spain
+Mid-Atlantic Ocean,North Africa
+Denmark,Sweden
+Denmark,Heligoland Bight
+Denmark,Kiel
+Denmark,Skagerrak
+Bulgaria,Greece
+Bulgaria,Constantinople
+Bulgaria,Black Sea
+Bulgaria,Rumania
+Bulgaria,Serbia
+Greece,Albania
+Greece,Ionian Sea
+Greece,Serbia
+Barents Sea,Norwegian Sea
+Barents Sea,Norway
+Barents Sea,St. Petersburg
+Brest,Gascony
+Brest,English Channel
+Brest,Picardy
+Norwegian Sea,Norway
+Norwegian Sea,Clyde
+Norwegian Sea,North Atlantic Ocean
+Norwegian Sea,Edinburgh
+Irish Sea,English Channel
+Irish Sea,Liverpool
+Irish Sea,North Atlantic Ocean
+Irish Sea,Mid-Atlantic Ocean
+Irish Sea,Wales
+Gulf of Lyon,Tyrrhenian Sea
+Gulf of Lyon,Marseilles
+Gulf of Lyon,Tuscany
+Gulf of Lyon,Western Mediterranean Sea
+Gulf of Lyon,Spain
+Gascony,Marseilles
+Gascony,Spain
+Livonia,Prussia
+Livonia,St. Petersburg
+Livonia,Warsaw
+Tunis,Tyrrhenian Sea
+Tunis,Ionian Sea
+Tunis,Western Mediterranean Sea
+Tunis,North Africa
+Apulia,Venice
+Apulia,Naples
+Apulia,Ionian Sea
+Apulia,Adriatic Sea
+Constantinople,Ankara
+Constantinople,Black Sea
+Norway,Sweden
+Norway,St. Petersburg
+Norway,Skagerrak
+Clyde,Liverpool
+Clyde,North Atlantic Ocean
+Clyde,Edinburgh
+Syria,Armenia
+Syria,Eastern Mediterranean Sea
+Sweden,Skagerrak
+Ukraine,Rumania
+Ukraine,Sevastopol
+Ukraine,Galicia
+Ukraine,Warsaw
+Portugal,Spain
+Armenia,Ankara
+Armenia,Black Sea
+Armenia,Sevastopol
+English Channel,Belgium
+English Channel,Wales
+English Channel,Picardy
+English Channel,London
+Prussia,Berlin
+Prussia,Warsaw
+Venice,Trieste
+Venice,Tyrolia
+Venice,Adriatic Sea
+Venice,Tuscany
+Ankara,Black Sea
+Heligoland Bight,Holland
+Heligoland Bight,Kiel
+Tyrrhenian Sea,Naples
+Tyrrhenian Sea,Ionian Sea
+Tyrrhenian Sea,Tuscany
+Tyrrhenian Sea,Western Mediterranean Sea
+Albania,Trieste
+Albania,Ionian Sea
+Albania,Adriatic Sea
+Albania,Serbia
+Trieste,Tyrolia
+Trieste,Budapest
+Trieste,Vienna
+Trieste,Adriatic Sea
+Trieste,Serbia
+Marseilles,Spain
+Liverpool,North Atlantic Ocean
+Liverpool,Wales
+Liverpool,Yorkshire
+Liverpool,Edinburgh
+Tyrolia,Bohemia
+Tyrolia,Vienna
+Tyrolia,Munich
+Holland,Belgium
+Holland,Kiel
+Black Sea,Rumania
+Black Sea,Sevastopol
+Budapest,Rumania
+Budapest,Vienna
+Budapest,Serbia
+Budapest,Galicia
+Berlin,Munich
+Berlin,Kiel
+Bohemia,Vienna
+Bohemia,Munich
+Bohemia,Galicia
+Rumania,Sevastopol
+Rumania,Serbia
+Rumania,Galicia
+Wales,Yorkshire
+Wales,London
+Naples,Ionian Sea
+Belgium,Picardy
+Eastern Mediterranean Sea,Ionian Sea
+Yorkshire,Edinburgh
+Yorkshire,London
+Vienna,Galicia
+Ionian Sea,Adriatic Sea
+Munich,Kiel
+Western Mediterranean Sea,Spain
+Western Mediterranean Sea,North Africa
+Galicia,Warsaw

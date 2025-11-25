@@ -81,7 +81,7 @@ def convoy_is_possible(start: Province, end: Province, check_fleet_orders=False)
     return False
 
 
-def order_is_valid(province: Province, order: Order, strict_convoys_supports=False) -> tuple[bool, str | None]:
+def order_is_valid(province: Province, order: Order, strict_convoys_supports=False, strict_coast_movement=True) -> tuple[bool, str | None]:
     """
     Checks if order from given location is valid for configured board
 
@@ -127,10 +127,15 @@ def order_is_valid(province: Province, order: Order, strict_convoys_supports=Fal
             if destination_province.type == ProvinceType.SEA:
                 return False, "Armies cannot move to sea provinces"
         elif unit.unit_type == UnitType.FLEET:
-            # Note that this would cause issues if we ever try to implement one-way adjacencies
-            if (order.destination not in province.get_coastal_adjacent(unit.coast)
-                or province not in order.destination.get_coastal_adjacent(order.destination_coast)):
-                return False, f"{province} does not border {order.destination}"
+            destination_coast = order.destination_coast if strict_coast_movement else None
+            if not province.is_coastally_adjacent((destination_province, destination_coast), unit.coast):
+                return False, f"{province.get_name(unit.coast)} does not border {order.get_destination_and_coast()}"
+            if strict_coast_movement and not destination_coast:
+                reachable_coasts = {c for c in order.destination.get_multiple_coasts() if province.is_coastally_adjacent((order.destination, c), unit.coast)}
+                if len(reachable_coasts) > 1:
+                    return False, f"{province} and {order.destination} have multiple coastal paths"
+                if reachable_coasts:
+                    order.destination_coast = reachable_coasts.pop()
         else:
             raise ValueError("Unknown type of unit. Something has broken in the bot. Please report this")
 
@@ -317,8 +322,10 @@ class BuildsAdjudicator(Adjudicator):
 
                 if available_builds > 0 and isinstance(order, Build):
                     # ignore coast specifications for army
+                    if (order.unit_type == UnitType.FLEET and not order.province.fleet_adjacent):
+                        logger.warning(f"Skipping {order}; tried building an inland fleet")
+                        continue
                     if (order.unit_type == UnitType.FLEET
-                        and order.province.get_multiple_coasts()
                         and order.coast not in order.province.get_multiple_coasts()):
                         logger.warning(f"Skipping {order}; someone didn't specify a valid coast")
                         continue
@@ -558,7 +565,7 @@ class MovesAdjudicator(Adjudicator):
                 if order.destination_province.dislodged_unit is not None:
                     order.destination_province.dislodged_unit.add_retreat_options()
                     if not order.is_convoy:
-                        order.destination_province.dislodged_unit.remove_retreat_option(order.source_province, None)
+                        order.destination_province.dislodged_unit.remove_retreat_option(order.source_province)
                 # Move us there
                 order.base_unit.province = order.destination_province
                 order.base_unit.coast = order.destination_coast

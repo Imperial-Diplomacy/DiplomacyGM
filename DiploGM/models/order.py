@@ -23,7 +23,12 @@ class UnitOrder(Order):
     def __init__(self):
         super().__init__()
         self.hasFailed = False
+    
+    def get_source_str(self):
+        return None
 
+    def get_destination_str(self):
+        return None
 
 class ComplexOrder(UnitOrder):
     """Complex orders are orders that operate on other orders (supports and convoys)."""
@@ -70,10 +75,13 @@ class Move(UnitOrder):
         self.destination_coast: str | None = destination_coast
 
     def __str__(self):
-        return f"- {self.destination}" + (f" {self.destination_coast}" if self.destination_coast else "")
+        return f"- {self.get_destination_str()}"
     
     def get_destination_and_coast(self) -> tuple[Province, str | None]:
         return (self.destination, self.destination_coast)
+    
+    def get_destination_str(self) -> str:
+        return f"{self.destination}" + (f" {self.destination_coast}" if self.destination_coast else "")
 
 class ConvoyMove(UnitOrder):
     display_priority: int = 30
@@ -84,6 +92,12 @@ class ConvoyMove(UnitOrder):
 
     def __str__(self):
         return f"Convoys - {self.destination}"
+    
+    def get_destination_and_coast(self) -> tuple[Province | None]:
+        return (self.destination, None)
+    
+    def get_destination_str(self) -> str:
+        return f"{self.destination}"
 
 
 class ConvoyTransport(ComplexOrder):
@@ -93,6 +107,12 @@ class ConvoyTransport(ComplexOrder):
 
     def __str__(self):
         return f"Convoys {self.source} - {self.destination}"
+    
+    def get_source_str(self) -> str:
+        return f"{self.source}"
+    
+    def get_destination_str(self) -> str:
+        return f"{self.destination}"
 
 
 class Support(ComplexOrder):
@@ -111,6 +131,15 @@ class Support(ComplexOrder):
             if self.destination_coast:
                 suffix += f" {self.destination_coast}"
         return f"Supports {self.source} {suffix}"
+        
+    def get_destination_and_coast(self) -> tuple[Province, str | None]:
+        return (self.destination, self.destination_coast)
+    
+    def get_source_str(self) -> str:
+        return f"{self.source}"
+    
+    def get_destination_str(self) -> str:
+        return f"{self.destination}" + (f" {self.destination_coast}" if self.destination_coast else "")
 
 
 class RetreatMove(UnitOrder):
@@ -125,6 +154,8 @@ class RetreatMove(UnitOrder):
     def get_destination_and_coast(self) -> tuple[Province, str | None]:
         return (self.destination, self.destination_coast)
 
+    def get_destination_str(self) -> str:
+        return f"{self.destination}" + (f" {self.destination_coast}" if self.destination_coast else "")
 
 class RetreatDisband(UnitOrder):
     def __init__(self):

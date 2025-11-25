@@ -95,11 +95,15 @@ class Board:
         # People input apostrophes that don't match what the province names are
         name = re.sub(r"[‘’`´′‛]", "'", name)
         name = name.lower()
+
+        if name.endswith(" coast"):
+            name = name[:-6]
+
         if "abbreviations" in self.data and name in self.data["abbreviations"]:
             name = self.data["abbreviations"][name].lower()
-        province, coast = self.name_to_coast.get(name)
-        if coast:
-            return province, coast
+        
+        if name in self.name_to_coast:
+            return self.name_to_coast.get(name)
         elif name in self.name_to_province:
             return self.name_to_province[name], None
 
@@ -124,7 +128,7 @@ class Board:
                     if province in unit.province.adjacent and province.type != ProvinceType.SEA:
                         visible.add(province)
                 if unit.unit_type == UnitType.FLEET:
-                    if (province in unit.province.get_coastal_adjacent(unit.coast)):
+                    if unit.province.is_coastally_adjacent((province, None), unit.coast):
                         visible.add(province)
 
         for unit in player.units:

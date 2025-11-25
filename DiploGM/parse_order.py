@@ -30,7 +30,7 @@ class TreeToOrder(Transformer):
     # used for supports, specifically FoW
     def l_unit(self, s) -> Province:
         # ignore the fleet/army signifier, if exists
-        loc = s[-1]
+        loc = s[-1][0]
         if loc is not None and not self.board.fow:
             unit = loc.get_unit()
             if unit is None:
@@ -42,7 +42,7 @@ class TreeToOrder(Transformer):
 
     def unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
-        unit = s[-1].get_unit()
+        unit = s[-1][0].get_unit()
         if unit is None:
             raise ValueError(f"No unit in {s[-1]}")
         if not isinstance(unit, Unit):
@@ -167,7 +167,7 @@ class TreeToOrder(Transformer):
         if isinstance(build_order[2], order.Waive):
             build_order[1].waived_orders = build_order[2].quantity
         elif isinstance(build_order[2], order.PlayerOrder):
-            remove_player_order_for_location(self.board, build_order[1], build_order[0])
+            remove_player_order_for_province(self.board, build_order[1], build_order[0])
             build_order[1].build_orders.add(build_order[2])
         else:
             remove_relationship_order(self.board, build_order[2], build_order[1])
@@ -187,16 +187,16 @@ class TreeToOrder(Transformer):
         return s[0], order.Hold()
     
     def l_move_order(self, s):
-        return s[0], order.Move(s[-1])
+        return s[0], order.Move(s[-1][0], s[-1][1])
 
     def move_order(self, s):
-        return s[0], order.Move(s[-1])
+        return s[0], order.Move(s[-1][0], s[-1][1])
 
     def convoy_order(self, s):
         return s[0], order.ConvoyTransport(s[-1][0], s[-1][1].destination)
 
     def support_order(self, s):
-        if isinstance(s[-1], tuple):
+        if isinstance(s[-1], Province):
             loc = s[-1]
             unit_order = order.Hold()
         else:
@@ -204,7 +204,7 @@ class TreeToOrder(Transformer):
             unit_order = s[-1][1]
 
         if isinstance(unit_order, order.Move):
-            return s[0], order.Support(loc, unit_order.destination)
+            return s[0], order.Support(loc, unit_order.destination, unit_order.destination_coast)
         elif isinstance(unit_order, order.Hold):
             return s[0], order.Support(loc, loc)
         else:
@@ -275,6 +275,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             except VisitError as e:
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
+                errors.append(f"`{order}`: {str(e)}")
             except UnexpectedEOF as e:
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
@@ -302,6 +303,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             except VisitError as e:
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
+                errors.append(f"`{order}`: {str(e)}")
             except UnexpectedEOF as e:
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")

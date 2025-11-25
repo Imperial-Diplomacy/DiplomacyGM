@@ -8,13 +8,34 @@ from test.utils import BoardBuilder
 
 # 6.B. TEST CASES, COASTAL ISSUES
 class TestDATC_B(unittest.TestCase):
-    # NOT APPLICABLE 6_b_1; MOVING WITH UNSPECIFIED COAST WHEN COAST IS NECESSARY
+    def test_6_b_1(self):
+        """ 6.B.1. TEST CASE, MOVING WITH UNSPECIFIED COAST WHEN COAST IS NECESSARY
+            Coast is significant in this case:
+            France: 
+            F Portugal - Spain
+            Move should fail.
+        """
+        b = BoardBuilder()
+        f_portugal = b.move(b.france, UnitType.FLEET, "Portugal", "Spain")
 
-    # NOT APPLICABLE 6_b_2; TEST CASE, MOVING WITH UNSPECIFIED COAST WHEN COAST IS NOT NECESSARY
+        b.assertFail(f_portugal)
+        b.moves_adjudicate(self)
 
-    # TODO fix when overrides are added
+    def test_6_b_2(self):
+        """ 6.B.2. TEST CASE, MOVING WITH UNSPECIFIED COAST WHEN COAST IS NOT NECESSARY
+            There is only one coast possible in this case:
+            France: 
+            F Gascony - Spain
+            Since the North Coast is the only coast that can be reached, it seems logical that a move is attempted to the north coast of Spain. See issue 4.B.2.
+            I prefer that an attempt is made to the only possible coast, the north coast of Spain.
+        """
+        b = BoardBuilder()
+        f_gascony = b.move(b.france, UnitType.FLEET, "Gascony", "Spain")
 
-    def test_6_b_3_fail(self):
+        b.assertSuccess(f_gascony)
+        b.moves_adjudicate(self)
+
+    def test_6_b_3(self):
         """ 6.B.3. TEST CASE, MOVING WITH WRONG COAST WHEN COAST IS NOT NECESSARY
             If only one coast is possible, but the wrong coast can be specified.
             France: F Gascony - Spain(sc)
@@ -23,9 +44,9 @@ class TestDATC_B(unittest.TestCase):
             I prefer that the move fails.
         """
         b = BoardBuilder()
-        f_gascony = b.move(b.france, UnitType.FLEET, b.gascony_c, b.spain_sc)
+        f_gascony = b.move(b.france, UnitType.FLEET, "Gascony", "Spain sc")
 
-        b.assertSuccess(f_gascony) # this should really be a fail but the current code doesn't check this properly
+        b.assertFail(f_gascony)
         b.moves_adjudicate(self)
 
     def test_6_b_4(self):
@@ -39,9 +60,9 @@ class TestDATC_B(unittest.TestCase):
             in Gasgony succeeds and the move of the Italian fleet fails.
         """
         b = BoardBuilder()
-        f_gascony = b.move(b.france, UnitType.FLEET, b.gascony_c, b.spain_nc)
-        f_marseilles = b.supportMove(b.france, UnitType.FLEET, b.marseilles_c, f_gascony, b.spain_nc)
-        f_western_mediterranean = b.move(b.italy, UnitType.FLEET, b.western_mediterranean, b.spain_sc)
+        f_gascony = b.move(b.france, UnitType.FLEET, "Gascony", "Spain nc")
+        f_marseilles = b.supportMove(b.france, UnitType.FLEET, "Marseilles", f_gascony, "Spain nc")
+        f_western_mediterranean = b.move(b.italy, UnitType.FLEET, "Western Mediterranean Sea", "Spain sc")
 
         b.assertSuccess(f_gascony)
         b.assertSuccess(f_marseilles)
@@ -58,9 +79,9 @@ class TestDATC_B(unittest.TestCase):
             Spain is invalid and the fleet in the Gulf of Lyon is not dislodged.
         """
         b = BoardBuilder()
-        f_marseilles = b.move(b.france, UnitType.FLEET, b.marseilles_c, b.gulf_of_lyon)
-        f_spain_nc = b.supportMove(b.france, UnitType.FLEET, b.spain_nc, f_marseilles, b.gulf_of_lyon)
-        f_gulf_of_lyon = b.hold(b.italy, UnitType.FLEET, b.gulf_of_lyon)
+        f_marseilles = b.move(b.france, UnitType.FLEET, "Marseilles", "Gulf of Lyon")
+        f_spain_nc = b.supportMove(b.france, UnitType.FLEET, "Spain nc", f_marseilles, "Gulf of Lyon")
+        f_gulf_of_lyon = b.hold(b.italy, UnitType.FLEET, "Gulf of Lyon")
 
         b.assertIllegal(f_spain_nc)
         b.assertFail(f_marseilles)
@@ -79,11 +100,11 @@ class TestDATC_B(unittest.TestCase):
             in the North Atlantic Ocean.
         """
         b = BoardBuilder()
-        f_north_atlantic_ocean = b.move(b.england, UnitType.FLEET, b.north_atlantic_ocean, b.mid_atlantic_ocean)
-        f_irish_sea = b.supportMove(b.england, UnitType.FLEET, b.irish_sea, f_north_atlantic_ocean, b.mid_atlantic_ocean)
-        f_mid_atlantic_ocean = b.hold(b.france, UnitType.FLEET, b.mid_atlantic_ocean)
-        f_spain_nc = b.supportHold(b.france, UnitType.FLEET, b.spain_nc, f_mid_atlantic_ocean)
-        f_gulf_of_lyon = b.move(b.italy, UnitType.FLEET, b.gulf_of_lyon, b.spain_sc)
+        f_north_atlantic_ocean = b.move(b.england, UnitType.FLEET, "North Atlantic Ocean", "Mid-Atlantic Ocean")
+        f_irish_sea = b.supportMove(b.england, UnitType.FLEET, "Irish Sea", f_north_atlantic_ocean, "Mid-Atlantic Ocean")
+        f_mid_atlantic_ocean = b.hold(b.france, UnitType.FLEET, "Mid-Atlantic Ocean")
+        f_spain_nc = b.supportHold(b.france, UnitType.FLEET, "Spain nc", f_mid_atlantic_ocean)
+        f_gulf_of_lyon = b.move(b.italy, UnitType.FLEET, "Gulf of Lyon", "Spain sc")
 
         b.assertFail(f_gulf_of_lyon)
         b.assertFail(f_spain_nc)
@@ -113,8 +134,8 @@ class TestDATC_B(unittest.TestCase):
             Both moves fail.
         """
         b = BoardBuilder()
-        f_bulgaria_sc = b.move(b.turkey, UnitType.FLEET, b.bulgaria_sc, b.constantinople_c)
-        f_constantinople = b.move(b.turkey, UnitType.FLEET, b.constantinople_c, b.bulgaria_ec)
+        f_bulgaria_sc = b.move(b.turkey, UnitType.FLEET, "Bulgaria sc", "Constantinople")
+        f_constantinople = b.move(b.turkey, UnitType.FLEET, "Constantinople", "Bulgaria ec")
         
         b.assertFail(f_bulgaria_sc)
         b.assertFail(f_constantinople)

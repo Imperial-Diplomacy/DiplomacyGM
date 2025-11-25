@@ -22,11 +22,11 @@ class TestDATC_J(unittest.TestCase):
         """
         b = BoardBuilder()
         b.inject_centers(b.france, 1)
-        b.army(b.paris, b.france)
-        b.army(b.picardy, b.france)
+        b.army("Paris", b.france)
+        b.army("Picardy", b.france)
         # technically the order parser will notice that france doesn't own a unit in gulf of lyon so the order 
         # wouldn't reach this point.
-        b.disband(b.france, b.gulf_of_lyon, b.picardy, b.paris)
+        b.disband(b.france, "Gulf of Lyon", "Picardy", "Paris")
         b.builds_adjudicate(self)
         b.assertBuildCount(-1)
 

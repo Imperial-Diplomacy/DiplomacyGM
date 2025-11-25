@@ -21,9 +21,11 @@ class TestDATC_I(unittest.TestCase):
             to this preference, the build in Warsaw fails, the build in Kiel succeeds and the build in Munich fails.
         """
         b = BoardBuilder()
-        b.inject_centers(b.germany, 1)
-        b.player_core(b.germany, b.warsaw, b.kiel, b.munich)
-        b.build(b.germany, (UnitType.ARMY, b.warsaw), (UnitType.ARMY, b.kiel), (UnitType.ARMY, b.munich))
+        b.army("Berlin", b.germany)
+        b.army("Silesia", b.germany)
+        b.army("Prussia", b.germany)
+        b.player_core(b.germany, "Warsaw", "Kiel", "Munich")
+        b.build(b.germany, (UnitType.ARMY, "Warsaw"), (UnitType.ARMY, "Kiel"), (UnitType.ARMY, "Munich"))
         b.assertBuildCount(1)
         b.builds_adjudicate(self)
         
@@ -36,9 +38,8 @@ class TestDATC_I(unittest.TestCase):
             I prefer that the build fails.
         """
         b = BoardBuilder()
-        b.inject_centers(b.russia, 1)
-        b.player_core(b.russia, b.moscow)
-        b.build(b.russia, (UnitType.FLEET, b.moscow))
+        b.player_core(b.russia, "Moscow")
+        b.build(b.russia, (UnitType.FLEET, "Moscow"))
         b.assertBuildCount(0)
         b.builds_adjudicate(self)
 
@@ -50,10 +51,9 @@ class TestDATC_I(unittest.TestCase):
             Build fails.
         """
         b = BoardBuilder()
-        b.inject_centers(b.germany, 2)
-        b.army(b.berlin, b.germany)
-        b.player_core(b.germany, b.berlin)
-        b.build(b.germany, (UnitType.ARMY, b.berlin))
+        b.player_core(b.germany, "Berlin")
+        b.army("Berlin", b.germany)
+        b.build(b.germany, (UnitType.ARMY, "Berlin"))
         b.assertBuildCount(0)
         b.builds_adjudicate(self)
 
@@ -61,15 +61,14 @@ class TestDATC_I(unittest.TestCase):
         """ 6.I.4. TEST CASE, BOTH COASTS MUST BE EMPTY FOR BUILDING
             If a sector is occupied on one coast, the other coast can not be used for building.
             Russia may build a unit and has a fleet in St Petersburg(sc). Russia orders the following:
-            Russia: Build A St Petersburg(nc)
+            Russia: Build F St Petersburg(nc)
             Build fails.
         """
         b = BoardBuilder()
-        b.inject_centers(b.russia, 2)
-        b.fleet(b.st_petersburg_sc, b.russia)
-        b.player_core(b.russia, b.st_petersburg)
-        b.build(b.russia, (UnitType.ARMY, b.st_petersburg_nc))
-        b.assertBuildCount(0)
+        b.fleet("St. Petersburg sc", b.russia)
+        b.player_core(b.russia, "St. Petersburg")
+        b.build(b.russia, (UnitType.FLEET, "St. Petersburg nc"))
+        b.assertBuildCount(1)
         b.builds_adjudicate(self)
 
     def test_6_i_5(self):
@@ -81,10 +80,10 @@ class TestDATC_I(unittest.TestCase):
             Build fails.
         """
         b = BoardBuilder()
-        b.inject_centers(b.germany, 1)
-        b.berlin.core = b.germany
-        b.berlin.owner = b.russia
-        b.build(b.germany, (UnitType.ARMY, b.berlin))
+        p_holland = b.board.get_province("Holland")
+        p_holland.owner = b.russia
+        p_holland.core = b.germany
+        b.build(b.germany, (UnitType.ARMY, "Berlin"))
         b.assertBuildCount(0)
         b.builds_adjudicate(self)
 
@@ -98,10 +97,10 @@ class TestDATC_I(unittest.TestCase):
             Build fails.
         """
         b = BoardBuilder()
-        b.inject_centers(b.germany, 1)
-        b.warsaw.owner = b.germany
-        b.warsaw.core = b.russia
-        b.build(b.germany, (UnitType.ARMY, b.warsaw))
+        p_warsaw = b.board.get_province("Warsaw")
+        p_warsaw.owner = b.germany
+        p_warsaw.core = b.russia
+        b.build(b.germany, (UnitType.ARMY, "Warsaw"))
         b.assertBuildCount(0)
         b.builds_adjudicate(self)
 
@@ -114,9 +113,8 @@ class TestDATC_I(unittest.TestCase):
             The second build should fail.
         """
         b = BoardBuilder()
-        b.inject_centers(b.russia, 2)
-        b.player_core(b.russia, b.moscow)
-        b.moscow.core = b.russia
-        b.build(b.russia, (UnitType.ARMY, b.moscow), (UnitType.ARMY, b.moscow))
+        b.player_core(b.russia, "Moscow")
+        b.board.get_province("Moscow").core = b.russia
+        b.build(b.russia, (UnitType.ARMY, "Moscow"), (UnitType.ARMY, "Moscow"))
         b.assertBuildCount(1)
         b.builds_adjudicate(self)

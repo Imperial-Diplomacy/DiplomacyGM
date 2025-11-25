@@ -1,0 +1,2176 @@
+Strait of Hormuz,Rustaq
+Strait of Hormuz,Muscat
+Strait of Hormuz,Bandar Abbas
+Strait of Hormuz,Gulf of Kutch
+Strait of Hormuz,Arabian Sea
+Strait of Hormuz,Qeshm
+Kara Sea,Laptev Sea
+Kara Sea,Arkhangelsk
+Kara Sea,Nenetia
+Kara Sea,Verkhoturye
+Kara Sea,Greenland Sea
+Kara Sea,Barents Sea
+Kara Sea,Spitsbergen
+Surat,Gulf of Khambhat
+Surat,Khandesh
+Surat,Bharuch
+Surat,Bijapur
+Kharkov,Moscow
+Kharkov,Sea of Azov
+Kharkov,Astrakhan
+Kharkov,Shapsugh
+Kharkov,Voronezh
+Kharkov,Kazan
+Kharkov,Kabardia
+Kharkov,Bakchisarai
+Kathiri,Sanaa
+Kathiri,Aden
+Kathiri,Riyadh
+Kathiri,Mahra
+Kathiri,Gulf of Tadoura
+Argentine Basin,Bahia Grande
+Argentine Basin,Rio Grande Rise
+Argentine Basin,Islas Malvinas
+Argentine Basin,Rio de la Plata
+Argentine Basin,Charrua
+Argentine Basin,Golfo San Jorge
+Ava,Kunming
+Ava,Mrauk
+Ava,Chiang Mai
+Ava,Yongchang
+Ava,Pegu
+Ava,Lan Na
+Ava,Bhamo
+Ava,Thaton
+Halmahera Sea,Papua
+Halmahera Sea,Sulu Sea
+Halmahera Sea,Manado
+Halmahera Sea,Zamboanga
+Halmahera Sea,Banda Sea
+Halmahera Sea,Dani
+Halmahera Sea,Solomon Islands
+Halmahera Sea,Celebes Sea
+Halmahera Sea,Philippine Sea
+Karankawa,Saltillo
+Karankawa,Chitimacha
+Karankawa,Gulf of Mexico
+Karankawa,Caddo
+Karankawa,Apache
+Mia,Chiquitano
+Mia,Chipaya
+Mia,Pano
+Mia,Quella Kollu
+Mia,Weenhayek
+Panama,Cartagena
+Panama,Colon Ridge
+Panama,Bogota
+Panama,Bay of Panama
+Panama,Honduras
+Yakutsk,Laptev Sea
+Yakutsk,Aldan
+Yakutsk,Buor Khaya Gulf
+Yakutsk,Yenisei
+Yakutsk,Amur
+Yakutsk,Taymyr
+Yakutsk,Buryatia
+Yakutsk,Sakha
+Dhambalin Shore,Hobyo
+Dhambalin Shore,Mahra
+Dhambalin Shore,Majeerteen
+Dhambalin Shore,Somali Basin
+Dhambalin Shore,Gulf of Tadoura
+Dhambalin Shore,Socotra
+Dhambalin Shore,Arabian Sea
+Pskov,Novgorod
+Pskov,Helsingfors
+Pskov,Narva
+Pskov,Riga
+Axura,Quechua
+Axura,Peru Basin
+Axura,Gulf of Guayaquil
+Axura,Wamanga
+Axura,Nazca Ridge
+Axura,Chuyma
+Koln,Hesse
+Koln,Utrecht
+Koln,Strasbourg
+Koln,Munster
+Koln,Luxembourg
+Koln,Liege
+Koln,Ghent
+Likatanai,Huarpe
+Likatanai,Roggeveen Basin
+Likatanai,Lule-Vilela
+Likatanai,Chipaya
+Likatanai,Guaqui
+Likatanai,Nazca Ridge
+Likatanai,Wichi
+Dinka,Gojjam
+Dinka,Oromo
+Dinka,Gondar
+Dinka,Sannar
+Dinka,Azande
+Dinka,Darfur
+Laptev Sea,Nenetia
+Laptev Sea,Chukchi Sea
+Laptev Sea,Verkhoturye
+Laptev Sea,Buor Khaya Gulf
+Laptev Sea,Taymyr
+Laptev Sea,Yamalia
+Sicily,Gulf of Gabes
+Sicily,Skerki Banks
+Sicily,Tyrrhenian Sea
+Sicily,Ionian Sea
+Tsuu T'ina,Assiniboine
+Tsuu T'ina,Gros Ventres
+Tsuu T'ina,Oji-Cree
+Tsuu T'ina,Tlicho
+Tsuu T'ina,Chipewyan
+Luzon Strait,Fokien Strait
+Luzon Strait,Bay of Tonkin
+Luzon Strait,Manila
+Luzon Strait,Formosa
+Luzon Strait,Okinawa Trough
+Luzon Strait,South China Sea
+Luzon Strait,Hainan
+Luzon Strait,Philippine Sea
+Portland,Estrie
+Portland,Massachusetts Bay
+Portland,Boston
+Portland,Mohawk
+Portland,Massachusetts
+Cape Khoe,Crozet Basin
+Cape Khoe,Southern Sea
+Cape Khoe,Zulu
+Cape Khoe,Mpondo
+Cape Khoe,Cape Basin
+Cape Khoe,Kalahari
+Cape Khoe,Delagoa
+Mogadishu,Mareeg
+Mogadishu,Hariin
+Mogadishu,Seychelles Sea
+Mogadishu,Swahili Coast
+Mogadishu,Baidoa
+Riau Sea,Malay
+Riau Sea,Bangka
+Riau Sea,Sambas
+Riau Sea,Natuna Sea
+Riau Sea,Sumatra
+Riau Sea,Malacca Strait
+Estrie,Ville Marie
+Estrie,Mohawk
+Estrie,Gaspe
+Estrie,Quebec
+Estrie,Massachusetts
+Saltillo,Zacatecas
+Saltillo,Gulf of Mexico
+Saltillo,Apache
+Saltillo,Mexico City
+Saltillo,Nueva Vizcaya
+Gulf of Khambhat,Goa
+Gulf of Khambhat,Ahmedabad
+Gulf of Khambhat,Lakshadweep Sea
+Gulf of Khambhat,Bharuch
+Gulf of Khambhat,Bijapur
+Maravi,Barotse
+Maravi,Mutapa
+Maravi,Makua
+Maravi,Comoros Sea
+Maravi,Beira
+Maravi,Bemba
+Mozambique Channel,Onilahy Bay
+Mozambique Channel,Mutapa
+Mozambique Channel,Crozet Basin
+Mozambique Channel,Zulu
+Mozambique Channel,Comoros Sea
+Mozambique Channel,Beira
+Mozambique Channel,Sakalava
+Mozambique Channel,Maha
+Mozambique Channel,Delagoa
+Rustaq,Sharqiya
+Rustaq,Duthar
+Rustaq,Muscat
+Rustaq,Riyadh
+Rustaq,Persian Gulf
+Rustaq,Qeshm
+Karakorum,Bratsk
+Karakorum,Krasnoyarsk
+Karakorum,Turfan
+Karakorum,Tumeds
+Karakorum,Ikh Khuree
+Karakorum,Gobi
+St. Augustine,Catawba
+St. Augustine,Gulf of Mexico
+St. Augustine,Muscogee
+St. Augustine,Santee
+St. Augustine,Florida Current
+Tadoussac,St. Lawrence
+Tadoussac,Atikamekw
+Tadoussac,Quebec
+Tadoussac,Papinachois
+Suakin,Tigre
+Suakin,Red Sea
+Suakin,Cairo
+Suakin,Mek'ele
+Suakin,Aksum
+Suakin,Beja
+Surabaya,Java Sea
+Surabaya,Timor Sea
+Surabaya,Tenggara
+Surabaya,Batavia
+Caribbean Sea,Cartagena
+Caribbean Sea,Mona Passage
+Caribbean Sea,Bay of Panama
+Caribbean Sea,Aves Ridge
+Caribbean Sea,Windward Passage
+Caribbean Sea,Cap-Haitien
+Caribbean Sea,Caracas
+Caribbean Sea,New Courland
+Moqoit,Buenos Aires
+Moqoit,Huarpe
+Moqoit,Qom
+Moqoit,Lule-Vilela
+Moqoit,Puelche
+Moqoit,Chana
+Moqoit,Minuane
+Moqoit,Rankulche
+Antarctic Basin,Crozet Basin
+Antarctic Basin,Southern Sea
+Antarctic Basin,Great Australian Bight
+Antarctic Basin,Aotearoa
+Antarctic Basin,Wurruk
+Poltava,Voronezh
+Poltava,Ochakiv
+Poltava,Kyiv
+Poltava,Bakchisarai
+St. Marcos Bay,Belem
+St. Marcos Bay,Ceara Rise
+St. Marcos Bay,Guiana Current
+St. Marcos Bay,Maranhao
+St. Marcos Bay,Mauritsstad
+St. Marcos Bay,Sao Sebastiao
+Dijon,Aquitaine
+Dijon,Strasbourg
+Dijon,Bern
+Dijon,Marseille
+Dijon,Paris
+Dijon,Savoy
+Burundi,Bunyoro
+Burundi,Kismayo
+Burundi,Turkana
+Burundi,Lunda-Luba
+Burundi,Bemba
+Burundi,Mongo
+Onilahy Bay,Crozet Basin
+Onilahy Bay,Bara
+Onilahy Bay,Fort-Dauphin
+Onilahy Bay,Maha
+Nantes,Normandy
+Nantes,Aquitaine
+Nantes,Iberian Current
+Nantes,Paris
+Nantes,English Channel
+Nantes,Bay of Biscay
+Sanaa,Tamaha
+Sanaa,Aden
+Sanaa,Riyadh
+Sanaa,Red Sea
+Sanaa,Gulf of Tadoura
+Belem,Karib
+Belem,Ceara Rise
+Belem,Amazon
+Belem,Maranhao
+Belem,Kalina
+Belem,Je
+Soyo,Malanje
+Soyo,Walvis Ridge
+Soyo,Mpemba
+Soyo,Mbanza
+Soyo,Luanda
+Soyo,Angola Basin
+Kunming,Yongchang
+Kunming,Chengdu
+Kunming,Guangxi
+Kunming,Lan Na
+Kunming,Huguang
+Kunming,Rinpungpa
+Kunming,Hanoi
+Kunming,Bhamo
+Gothenburg,Christiania
+Gothenburg,Skagerrak
+Gothenburg,Scania
+Gothenburg,Stockholm
+Caspian Sea,Bayuly
+Caspian Sea,Derbent
+Caspian Sea,Tabriz
+Caspian Sea,Turkmenistan
+Caspian Sea,Astrakhan
+Caspian Sea,Tehran
+Caspian Sea,Kalmykia
+Bayuly,Turkmenistan
+Bayuly,Astrakhan
+Bayuly,Alimuly
+Bayuly,Khiva
+Bayuly,Kazan
+Cartagena,Orinoco
+Cartagena,Bogota
+Cartagena,Bay of Panama
+Cartagena,Caracas
+Oxford,York
+Oxford,Wales
+Oxford,Plymouth
+Oxford,North Sea
+Oxford,London
+Karelia,Arkhangelsk
+Karelia,Kola
+Karelia,Novgorod
+Karelia,Helsingfors
+Tamaha,Riyadh
+Tamaha,Red Sea
+Tamaha,Mecca
+Buenos Aires,Puelche
+Buenos Aires,Rio de la Plata
+Buenos Aires,Chana
+Buenos Aires,Teushen
+Buenos Aires,Charrua
+Gulf of Gabes,Skerki Banks
+Gulf of Gabes,Ionian Sea
+Gulf of Gabes,Tunis
+Gulf of Gabes,Tripoli
+Florence,Ligurian Sea
+Florence,Venice
+Florence,Rome
+Florence,Milan
+Florence,Savoy
+Ha Tinh,Bay of Tonkin
+Ha Tinh,Phan Rang
+Ha Tinh,Hanoi
+Aden,Gulf of Tadoura
+Qiqihar,Hailanpao
+Qiqihar,Outer Mongolia
+Qiqihar,Amur
+Qiqihar,Shengjing
+Qiqihar,Ikh Khuree
+Qiqihar,Hohhot
+Qiqihar,Buryatia
+Banat,Slavonia
+Banat,Constantinople
+Banat,Targoviste
+Banat,Alfold
+Banat,Sarajevo
+Kanem-Bornu,Wadai
+Kanem-Bornu,Hausa States
+Kanem-Bornu,Agadez
+Kanem-Bornu,Mandara
+Kanem-Bornu,Darfur
+St. Helena,Cape Basin
+St. Helena,Angola Basin
+Parmurbo,Karib
+Parmurbo,Orinoco
+Parmurbo,Brokopondo
+Parmurbo,Gulf of Paria
+Normandy,Reims
+Normandy,Paris
+Normandy,English Channel
+Normandy,Ghent
+Strait of Tartary,Haishenwai
+Strait of Tartary,Sea of Okhotsk
+Strait of Tartary,Nivikhs
+Strait of Tartary,Ainu
+Strait of Tartary,Sahaliyan
+Strait of Tartary,Oriental Sea
+Strait of Tartary,Jilin
+Strait of Tartary,Kuril Sea
+Slavonia,Alfold
+Slavonia,Sarajevo
+Slavonia,Split
+Slavonia,Pressburg
+Slavonia,Trieste
+Huarpe,Roggeveen Basin
+Huarpe,Lule-Vilela
+Huarpe,Ruka Pillan
+Huarpe,Rankulche
+Japura,Karib
+Japura,Madeira
+Japura,Amazon
+Japura,Shipibo
+Japura,Huitoto
+Smolensk,Kursk
+Smolensk,Novgorod
+Smolensk,Kyiv
+Smolensk,Wilno
+Smolensk,Riga
+Bahia,Nokugo
+Bahia,Minas Gerais
+Bahia,Salvador
+Bahia,Mauritsstad
+Bahia,Vitoria
+Bahia,Goias
+Assiniboine,Crow
+Assiniboine,Winipek
+Assiniboine,Gros Ventres
+Assiniboine,Oji-Cree
+Assiniboine,Shoshone
+Assiniboine,Lakota
+Itelmen,Kereks
+Itelmen,Sea of Okhotsk
+Itelmen,Kuril Sea
+Itelmen,Koryaks
+Freiburg,Strasbourg
+Freiburg,Bern
+Freiburg,Innsbruck
+Freiburg,Bavaria
+Freiburg,Chur
+Freiburg,Stuttgart
+Freiburg,Nuremberg
+Norwegian Sea,Iceland Basin
+Norwegian Sea,Trondheim
+Norwegian Sea,North Sea
+Norwegian Sea,Vestland
+Norwegian Sea,Greenland Sea
+Norwegian Sea,Barents Sea
+Norwegian Sea,Spitsbergen
+Norwegian Sea,Christiania
+Norwegian Sea,Finnmark
+Arkhangelsk,Nenetia
+Arkhangelsk,Moscow
+Arkhangelsk,Kola
+Arkhangelsk,Novgorod
+Arkhangelsk,Barents Sea
+Qom,Mbya
+Qom,Lule-Vilela
+Qom,Ayoreo
+Qom,Minuane
+Qom,Wichi
+Qom,Chiripa
+Hudson Strait,Labrador Sea
+Hudson Strait,Kuujjuaq
+Hudson Strait,Quaqtaq
+Hudson Strait,Iqaluit
+Hudson Strait,Arctic Ocean
+Hudson Strait,Nunavut
+Hudson Strait,Hudson Bay
+Hudson Strait,Salliq
+Imerina,Crozet Basin
+Imerina,Bara
+Imerina,Seychelles Sea
+Imerina,Fort-Dauphin
+Imerina,Mascarene Sea
+Imerina,Sakalava
+Ligurian Sea,Corse
+Ligurian Sea,Marseille
+Ligurian Sea,Rome
+Ligurian Sea,Tyrrhenian Sea
+Ligurian Sea,Savoy
+Ligurian Sea,Gulf of Lyon
+Nenetia,Moscow
+Nenetia,Verkhoturye
+Nenetia,Kazan
+Antilles Current,Bahamas
+Antilles Current,Mona Passage
+Antilles Current,St. Domingo
+Antilles Current,Windward Passage
+Antilles Current,Puerto Rico
+Antilles Current,Cap-Haitien
+Antilles Current,Bahamas Channel
+Antilles Current,Leeward Sea
+Antilles Current,Sargasso Sea
+Roggeveen Basin,Peru Basin
+Roggeveen Basin,Ruka Pillan
+Roggeveen Basin,Tucapel
+Roggeveen Basin,Nazca Ridge
+Roggeveen Basin,Chiloe
+Derbent,Tabriz
+Derbent,Kalmykia
+Derbent,Syunik
+Derbent,Tbilisi
+Derbent,Kabardia
+Chitimacha,Gulf of Mexico
+Chitimacha,Muscogee
+Chitimacha,Caddo
+Naskapi,Michikamau
+Naskapi,Enticosty
+Naskapi,Labrador Sea
+Naskapi,Kuujjuaq
+Naskapi,Strait of Belle Isle
+Naskapi,Papinachois
+Michikamau,Innus
+Michikamau,Kuujjuaq
+Michikamau,Papinachois
+Quechua,Madeira
+Quechua,Lima
+Quechua,Wamanga
+Quechua,Pano
+Quechua,Chuyma
+Quechua,Shipibo
+Crow,Arapaho
+Crow,Gosiute
+Crow,Shoshone
+Crow,Lakota
+Tupiniquim,Mbya
+Tupiniquim,Rio Grande Rise
+Tupiniquim,Laklano
+Tupiniquim,Ofaye
+Tupiniquim,Kahngag
+Tupiniquim,Xeta
+Tupiniquim,Sao Paulo
+Beizhili Sea,Yellow Sea
+Beizhili Sea,Pyeongyang
+Beizhili Sea,Peking
+Beizhili Sea,Shengjing
+Beizhili Sea,Zhili
+Navarre,Madrid
+Navarre,Aquitaine
+Navarre,Bay of Biscay
+Navarre,Barcelona
+Navarre,Galicia
+Barotse,Mutapa
+Barotse,Bemba
+Barotse,Matamba
+Barotse,Kalahari
+Iceland Basin,Ireland
+Iceland Basin,North Sea
+Iceland Basin,Irish Sea
+Iceland Basin,Greenland Sea
+Iceland Basin,Edinburgh
+Iceland Basin,Rockall Rise
+Iceland Basin,Iceland
+Saxony,Hesse
+Saxony,Bremen
+Saxony,Silesia
+Saxony,Vienna
+Saxony,Brandenburg
+Saxony,Nuremberg
+St. Lawrence,Enticosty
+St. Lawrence,Gaspe
+St. Lawrence,Quebec
+St. Lawrence,Papinachois
+St. Lawrence,Cap-aux-Meules
+Constantinople,Targoviste
+Constantinople,Sarajevo
+Constantinople,Ochakiv
+Constantinople,Aegean Sea
+Constantinople,Smyrna
+Constantinople,Anatolia
+Constantinople,Black Sea
+Constantinople,Salonica
+Peru Basin,Gulf of Guayaquil
+Peru Basin,Colon Ridge
+Peru Basin,Galapagos
+Peru Basin,Nazca Ridge
+Hesse,Bremen
+Hesse,Strasbourg
+Hesse,Munster
+Hesse,Stuttgart
+Hesse,Nuremberg
+Cree,Algonquin
+Cree,Innus
+Cree,Oji-Cree
+Cree,Atikamekw
+Cree,Anishinabek
+Cree,Michif Piyii
+Cree,Montagnais
+Cree,Hudson Bay
+Cree,Papinachois
+Karib,Orinoco
+Karib,Brokopondo
+Karib,Amazon
+Karib,Kalina
+Karib,Huitoto
+Sardinia,Skerki Banks
+Sardinia,Strait of Bonifacio
+Sardinia,Tyrrhenian Sea
+Sardinia,Algerian Basin
+Khuzestan,Isfahan
+Khuzestan,Baghdad
+Khuzestan,Van
+Khuzestan,Persian Gulf
+Guanabara Bay,Rio Grande Rise
+Guanabara Bay,Salvador
+Guanabara Bay,Todos os Santos Bay
+Guanabara Bay,Rio de Janeiro
+Guanabara Bay,Sao Paulo
+Occitania,Aquitaine
+Occitania,Marseille
+Occitania,Barcelona
+Occitania,Gulf of Lyon
+Viscaino Bay,Berlanga Ridge
+Viscaino Bay,Yokuts
+Viscaino Bay,Akwa'ala
+Viscaino Bay,Sea of Cortez
+Viscaino Bay,Chemehuevi
+Viscaino Bay,North Equatorial Current
+Moscow,Kursk
+Moscow,Novgorod
+Moscow,Voronezh
+Moscow,Kazan
+Sharqiya,Duthar
+Sharqiya,Muscat
+Sharqiya,Arabian Sea
+Winipek,Oji-Cree
+Winipek,Dakota
+Winipek,Lakota
+Winipek,Ojibwe
+Malanje,Mpemba
+Malanje,Luanda
+Malanje,Matamba
+Madrid,Gibraltar
+Madrid,Merida
+Madrid,Valencia
+Madrid,Barcelona
+Madrid,Seville
+Madrid,Galicia
+Chukchi Sea,Buor Khaya Gulf
+Chukchi Sea,Kvichak Bay
+Chukchi Sea,Yupik
+Chukchi Sea,Aleuts
+Chukchi Sea,Chukchis
+Chukchi Sea,Arctic Ocean
+Chukchi Sea,Karaginskiy Gulf
+Chukchi Sea,North Equatorial Current
+Chukchi Sea,Nome
+Mutapa,Beira
+Mutapa,Kalahari
+Mutapa,Delagoa
+Rabat,Sea of Azores
+Rabat,Tangier
+Rabat,Marrakech
+Rabat,Anfa
+Rabat,Madeira Plain
+Rabat,Tafilalt
+Bremen,Lubeck
+Bremen,Kiel
+Bremen,Munster
+Bremen,Wadden Sea
+Bremen,Brandenburg
+Senegal Estuary,The Gambia
+Senegal Estuary,Bay of Nouadhibou
+Senegal Estuary,Sahrawi
+Senegal Estuary,Serra Leoa Rise
+Senegal Estuary,Ndakaaru
+Senegal Estuary,St. Louis
+Senegal Estuary,Arguin
+Bratsk,Krasnoyarsk
+Bratsk,Yenisei
+Bratsk,Buryatia
+Fokien Strait,Hokkien
+Fokien Strait,East China Sea
+Fokien Strait,Formosa
+Fokien Strait,Macao
+Fokien Strait,Okinawa Trough
+Fokien Strait,Hainan
+Venad,Gulf of Mannar
+Venad,Cochin
+Venad,Madurai
+Venad,Laccadive Plateau
+Hokkien,Chengdu
+Hokkien,East China Sea
+Hokkien,Macao
+Hokkien,Huguang
+Hokkien,Nanjing
+Sea of Azores,Cadiz Bay
+Sea of Azores,Iberian Current
+Sea of Azores,Strait of Gibraltar
+Sea of Azores,Azores
+Sea of Azores,Lisbon
+Sea of Azores,Tangier
+Sea of Azores,Porto
+Sea of Azores,Madeira Plain
+Verkhoturye,Alimuly
+Verkhoturye,Yamalia
+Verkhoturye,Kazan
+Mbya,Rio Grande Rise
+Mbya,Laklano
+Mbya,Minuane
+Mbya,Xeta
+Mbya,Chiripa
+Mbya,Charrua
+Nakhon Si,Malay
+Nakhon Si,Natuna Sea
+Nakhon Si,Gulf of Siam
+Nakhon Si,Tavoy
+Nakhon Si,Malacca Strait
+Nakhon Si,Kra
+Heilongjiang,Hailanpao
+Heilongjiang,Haishenwai
+Heilongjiang,Nivikhs
+Heilongjiang,Jilin
+Bay of Tonkin,Phan Rang
+Bay of Tonkin,South China Sea
+Bay of Tonkin,Hainan
+Bay of Tonkin,Hanoi
+Hobyo,Mareeg
+Hobyo,Galla
+Hobyo,Majeerteen
+Hobyo,Somali Basin
+Duthar,Riyadh
+Duthar,Mahra
+Duthar,Arabian Sea
+Bahia Grande,Islas Malvinas
+Bahia Grande,Tehuelche
+Bahia Grande,Kawesqar
+Bahia Grande,Golfo San Jorge
+Paulatuk,Tlicho
+Paulatuk,Sahtu
+Paulatuk,Arctic Ocean
+Paulatuk,Nunavut
+Paulatuk,Chipewyan
+Paulatuk,Tanana
+Paulatuk,Koyukon
+Gulf of Mannar,Andhra Coast
+Gulf of Mannar,Maldives
+Gulf of Mannar,Ceylon
+Gulf of Mannar,Gulf of Ceylon
+Gulf of Mannar,Palyakkar
+Gulf of Mannar,Madurai
+Gulf of Mannar,Laccadive Plateau
+Geba,The Gambia
+Geba,Mali
+Geba,Jacob Fort
+Geba,Niani
+Geba,Fulani
+Geba,Serra Leoa Rise
+Geba,Ndakaaru
+Utrecht,Amsterdam
+Utrecht,Munster
+Utrecht,Wadden Sea
+Utrecht,Ghent
+Hailanpao,Haishenwai
+Hailanpao,Nivikhs
+Hailanpao,Amur
+Hailanpao,Shengjing
+Tsushima,Yellow Sea
+Tsushima,Kyushu
+Tsushima,Pyeongyang
+Tsushima,Fusan
+Tsushima,Oriental Sea
+Tsushima,Kyoto
+Logone,Banda
+Logone,Mandara
+Logone,Azande
+Logone,Darfur
+York,Wales
+York,North Sea
+York,Edinburgh
+Manden,Cormantin
+Manden,Ouagadougou
+Manden,Niani
+Manden,Serra Leoa Rise
+Manden,Gold Coast
+Gulf of Guinea,Fernando Po
+Gulf of Guinea,Benin
+Gulf of Guinea,Great Ardra
+Gulf of Guinea,Sao Tome
+Gulf of Guinea,Notse
+Gulf of Guinea,Gold Coast
+Gulf of Guinea,Lopez Bay
+Gulf of Guinea,Loango
+Orinoco,Bogota
+Orinoco,Caracas
+Orinoco,Gulf of Paria
+Orinoco,Huitoto
+Adriatic Sea,Strait of Otranto
+Adriatic Sea,Naples
+Adriatic Sea,Venice
+Adriatic Sea,Rome
+Adriatic Sea,Split
+Adriatic Sea,Trieste
+Catawba,Muscogee
+Catawba,Cherokee
+Catawba,Tutelo
+Catawba,Gulf Stream
+Catawba,Santee
+Catawba,Jamestown
+Bahamas,Windward Passage
+Bahamas,Florida Current
+Bahamas,Bahamas Channel
+Bahamas,Sargasso Sea
+Ceara Rise,Guiana Current
+Ceara Rise,Kalina
+Ceara Rise,Cayenne
+Wadai,Hawwara
+Wadai,Zaghawa
+Wadai,Darfur
+Guatemala Basin,Berlanga Ridge
+Guatemala Basin,Colon Ridge
+Guatemala Basin,Galapagos
+Guatemala Basin,Yucatan
+Guatemala Basin,Honduras
+Guatemala Basin,Mexico City
+Chinook,Miwok
+Chinook,Gros Ventres
+Chinook,Cascadia Basin
+Chinook,Gulf of Alakshak
+Chinook,Kwakiutl
+Chinook,Chilcotin
+Kursk,Novgorod
+Kursk,Voronezh
+Kursk,Kyiv
+Rio Grande Rise,Laklano
+Rio Grande Rise,Sao Paulo
+Rio Grande Rise,Charrua
+Wales,Plymouth
+Wales,Irish Sea
+Wales,Edinburgh
+Penneru,Masulipatnam
+Penneru,Madras
+Penneru,Andhra Coast
+Penneru,Raichur
+Penneru,Palyakkar
+Penneru,Ballari
+Algonquin,Atikamekw
+Algonquin,Anishinabek
+Algonquin,Ville Marie
+Algonquin,Quebec
+Gibraltar,Cadiz Bay
+Gibraltar,Strait of Gibraltar
+Gibraltar,Valencia
+Gibraltar,Seville
+Papua,Banda Sea
+Papua,Dani
+Papua,Coral Sea
+Tabriz,Tehran
+Tabriz,Kurdistan
+Tabriz,Syunik
+Frederikshaab,Labrador Sea
+Frederikshaab,Godthaab
+Frederikshaab,Brattahlid
+Lubeck,Kiel
+Lubeck,Copenhagen
+Lubeck,The Sound
+Lubeck,Brandenburg
+The Gambia,Jacob Fort
+The Gambia,Serra Leoa Rise
+The Gambia,Ndakaaru
+Turkmenistan,Tehran
+Turkmenistan,Khiva
+Turkmenistan,Bukhara
+Miwok,Yokuts
+Miwok,Gulf of Alakshak
+Miwok,North Equatorial Current
+Miwok,Washo
+Mareeg,Galla
+Mareeg,Hariin
+Mareeg,Bunyoro
+Mareeg,Seychelles Sea
+Mareeg,Somali Basin
+Mareeg,Sidamo
+Masulipatnam,Andhra Coast
+Masulipatnam,Raichur
+Masulipatnam,Rajamahendri
+Shaanxi,Chengdu
+Shaanxi,Lanzhou
+Shaanxi,Peking
+Shaanxi,Nanjing
+Shaanxi,Hohhot
+Lule-Vilela,Wichi
+Zacatecas,Sea of Cortez
+Zacatecas,Mexico City
+Zacatecas,Nueva Vizcaya
+Cadiz Bay,Strait of Gibraltar
+Cadiz Bay,Lisbon
+Cadiz Bay,Seville
+Cadiz Bay,Algarve
+Targoviste,Transylvania
+Targoviste,Alfold
+Targoviste,Jassy
+Targoviste,Ochakiv
+Gulf of Guayaquil,Colon Ridge
+Gulf of Guayaquil,Lima
+Gulf of Guayaquil,Quito
+Gulf of Guayaquil,Wamanga
+Tichitt,Idjil
+Tichitt,Regeibat
+Tichitt,Tukulor
+Tichitt,Sahrawi
+Tichitt,Oualata
+Tichitt,Arguin
+New Holland,The Outback
+New Holland,Great Australian Bight
+New Holland,Timor Sea
+New Holland,Gulumoerrgin
+New Holland,Wurruk
+Massachusetts Bay,Gulf Stream
+Massachusetts Bay,Port Royal
+Massachusetts Bay,St. Marguerite Baie
+Massachusetts Bay,Boston
+Massachusetts Bay,Bermuda
+Massachusetts Bay,Delaware Bay
+Massachusetts Bay,Massachusetts
+Sulu Sea,Zamboanga
+Sulu Sea,Natuna Sea
+Sulu Sea,Palawan
+Sulu Sea,Celebes Sea
+Sulu Sea,Cebu
+Sulu Sea,Kota Batu
+Isfahan,Tehran
+Isfahan,Van
+Isfahan,Kurdistan
+Isfahan,Bandar Abbas
+Isfahan,Persian Gulf
+Isfahan,Herat
+Mali,Boussa
+Mali,Ouagadougou
+Mali,Niani
+Mali,Tukulor
+Mali,Fulani
+Mali,Timbuktu
+Mali,Oualata
+Aquitaine,Marseille
+Aquitaine,Paris
+Aquitaine,Bay of Biscay
+Aquitaine,Barcelona
+Strasbourg,Bern
+Strasbourg,Reims
+Strasbourg,Paris
+Strasbourg,Luxembourg
+Strasbourg,Stuttgart
+Kiel,Copenhagen
+Kiel,Wadden Sea
+Kiel,Jutland
+Kiel,Skagerrak
+Yellow Sea,East China Sea
+Yellow Sea,Hanyang
+Yellow Sea,Kyushu
+Yellow Sea,Pyeongyang
+Yellow Sea,Peking
+Yellow Sea,Fusan
+Yellow Sea,Nanjing
+Trondheim,Vestland
+Trondheim,Jamtland
+Trondheim,Christiania
+Trondheim,Finnmark
+Madras,Andhra Coast
+Madras,Palyakkar
+Java Sea,Bangka
+Java Sea,Sumatra
+Java Sea,Banjarmasin
+Java Sea,Flores Sea
+Java Sea,Makassar
+Java Sea,Celebes Sea
+Java Sea,Tenggara
+Java Sea,Batavia
+Muscat,Arabian Sea
+Islas Malvinas,Golfo San Jorge
+Crozet Basin,Southern Sea
+Crozet Basin,Zulu
+Crozet Basin,Mpondo
+Crozet Basin,Fort-Dauphin
+Crozet Basin,Mascarene Sea
+Crozet Basin,Reunion
+Manado,Muna
+Manado,Banda Sea
+Manado,Flores Sea
+Manado,Makassar
+Manado,Celebes Sea
+Kola,Helsingfors
+Kola,Barents Sea
+Kola,Umea
+Kola,Finnmark
+Berlanga Ridge,Hawai'i
+Berlanga Ridge,Sea of Cortez
+Berlanga Ridge,North Equatorial Current
+Berlanga Ridge,Mexico City
+Yarkand,Tsangpa
+Yarkand,Turfan
+Yarkand,Uighuristan
+Yarkand,Hissar
+Yarkand,Ghor
+Yarkand,Uzgen
+Yarkand,Turkestan
+Yarkand,Zaisan
+Yarkand,Kabul
+Colon Ridge,Bogota
+Colon Ridge,Quito
+Colon Ridge,Galapagos
+Colon Ridge,Honduras
+Courland,Konigsberg
+Courland,Warsaw
+Courland,Wilno
+Courland,Gulf of Gdansk
+Courland,Baltic Sea
+Courland,Gulf of Riga
+Zamboanga,Cebu
+Zamboanga,Philippine Sea
+Puelche,Teushen
+Puelche,Tucapel
+Puelche,Rankulche
+Ireland,Irish Sea
+Ireland,Rockall Rise
+Innus,Kuujjuaq
+Innus,Quaqtaq
+Innus,Montagnais
+Innus,Papinachois
+Kereks,Evens
+Kereks,Sea of Okhotsk
+Kereks,Chukchis
+Kereks,Karaginskiy Gulf
+Kereks,Koryaks
+Evens,Aldan
+Evens,Sea of Okhotsk
+Evens,Nivikhs
+Evens,Chukchis
+Evens,Yukaghir
+Evens,Sakha
+Mrauk,Kolkata
+Mrauk,Pegu
+Mrauk,Sasaram
+Mrauk,Bay of Bengal
+Mrauk,Bhamo
+Galla,Majeerteen
+Galla,Warsangali
+Galla,Aussa
+Galla,Sidamo
+Gulf of Mexico,Muscogee
+Gulf of Mexico,Yucatan Channel
+Gulf of Mexico,Florida Current
+Gulf of Mexico,Yucatan
+Gulf of Mexico,Havana
+Gulf of Mexico,Bahamas Channel
+Gulf of Mexico,Mexico City
+Strait of Otranto,Naples
+Strait of Otranto,Ionian Sea
+Strait of Otranto,Sarajevo
+Strait of Otranto,Split
+Strait of Otranto,Salonica
+Malay,Natuna Sea
+Malay,Malacca Strait
+Bern,Chur
+Bern,Savoy
+Muscogee,Caddo
+Muscogee,Cherokee
+Chiang Mai,Lan Na
+Chiang Mai,Ayutthaya
+Chiang Mai,Lan Sang
+Chiang Mai,Tavoy
+Chiang Mai,Thaton
+Iberian Current,Azores
+Iberian Current,English Channel
+Iberian Current,Bay of Biscay
+Iberian Current,Porto
+Iberian Current,Rockall Rise
+Iberian Current,Galicia
+Brokopondo,Guiana Current
+Brokopondo,Kalina
+Brokopondo,Gulf of Paria
+Brokopondo,Cayenne
+Reims,Paris
+Reims,Luxembourg
+Reims,Liege
+Reims,Ghent
+Manila,South China Sea
+Manila,Mindoro
+Manila,Cebu
+Manila,Philippine Sea
+Plymouth,Irish Sea
+Plymouth,English Channel
+Plymouth,Rockall Rise
+Plymouth,London
+Hariin,Bunyoro
+Hariin,Baidoa
+Yongchang,Bhamo
+Copenhagen,Jutland
+Copenhagen,Skagerrak
+Copenhagen,Scania
+Copenhagen,The Sound
+Nokugo,Madeira
+Nokugo,Chiquitano
+Nokugo,Minas Gerais
+Nokugo,Ofaye
+Nokugo,Kahngag
+Nokugo,Goias
+Oran,Strait of Gibraltar
+Oran,Tangier
+Oran,Alboran Sea
+Oran,Tunis
+Oran,Chaamba
+Chengdu,Lanzhou
+Chengdu,Huguang
+Chengdu,Rinpungpa
+Chengdu,Nanjing
+Chengdu,Xining
+Naples,Rome
+Naples,Tyrrhenian Sea
+Naples,Ionian Sea
+Krasnoyarsk,Yenisei
+Krasnoyarsk,Tumeds
+Krasnoyarsk,Zaisan
+The Outback,Gulumoerrgin
+The Outback,Wurruk
+Makua,Kismayo
+Makua,Comoros Sea
+Makua,Zanzibar
+Makua,Bemba
+Madeira,Chiquitano
+Madeira,Amazon
+Madeira,Pano
+Madeira,Shipibo
+Madeira,Goias
+Sea of Azov,Shapsugh
+Sea of Azov,Black Sea
+Sea of Azov,Tbilisi
+Sea of Azov,Trebizond
+Sea of Azov,Bakchisarai
+Gros Ventres,Tlicho
+Gros Ventres,Sekani
+Gros Ventres,Shoshone
+Gros Ventres,Chilcotin
+Baghdad,Van
+Baghdad,Al-Hajarah
+Baghdad,Persian Gulf
+Baghdad,Najd
+Baghdad,Khalidi
+Baghdad,Trebizond
+Astrakhan,Kalmykia
+Astrakhan,Kazan
+Astrakhan,Kabardia
+Gojjam,Oromo
+Gojjam,Debre Birhan
+Gojjam,Mek'ele
+Gojjam,Aksum
+Gojjam,Gondar
+Novgorod,Riga
+Bogota,Quito
+Bogota,Huitoto
+Riyadh,Mahra
+Riyadh,Mecca
+Riyadh,Persian Gulf
+Riyadh,Najd
+Riyadh,Khalidi
+Orissa,Kolkata
+Orissa,Andhra Coast
+Orissa,Gondwana
+Orissa,Rajamahendri
+Orissa,Bay of Bengal
+East China Sea,Okinawa
+East China Sea,Kyushu
+East China Sea,Okinawa Trough
+East China Sea,Nanjing
+East China Sea,Amami
+Boussa,Aja
+Boussa,Ouagadougou
+Boussa,Hausa States
+Boussa,Agadez
+Boussa,Timbuktu
+Hawwara,Tigre
+Hawwara,Zaghawa
+Hawwara,Sannar
+Hawwara,Beja
+Hawwara,Darfur
+Guiana Current,St. Lucia
+Guiana Current,Barbados
+Guiana Current,Antigua
+Guiana Current,Gulf of Paria
+Guiana Current,Cayenne
+Guiana Current,Guadeloupe
+Guiana Current,Leeward Sea
+North Sea,Wadden Sea
+North Sea,Edinburgh
+North Sea,Christiania
+North Sea,Skagerrak
+North Sea,London
+North Sea,Southern Bight
+Rio de la Plata,Teushen
+Rio de la Plata,Charrua
+Rio de la Plata,Golfo San Jorge
+Caddo,Cherokee
+Caddo,Arapaho
+Caddo,Missouri
+Caddo,Kanza
+Caddo,Apache
+Cherokee,Tutelo
+Cherokee,Illinois
+Cherokee,Missouri
+Cherokee,Erie
+Outer Mongolia,Ikh Khuree
+Outer Mongolia,Hohhot
+Outer Mongolia,Gobi
+Skerki Banks,Tyrrhenian Sea
+Skerki Banks,Tunis
+Skerki Banks,Algerian Basin
+Corse,Strait of Bonifacio
+Corse,Tyrrhenian Sea
+Corse,Gulf of Lyon
+Gdansk,Konigsberg
+Gdansk,Krakow
+Gdansk,Warsaw
+Gdansk,Gulf of Gdansk
+Gdansk,Baltic Sea
+Gdansk,Brandenburg
+Chiquitano,Ayoreo
+Chiquitano,Pano
+Chiquitano,Ofaye
+Chiquitano,Weenhayek
+Tehran,Kurdistan
+Tehran,Herat
+Tehran,Bukhara
+Tutelo,Jamestown
+Tutelo,Maryland
+Tutelo,Erie
+Enticosty,Strait of Belle Isle
+Enticosty,Papinachois
+Enticosty,Cap-aux-Meules
+Lima,Quito
+Lima,Wamanga
+Lima,Shipibo
+Gulf Stream,Bermuda
+Gulf Stream,Santee
+Gulf Stream,Florida Current
+Gulf Stream,Delaware Bay
+Gulf Stream,Jamestown
+Gulf Stream,Maryland
+Gulf Stream,Sargasso Sea
+Tigre,Aksum
+Tigre,Sannar
+Tigre,Beja
+Chana,Minuane
+Chana,Charrua
+Okinawa,Okinawa Trough
+Okinawa,Amami
+Okinawa,Kuroshio Current
+Konigsberg,Warsaw
+Konigsberg,Gulf of Gdansk
+Shapsugh,Tbilisi
+Shapsugh,Kabardia
+Venice,Rome
+Venice,Milan
+Venice,Innsbruck
+Venice,Chur
+Venice,Trieste
+Tsangpa,Uighuristan
+Tsangpa,Rinpungpa
+Tsangpa,Xining
+Tsangpa,Kabul
+Balkhash,Turkestan
+Balkhash,Zaisan
+Phan Rang,South China Sea
+Phan Rang,Lan Sang
+Phan Rang,Hanoi
+Phan Rang,Cambodia
+Irish Sea,Edinburgh
+Irish Sea,Rockall Rise
+Kolkata,Sasaram
+Kolkata,Gondwana
+Kolkata,Bay of Bengal
+Strait of Gibraltar,Tangier
+Strait of Gibraltar,Valencia
+Strait of Gibraltar,Alboran Sea
+Fernando Po,Benin
+Fernando Po,Nri
+Fernando Po,Loango
+Hanyang,Pyeongyang
+Hanyang,Fusan
+Port Royal,St. Marguerite Baie
+Port Royal,Gaspe
+Port Royal,Massachusetts
+Port Royal,Cap-aux-Meules
+Formosa,Okinawa Trough
+Amsterdam,Wadden Sea
+Amsterdam,Ghent
+Amsterdam,Southern Bight
+Bara,Fort-Dauphin
+Bara,Sakalava
+Bara,Maha
+St. Marguerite Baie,Strait of Belle Isle
+St. Marguerite Baie,Cap-aux-Meules
+Helsingfors,Umea
+Helsingfors,Gulf of Bothnia
+Helsingfors,Narva
+Helsingfors,Baltic Sea
+Helsingfors,Gulf of Riga
+Walvis Ridge,Cape Basin
+Walvis Ridge,Luanda
+Walvis Ridge,Benguela
+Walvis Ridge,Angola Basin
+Walvis Ridge,Kalahari
+Zaghawa,Cairo
+Zaghawa,Jalo
+Zaghawa,Hoggar
+Zaghawa,Beja
+Aldan,Nivikhs
+Aldan,Amur
+Aldan,Sakha
+Lanzhou,Turfan
+Lanzhou,Uighuristan
+Lanzhou,Hohhot
+Lanzhou,Gobi
+Lanzhou,Xining
+Bunyoro,Turkana
+Bunyoro,Oromo
+Bunyoro,Budu
+Bunyoro,Baidoa
+Bunyoro,Sidamo
+Bunyoro,Mongo
+Bunyoro,Azande
+Connecticut,Boston
+Connecticut,Mohawk
+Connecticut,Delaware Bay
+Connecticut,New Amsterdam
+Connecticut,Oneida
+Chipaya,Guaqui
+Chipaya,Quella Kollu
+Chipaya,Wichi
+Chipaya,Weenhayek
+Buor Khaya Gulf,Chukchis
+Buor Khaya Gulf,Yukaghir
+Buor Khaya Gulf,Sakha
+Van,Kurdistan
+Van,Syunik
+Van,Trebizond
+Amazon,Goias
+Amazon,Je
+Illinois,Missouri
+Illinois,Ioway
+Illinois,Fort Detroit
+Illinois,Erie
+Illinois,Ojibwe
+Guangxi,Macao
+Guangxi,Huguang
+Guangxi,Hainan
+Guangxi,Hanoi
+Strait of Bonifacio,Tyrrhenian Sea
+Strait of Bonifacio,Barcelona
+Strait of Bonifacio,Balearic Sea
+Strait of Bonifacio,Baleares
+Strait of Bonifacio,Algerian Basin
+Strait of Bonifacio,Gulf of Lyon
+Tunumiisut,Godthaab
+Tunumiisut,Greenland Sea
+Tunumiisut,Arctic Ocean
+Tunumiisut,Brattahlid
+Labrador Sea,Godthaab
+Labrador Sea,Kuujjuaq
+Labrador Sea,Iqaluit
+Labrador Sea,Arctic Ocean
+Labrador Sea,Strait of Belle Isle
+Marseille,Savoy
+Marseille,Gulf of Lyon
+Mahra,Gulf of Tadoura
+Mahra,Arabian Sea
+Munster,Wadden Sea
+Wadden Sea,Skagerrak
+Wadden Sea,Southern Bight
+Yucatan Channel,Gulf of Honduras
+Yucatan Channel,Yucatan
+Yucatan Channel,Havana
+Yucatan Channel,Belize
+Yucatan Channel,Juventud
+Aja,Great Ardra
+Aja,Oyo
+Aja,Ouagadougou
+Aja,Notse
+Aja,Hausa States
+Sarawak,Sambas
+Sarawak,Natuna Sea
+Sarawak,Banjarmasin
+Sarawak,Kota Batu
+Haishenwai,Shengjing
+Haishenwai,Oriental Sea
+Haishenwai,Jilin
+Haishenwai,Hamgyong
+Bangka,Sambas
+Bangka,Sumatra
+Bangka,Banjarmasin
+Cormantin,Ouagadougou
+Cormantin,Notse
+Cormantin,Gold Coast
+Majeerteen,Warsangali
+Majeerteen,Socotra
+Andhra Coast,Andaman Sea
+Andhra Coast,Andaman Islands
+Andhra Coast,Rajamahendri
+Andhra Coast,Bay of Bengal
+Andhra Coast,Gulf of Ceylon
+Andhra Coast,Palyakkar
+Arapaho,Gosiute
+Arapaho,Kanza
+Arapaho,Apache
+Arapaho,Lakota
+Arapaho,Kiowa
+Seychelles Sea,Somali Basin
+Seychelles Sea,Swahili Coast
+Seychelles Sea,Mascarene Sea
+Seychelles Sea,Comoros Sea
+Seychelles Sea,Sakalava
+Azores,Madeira Plain
+Missouri,Ioway
+Missouri,Kanza
+Sea of Okhotsk,Nivikhs
+Sea of Okhotsk,Sahaliyan
+Sea of Okhotsk,Kuril Sea
+Transylvania,Alfold
+Transylvania,Jassy
+Transylvania,Ruthenia
+Transylvania,Pressburg
+Great Australian Bight,Wurruk
+Sambas,Natuna Sea
+Sambas,Banjarmasin
+Macao,Huguang
+Macao,Hainan
+Mona Passage,Aves Ridge
+Mona Passage,St. Domingo
+Mona Passage,Puerto Rico
+Mona Passage,Cap-Haitien
+Mona Passage,Guadeloupe
+Vestland,Christiania
+Yokuts,Chemehuevi
+Yokuts,North Equatorial Current
+Kyushu,Amami
+Kyushu,Kuroshio Current
+Kyushu,Osaka
+Kyushu,Kyoto
+English Channel,Rockall Rise
+English Channel,London
+English Channel,Ghent
+English Channel,Southern Bight
+Lisbon,Merida
+Lisbon,Porto
+Lisbon,Seville
+Lisbon,Algarve
+Boston,Mohawk
+Boston,Delaware Bay
+Baracoa,Windward Passage
+Baracoa,Gulf of Honduras
+Baracoa,Havana
+Baracoa,Jamaica
+Baracoa,Bahamas Channel
+Rome,Tyrrhenian Sea
+Okinawa Trough,Kuroshio Current
+Okinawa Trough,Philippine Sea
+Canaries,Regeibat
+Canaries,Tiguert Bay
+Canaries,Canary Basin
+Andaman Sea,Pegu
+Andaman Sea,Andaman Islands
+Andaman Sea,Tavoy
+Andaman Sea,Bay of Bengal
+Andaman Sea,Malacca Strait
+Andaman Sea,Thaton
+Ioway,Dakota
+Ioway,Kanza
+Ioway,Lakota
+Ioway,Ojibwe
+Oji-Cree,Anishinabek
+Oji-Cree,Michif Piyii
+Oji-Cree,Chipewyan
+Oji-Cree,Ojibwe
+Godthaab,Arctic Ocean
+Godthaab,Brattahlid
+Alfold,Pressburg
+Minas Gerais,Salvador
+Minas Gerais,Kahngag
+Minas Gerais,Rio de Janeiro
+Mpemba,Mbanza
+Mpemba,Lunda-Luba
+Mpemba,Fimi
+Mpemba,Matamba
+Mpemba,Pango
+Guaqui,Quella Kollu
+Guaqui,Nazca Ridge
+Guaqui,Chuyma
+Pegu,Bay of Bengal
+Pegu,Thaton
+Tutchone,Sahtu
+Tutchone,Dena'ina
+Tutchone,Sekani
+Tutchone,Yakutat Bay
+Tutchone,Cascadia Basin
+Tutchone,Tanana
+Tutchone,Chilcotin
+Tutchone,Koyukon
+Bermuda,Sargasso Sea
+Tlicho,Sahtu
+Tlicho,Sekani
+Tlicho,Chipewyan
+Benin,Great Ardra
+Benin,Oyo
+Benin,Nri
+Kuujjuaq,Quaqtaq
+Muna,Flores Sea
+Muna,Makassar
+Oudh,Sasaram
+Oudh,Kathmandu
+Oudh,Delhi
+Oudh,Kabul
+Akwa'ala,Sea of Cortez
+Akwa'ala,Chemehuevi
+Akwa'ala,Sonora
+Quito,Shipibo
+Quito,Huitoto
+Turfan,Uighuristan
+Turfan,Tumeds
+Turfan,Gobi
+Turfan,Zaisan
+Milan,Chur
+Milan,Savoy
+Innsbruck,Bavaria
+Innsbruck,Vienna
+Innsbruck,Chur
+Innsbruck,Trieste
+Great Ardra,Oyo
+Great Ardra,Notse
+Seewarte Seamounts,Cabo Verde
+Seewarte Seamounts,Canary Basin
+Seewarte Seamounts,Bay of Nouadhibou
+Seewarte Seamounts,Serra Leoa Rise
+Kurdistan,Syunik
+Ruka Pillan,Tucapel
+Ruka Pillan,Rankulche
+Bay of Panama,Windward Passage
+Bay of Panama,Gulf of Honduras
+Bay of Panama,Jamaica
+Bay of Panama,Honduras
+Red Sea,Gulf of Tadoura
+Red Sea,Cairo
+Red Sea,Mek'ele
+Red Sea,Mecca
+Zulu,Mpondo
+Zulu,Delagoa
+Atikamekw,Quebec
+Atikamekw,Papinachois
+Jamtland,Umea
+Jamtland,Christiania
+Jamtland,Finnmark
+Jamtland,Stockholm
+Fort Detroit,Ville Marie
+Fort Detroit,Erie
+Fort Detroit,Seneca
+Fort Detroit,Ojibwe
+Tangier,Chaamba
+Tangier,Tafilalt
+Cochin,Cannanore
+Cochin,Palyakkar
+Cochin,Madurai
+Cochin,Laccadive Plateau
+Kvichak Bay,Yupik
+Kvichak Bay,Aleuts
+Kvichak Bay,Gulf of Alakshak
+Kvichak Bay,North Equatorial Current
+Kismayo,Swahili Coast
+Kismayo,Turkana
+Kismayo,Zanzibar
+Kismayo,Baidoa
+Kismayo,Bemba
+Aves Ridge,St. Lucia
+Aves Ridge,Barbados
+Aves Ridge,New Courland
+Aves Ridge,Guadeloupe
+Tyrrhenian Sea,Ionian Sea
+Nivikhs,Amur
+Nivikhs,Jilin
+Ayoreo,Ofaye
+Ayoreo,Wichi
+Ayoreo,Chiripa
+Ayoreo,Weenhayek
+Somali Basin,Arabian Sea
+Somali Basin,Lakshadweep Sea
+Somali Basin,Laccadive Plateau
+Jassy,Ruthenia
+Jassy,Ochakiv
+Jassy,Kyiv
+St. Domingo,Cap-Haitien
+Uighuristan,Xining
+Mentawai Strait,Timor Sea
+Mentawai Strait,Sumatra
+Mentawai Strait,Batavia
+Sahtu,Sekani
+Sahtu,Tanana
+Windward Passage,Cap-Haitien
+Windward Passage,Jamaica
+Windward Passage,Bahamas Channel
+Yupik,Dena'ina
+Yupik,Gulf of Alakshak
+Yupik,Nome
+Yupik,Koyukon
+Greenland Sea,Spitsbergen
+Greenland Sea,Arctic Ocean
+Greenland Sea,Rockall Rise
+Greenland Sea,Iceland
+Oyo,Hausa States
+Oyo,Nri
+Quaqtaq,Montagnais
+Quaqtaq,Hudson Bay
+Swahili Coast,Comoros Sea
+Swahili Coast,Zanzibar
+Swahili Coast,Baidoa
+Multan,Mokran
+Multan,Ghor
+Multan,Sindh
+Multan,Delhi
+Multan,Herat
+Multan,Kabul
+Bay of Biscay,Galicia
+Hissar,Ghor
+Hissar,Uzgen
+Hissar,Herat
+Hissar,Bukhara
+Santee,Florida Current
+Hawai'i,North Equatorial Current
+Natuna Sea,Palawan
+Natuna Sea,South China Sea
+Natuna Sea,Gulf of Siam
+Natuna Sea,Cambodia
+Natuna Sea,Kota Batu
+Pyeongyang,Shengjing
+Pyeongyang,Fusan
+Pyeongyang,Oriental Sea
+Pyeongyang,Hamgyong
+Pano,Quella Kollu
+Pano,Chuyma
+Puerto Rico,St. Maarten
+Puerto Rico,Guadeloupe
+Puerto Rico,Leeward Sea
+Dena'ina,Yakutat Bay
+Dena'ina,Gulf of Alakshak
+Dena'ina,Koyukon
+Lan Na,Lan Sang
+Lan Na,Hanoi
+Anishinabek,Ville Marie
+Anishinabek,Ojibwe
+Gulf of Honduras,Havana
+Gulf of Honduras,Jamaica
+Gulf of Honduras,Honduras
+Gulf of Honduras,Belize
+Gulf of Honduras,Juventud
+Al-Hajarah,Levant
+Al-Hajarah,Mecca
+Al-Hajarah,Najd
+Al-Hajarah,Trebizond
+Ouagadougou,Niani
+Ouagadougou,Notse
+White Bay,St. Anthony
+White Bay,Strait of Belle Isle
+White Bay,St. John's
+Barents Sea,Spitsbergen
+Barents Sea,Finnmark
+Merida,Porto
+Merida,Seville
+Merida,Galicia
+Banda Sea,Flores Sea
+Banda Sea,Flores
+Banda Sea,Coral Sea
+Turkana,Baidoa
+Ville Marie,Mohawk
+Ville Marie,Quebec
+Ville Marie,Oneida
+Ville Marie,Seneca
+Sao Tome,Gold Coast
+Sao Tome,Lopez Bay
+Bavaria,Vienna
+Bavaria,Nuremberg
+Mohawk,Oneida
+Ionian Sea,Levantine Sea
+Ionian Sea,Aegean Sea
+Ionian Sea,Tripoli
+Ionian Sea,Salonica
+Mokran,Bandar Abbas
+Mokran,Gulf of Kutch
+Mokran,Sindh
+Mokran,Herat
+Jacob Fort,Ndakaaru
+Ainu,Oriental Sea
+Ainu,Tsugaru Strait
+Ainu,Kuril Sea
+Michif Piyii,Hudson Bay
+Michif Piyii,Chipewyan
+Alimuly,Khiva
+Alimuly,Kazan
+Alimuly,Turkestan
+Teushen,Tucapel
+Teushen,Tehuelche
+Teushen,Golfo San Jorge
+Valencia,Barcelona
+Valencia,Alboran Sea
+Valencia,Balearic Sea
+Silesia,Ruthenia
+Silesia,Krakow
+Silesia,Vienna
+Silesia,Brandenburg
+Silesia,Pressburg
+Sekani,Chilcotin
+Porto,Galicia
+Montagnais,Hudson Bay
+Kalmykia,Kabardia
+Gaspe,Quebec
+Gaspe,Massachusetts
+Gaspe,Cap-aux-Meules
+Voronezh,Kyiv
+Voronezh,Bakchisarai
+Bandar Abbas,Gulf of Kutch
+Bandar Abbas,Persian Gulf
+Bandar Abbas,Herat
+Bandar Abbas,Qeshm
+Sasaram,Gondwana
+Sasaram,Kathmandu
+Sasaram,Bhamo
+Sasaram,Delhi
+Sasaram,Bhutan
+Sarajevo,Split
+Sarajevo,Salonica
+Tucapel,Chiloe
+Tucapel,Tehuelche
+Tucapel,Rankulche
+Tucapel,Kawesqar
+Split,Trieste
+Quella Kollu,Chuyma
+Palawan,South China Sea
+Palawan,Mindoro
+Palawan,Cebu
+South China Sea,Mindoro
+South China Sea,Cambodia
+Niani,Serra Leoa Rise
+Raichur,Rajamahendri
+Raichur,Hyderabad
+Raichur,Ballari
+Gosiute,Shoshone
+Gosiute,Sonora
+Gosiute,Kiowa
+Gosiute,Paiute
+Gosiute,Washo
+Iqaluit,Arctic Ocean
+Oromo,Debre Birhan
+Oromo,Sidamo
+Oromo,Azande
+Mbanza,Fimi
+Mbanza,Lopez Bay
+Mbanza,Sangha
+Mbanza,Loango
+Ghor,Herat
+Ghor,Kabul
+Cape Basin,Angola Basin
+Cape Basin,Kalahari
+Yenisei,Taymyr
+Yenisei,Buryatia
+Luanda,Benguela
+Luanda,Matamba
+Umea,Gulf of Bothnia
+Umea,Finnmark
+Umea,Stockholm
+Aleuts,North Equatorial Current
+Minuane,Charrua
+Idjil,Regeibat
+Idjil,Oualata
+Idjil,Tafilalt
+Debre Birhan,Mek'ele
+Debre Birhan,Aussa
+Debre Birhan,Sidamo
+Marrakech,Regeibat
+Marrakech,Tiguert Bay
+Marrakech,Anfa
+Marrakech,Tafilalt
+Echigo,Oriental Sea
+Echigo,Aomori
+Echigo,Osaka
+Echigo,Edo
+Echigo,Kyoto
+Barcelona,Balearic Sea
+Barcelona,Gulf of Lyon
+Ruthenia,Krakow
+Ruthenia,Warsaw
+Ruthenia,Kyiv
+Ruthenia,Volhynia
+Ruthenia,Pressburg
+Gulf of Siam,Ayutthaya
+Gulf of Siam,Cambodia
+Gulf of Siam,Kra
+Chukchis,Karaginskiy Gulf
+Chukchis,Yukaghir
+Timor Sea,Timor
+Timor Sea,Gulumoerrgin
+Timor Sea,Tenggara
+Timor Sea,Flores
+Timor Sea,Batavia
+Timor Sea,Coral Sea
+Gulf of Tadoura,Mek'ele
+Gulf of Tadoura,Warsangali
+Gulf of Tadoura,Aussa
+Gulf of Tadoura,Socotra
+Ochakiv,Kyiv
+Ochakiv,Black Sea
+Ochakiv,Bakchisarai
+Dakota,Lakota
+Dakota,Ojibwe
+Maranhao,Sao Sebastiao
+Maranhao,Je
+Khiva,Uzgen
+Khiva,Turkestan
+Khiva,Bukhara
+Ayutthaya,Lan Sang
+Ayutthaya,Tavoy
+Ayutthaya,Cambodia
+Ayutthaya,Kra
+Levant,Cairo
+Levant,Mecca
+Levant,Levantine Sea
+Levant,Taurus
+Levant,Trebizond
+Goa,Cannanore
+Goa,Lakshadweep Sea
+Goa,Hyderabad
+Goa,Ballari
+Goa,Bijapur
+Yakutat Bay,Cascadia Basin
+Yakutat Bay,Gulf of Alakshak
+Sea of Cortez,Sonora
+Sea of Cortez,Mexico City
+Sea of Cortez,Nueva Vizcaya
+Salvador,Todos os Santos Bay
+Salvador,Rio de Janeiro
+Salvador,Vitoria
+Cairo,Mecca
+Cairo,Levantine Sea
+Cairo,Jalo
+Cairo,Tripoli
+Cairo,Beja
+Cabo Verde,Bay of Nouadhibou
+Cabo Verde,Serra Leoa Rise
+Amur,Buryatia
+Peking,Nanjing
+Peking,Zhili
+Peking,Hohhot
+Kalina,Cayenne
+Mascarene Sea,Reunion
+Benguela,Matamba
+Benguela,Kalahari
+Regeibat,Tiguert Bay
+Regeibat,Canary Basin
+Regeibat,Arguin
+Regeibat,Tafilalt
+Notse,Gold Coast
+Florida Current,Bahamas Channel
+Florida Current,Sargasso Sea
+Luxembourg,Liege
+Taymyr,Yamalia
+Mek'ele,Aussa
+Mek'ele,Aksum
+Mecca,Najd
+Alboran Sea,Balearic Sea
+Alboran Sea,Tunis
+Alboran Sea,Baleares
+Alboran Sea,Algerian Basin
+Tiguert Bay,Canary Basin
+Tiguert Bay,Anfa
+Tiguert Bay,Madeira Plain
+Dani,Solomon Islands
+Dani,Coral Sea
+Cascadia Basin,Gulf of Alakshak
+Cascadia Basin,Kwakiutl
+Cascadia Basin,Chilcotin
+Andaman Islands,Sumatra
+Andaman Islands,Gulf of Ceylon
+Andaman Islands,Malacca Strait
+Andaman Islands,Cocos Basin
+Maldives,Laccadive Plateau
+Gulf of Kutch,Arabian Sea
+Gulf of Kutch,Sindh
+Gulf of Kutch,Ahmedabad
+Gulf of Kutch,Lakshadweep Sea
+Ofaye,Kahngag
+Ofaye,Xeta
+Ofaye,Chiripa
+Lunda-Luba,Bemba
+Lunda-Luba,Matamba
+Lunda-Luba,Mongo
+Lunda-Luba,Pango
+Comoros Sea,Beira
+Comoros Sea,Sakalava
+Comoros Sea,Zanzibar
+Mauritsstad,Todos os Santos Bay
+Mauritsstad,Sao Sebastiao
+Mauritsstad,Vitoria
+Mauritsstad,Goias
+Shengjing,Zhili
+Shengjing,Hohhot
+Shengjing,Hamgyong
+Yucatan,Honduras
+Yucatan,Belize
+Yucatan,Mexico City
+Balearic Sea,Baleares
+Sahaliyan,Kuril Sea
+Mar de Hoces,Chiloe
+Mar de Hoces,Kawesqar
+Gulf of Bothnia,Stockholm
+Gulf of Bothnia,Baltic Sea
+Arctic Ocean,Nunavut
+Arctic Ocean,Nome
+Arctic Ocean,Koyukon
+Sumatra,Malacca Strait
+Sumatra,Batavia
+Sumatra,Cocos Basin
+Tukulor,Fulani
+Tukulor,Sahrawi
+Tukulor,Oualata
+Tukulor,St. Louis
+Oriental Sea,Tsugaru Strait
+Oriental Sea,Aomori
+Oriental Sea,Hamgyong
+Oriental Sea,Kyoto
+Mindoro,Cebu
+Seville,Algarve
+Nunavut,Hudson Bay
+Nunavut,Chipewyan
+Nunavut,Salliq
+Hainan,Hanoi
+Rinpungpa,Bhamo
+Rinpungpa,Xining
+Rinpungpa,Bhutan
+Sakalava,Maha
+Caracas,Gulf of Paria
+Caracas,New Courland
+Gondwana,Rajamahendri
+Gondwana,Delhi
+Gondwana,Hyderabad
+Christiania,Skagerrak
+Christiania,Stockholm
+Karaginskiy Gulf,Koryaks
+Gulf of Alakshak,North Equatorial Current
+Lan Sang,Hanoi
+Lan Sang,Cambodia
+Todos os Santos Bay,Vitoria
+Budu,Banda
+Budu,Mongo
+Budu,Azande
+Tunis,Chaamba
+Tunis,Algerian Basin
+Tunis,Tripoli
+Kanza,Lakota
+St. Anthony,Strait of Belle Isle
+St. Anthony,St. John's
+St. Anthony,Cap-aux-Meules
+Banjarmasin,Celebes Sea
+Banjarmasin,Kutai
+Banjarmasin,Kota Batu
+Havana,Bahamas Channel
+Havana,Juventud
+Jutland,Skagerrak
+Warsangali,Aussa
+Warsangali,Socotra
+Yukaghir,Sakha
+Uzgen,Turkestan
+Uzgen,Bukhara
+St. Lucia,Barbados
+St. Lucia,Antigua
+St. Lucia,Guadeloupe
+Persian Gulf,Khalidi
+Persian Gulf,Qeshm
+Hausa States,Agadez
+Hausa States,Mandara
+Hausa States,Nri
+Syunik,Tbilisi
+Syunik,Trebizond
+Ceylon,Gulf of Ceylon
+Aussa,Sidamo
+Tumeds,Zaisan
+Kwakiutl,Chilcotin
+Fulani,Ndakaaru
+Fulani,St. Louis
+Nazca Ridge,Chuyma
+Krakow,Warsaw
+Krakow,Brandenburg
+Skagerrak,Scania
+Solomon Islands,Coral Sea
+Kahngag,Rio de Janeiro
+Kahngag,Sao Paulo
+Levantine Sea,Aegean Sea
+Levantine Sea,Smyrna
+Levantine Sea,Taurus
+Levantine Sea,Tripoli
+Aksum,Gondar
+Aksum,Sannar
+Cannanore,Palyakkar
+Cannanore,Lakshadweep Sea
+Cannanore,Ballari
+Cannanore,Laccadive Plateau
+Rajamahendri,Hyderabad
+Bemba,Matamba
+Flores Sea,Makassar
+Flores Sea,Tenggara
+Flores Sea,Flores
+Rio de Janeiro,Sao Paulo
+Agadez,Timbuktu
+Agadez,Hoggar
+Warsaw,Wilno
+Warsaw,Volhynia
+Vienna,Pressburg
+Vienna,Trieste
+Vienna,Nuremberg
+Makassar,Celebes Sea
+Timor,Flores
+Timor,Coral Sea
+Tsugaru Strait,Aomori
+Tsugaru Strait,Kuril Sea
+Tsugaru Strait,Edo
+Wichi,Weenhayek
+Kyiv,Wilno
+Kyiv,Volhynia
+Najd,Khalidi
+Sao Sebastiao,Goias
+Sao Sebastiao,Je
+Liege,Ghent
+Aomori,Edo
+Barbados,Gulf of Paria
+Barbados,New Courland
+Delaware Bay,Maryland
+Delaware Bay,New Amsterdam
+Celebes Sea,Kutai
+Celebes Sea,Kota Batu
+Canary Basin,Bay of Nouadhibou
+Canary Basin,Madeira Plain
+Canary Basin,Arguin
+Hudson Bay,Chipewyan
+Hudson Bay,Salliq
+Wilno,Volhynia
+Wilno,Gulf of Riga
+Wilno,Riga
+Jamestown,Maryland
+Jalo,Tripoli
+Jalo,Hoggar
+Angola Basin,Gold Coast
+Angola Basin,Lopez Bay
+Rockall Rise,Iceland
+Xeta,Chiripa
+Ikh Khuree,Buryatia
+Ikh Khuree,Gobi
+Apache,Nueva Vizcaya
+Apache,Kiowa
+Zhili,Hohhot
+Timbuktu,Oualata
+Timbuktu,Hoggar
+Baleares,Algerian Basin
+Honduras,Belize
+Chaamba,Tripoli
+Chaamba,Hoggar
+Chaamba,Tafilalt
+Tavoy,Malacca Strait
+Tavoy,Kra
+Tavoy,Thaton
+Hohhot,Gobi
+Bay of Nouadhibou,Serra Leoa Rise
+Bay of Nouadhibou,Arguin
+Antigua,Guadeloupe
+Sahrawi,St. Louis
+Sahrawi,Arguin
+Chemehuevi,Sonora
+Chemehuevi,Paiute
+Kathmandu,Bhutan
+Amami,Kuroshio Current
+Kutai,Kota Batu
+Scania,The Sound
+Scania,Stockholm
+Scania,Baltic Sea
+Gondar,Sannar
+Turkestan,Zaisan
+The Sound,Baltic Sea
+The Sound,Brandenburg
+Stockholm,Baltic Sea
+Aegean Sea,Smyrna
+Aegean Sea,Salonica
+Cebu,Philippine Sea
+Shoshone,Washo
+Gulumoerrgin,Wurruk
+Gulumoerrgin,Coral Sea
+Smyrna,Anatolia
+Smyrna,Taurus
+Banda,Mandara
+Banda,Mongo
+Banda,Pango
+Banda,Sangha
+Banda,Azande
+London,Southern Bight
+Philadelphia,Maryland
+Philadelphia,New Amsterdam
+Philadelphia,Erie
+Philadelphia,Oneida
+Philadelphia,Seneca
+Gulf of Ceylon,Cocos Basin
+Gulf of Paria,New Courland
+Narva,Gulf of Riga
+Narva,Riga
+Shipibo,Huitoto
+Bhamo,Bhutan
+Arabian Sea,Lakshadweep Sea
+Anfa,Madeira Plain
+Fimi,Pango
+Fimi,Sangha
+Maryland,New Amsterdam
+Maryland,Erie
+Strait of Belle Isle,St. John's
+Strait of Belle Isle,Cap-aux-Meules
+Gulf of Gdansk,Baltic Sea
+Sannar,Darfur
+Sindh,Ahmedabad
+Sindh,Delhi
+Anatolia,Black Sea
+Anatolia,Taurus
+Anatolia,Trebizond
+Chiloe,Kawesqar
+Palyakkar,Madurai
+Palyakkar,Ballari
+Ndakaaru,St. Louis
+Chur,Savoy
+Mandara,Nri
+Mandara,Sangha
+Mandara,Loango
+Mandara,Darfur
+Baltic Sea,Brandenburg
+Baltic Sea,Gulf of Riga
+Tenggara,Flores
+St. John's,Cap-aux-Meules
+Gold Coast,Lopez Bay
+Kuril Sea,Koryaks
+Kuroshio Current,Osaka
+Kuroshio Current,Edo
+Kuroshio Current,Philippine Sea
+Osaka,Edo
+Osaka,Kyoto
+New Amsterdam,Oneida
+Ghent,Southern Bight
+Black Sea,Trebizond
+Black Sea,Bakchisarai
+Erie,Seneca
+Matamba,Kalahari
+Pressburg,Trieste
+Sonora,Nueva Vizcaya
+Sonora,Kiowa
+Sonora,Paiute
+Oneida,Seneca
+Ahmedabad,Delhi
+Ahmedabad,Lakshadweep Sea
+Ahmedabad,Bharuch
+Taurus,Trebizond
+Khandesh,Delhi
+Khandesh,Hyderabad
+Khandesh,Bharuch
+Khandesh,Bijapur
+Tbilisi,Kabardia
+Tbilisi,Trebizond
+Flores,Coral Sea
+Tripoli,Hoggar
+Lopez Bay,Loango
+Nri,Loango
+Delhi,Hyderabad
+Delhi,Bharuch
+Delhi,Kabul
+Herat,Bukhara
+Lakshadweep Sea,Laccadive Plateau
+Lakshadweep Sea,Bijapur
+Tanana,Koyukon
+Tehuelche,Kawesqar
+Tehuelche,Golfo San Jorge
+Stuttgart,Nuremberg
+Hyderabad,Ballari
+Hyderabad,Bijapur
+Kalahari,Delagoa
+Mongo,Pango
+Gulf of Riga,Riga
+Goias,Je
+St. Maarten,Guadeloupe
+St. Maarten,Leeward Sea
+Nueva Vizcaya,Kiowa
+Pango,Sangha
+Paiute,Washo
+Sangha,Loango
+Nome,Koyukon
+Azande,Darfur
+Wurruk,Coral Sea
+Leeward Sea,Sargasso Sea

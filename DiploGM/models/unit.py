@@ -22,7 +22,7 @@ class Unit:
         owner: player.Player,
         current_province: province.Province,
         coast: str | None,
-        retreat_options: set[province.Province] | None,
+        retreat_options: set[(province.Province, str | None)] | None,
     ):
         self.unit_type: UnitType = unit_type
         self.player: player.Player = owner
@@ -37,21 +37,21 @@ class Unit:
         return f"{self.unit_type.value} {self.province.get_name(self.coast)}"
     
     def add_retreat_options(self):
+        if self.retreat_options is None:
+            self.retreat_options = set()
         if self.unit_type == UnitType.ARMY:
             for province in self.province.adjacent:
                 if province.type != ProvinceType.SEA:
-                    self.retreat_options += (province, None)
+                    self.retreat_options.add((province, None))
         else:
             for province in self.province.get_coastal_adjacent(self.coast):
-                coasts = province.get_multiple_coasts()
-                if not coasts:
-                    self.retreat_options += (province, None)
-                for cur_coast in coasts:
-                    if self.province in province.get_coastal_adjacent(cur_coast):
-                        self.retreat_options += (province, cur_coast)
+                if isinstance(province, tuple):
+                    self.retreat_options.add(province)
+                else:
+                    self.retreat_options.add((province, None))
     
     def remove_retreat_option(self, province: province.Province):
-        self.retreat_options -= (province, None)
+        self.retreat_options -= {(province, None)}
         self.retreat_options -= {(province, coast) for coast in province.get_multiple_coasts()}
 
     def remove_many_retreat_options(self, provinces: set[province.Province]):
