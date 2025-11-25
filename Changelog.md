@@ -1,3 +1,14 @@
+1.3.2
+=====
+*further panicing*
+
+Contributors
+- Chloe
+
+
+# Developer Changes
+- fixed 11-RenamedVariants.py based on changes to `get_parser()` in `1.3.1`
+
 1.3.1
 =====
 *panic*
