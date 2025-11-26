@@ -24,10 +24,12 @@ class UnitOrder(Order):
         super().__init__()
         self.hasFailed = False
     
-    def get_source_str(self):
+    # Used for DB storage
+    def get_source_str(self) -> str | None:
         return None
 
-    def get_destination_str(self):
+    # Used for DB storage
+    def get_destination_str(self) -> str | None:
         return None
 
 class ComplexOrder(UnitOrder):
@@ -94,7 +96,7 @@ class ConvoyMove(UnitOrder):
     def __str__(self):
         return f"Convoys - {self.destination}"
     
-    def get_destination_and_coast(self) -> tuple[Province | None]:
+    def get_destination_and_coast(self) -> tuple[Province, None]:
         return (self.destination, None)
     
     def get_destination_str(self) -> str:

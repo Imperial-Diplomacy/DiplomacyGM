@@ -53,6 +53,10 @@ class Province():
         self.dislodged_unit: unit.Unit | None = None
         self.nonadjacent_coasts: set[str] = set()
 
+        # primary/retreat unit coordinates are of the form {unit_type/coast: (x, y)}
+        # all_locs/all_rets are of the form {unit_type/coast: set((x, y), (x2, y2), ...)}
+        # This assumes that only fleet units have to deal with multiple coasts
+        # TODO: Bundle primary and retreat coordinates into a single structure
         self.all_locs = {}
         self.all_rets = {}
         if primary_unit_coordinates:
@@ -86,8 +90,10 @@ class Province():
         return None
     
     def set_unit_coordinate(self, coord, is_primary, unit_type, coast = None):
+        # Set default cooordinate if none are found
         if coord is None:
             coord = (0, 0)
+
         if is_primary:
             unit_coords = self.primary_unit_coordinates
         else:
@@ -103,11 +109,14 @@ class Province():
     def get_unit(self) -> unit.Unit | None:
         return self.unit
     
+    # Gets a set of all coasts if multiple exist, otherwise returns an empty set (== False)
     def get_multiple_coasts(self) -> set:
         if self.fleet_adjacent and isinstance(self.fleet_adjacent, dict):
             return set(self.fleet_adjacent.keys())
         return set()
     
+    # Gets all provinces adjacent via fleet, optionally from a given coast
+    # If there are multiple coasts, coast must be specified
     def get_coastal_adjacent(self, coast: str | None = None) -> set[tuple[Province, str | None]]:
         if coast:
             if not isinstance(self.fleet_adjacent, dict):
@@ -119,6 +128,7 @@ class Province():
             raise ValueError(f"Province {self.name} has multiple coasts.")
         return self.fleet_adjacent
     
+    # Checks if other province (and optionally coast) is adjacent via fleet
     def is_coastally_adjacent(self, other: Province | tuple[Province, str | None], coast: str | None = None) -> bool:
         if isinstance(other, tuple) and other[1] == None:
             dest = other[0]
@@ -137,6 +147,7 @@ class Province():
         else:
             self.adjacent.add(other)
 
+    # After all provinces have been initialised, set sea and island fleet adjacencies
     def set_coasts(self):
         """This should only be called once all province adjacencies have been set."""
 
@@ -161,14 +172,16 @@ class Province():
             # this is not a coastal province
             return
 
+    # Once sea and island adjacencies have been set, set land adjacencies for fleets
     def set_adjacent_coasts(self):
-        # These are already manually assigned
+        # Multi-coast provinces are currently manually set
         if isinstance(self.fleet_adjacent, dict):
             return
         # TODO: (BETA) this will generate false positives (e.g. mini province keeping 2 big province coasts apart)
         for province2 in self.adjacent:
             if province2.get_multiple_coasts():
                 for coast2 in province2.get_multiple_coasts():
+                    # Since we know the other province has manually-assigned coasts
                     if province2.is_coastally_adjacent(self, coast2):
                     # if (province2.get_name(coast2) not in self.nonadjacent_coasts
                     #     and Province.detect_coastal_connection(self, province2, coast2)):

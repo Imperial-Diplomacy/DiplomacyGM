@@ -30,12 +30,14 @@ class Unit:
         self.coast: str | None = coast
 
         # retreat_options is None when not dislodged and {} when dislodged without retreat options
+        # When there are retreat options, they are stored as a set of (Province, coast) tuples
         self.retreat_options: set[tuple[province.Province, str | None]] | None = retreat_options
         self.order: order.UnitOrder | None = None
 
     def __str__(self):
         return f"{self.unit_type.value} {self.province.get_name(self.coast)}"
     
+    # Adds all valid retreat options based on unit type and current province
     def add_retreat_options(self):
         if self.retreat_options is None:
             self.retreat_options = set()
@@ -50,6 +52,7 @@ class Unit:
                 else:
                     self.retreat_options.add((province, None))
     
+    # Removes a specific retreat option
     def remove_retreat_option(self, province: province.Province):
         if self.retreat_options is None:
             return
@@ -58,6 +61,8 @@ class Unit:
         for coast in province.get_multiple_coasts():
             self.retreat_options.discard((province, coast))
 
+    # Removes multiple retreat options
+    # Since the set is relatively large compared to retreat_options, we iterate over a copy of retreat_options instead
     def remove_many_retreat_options(self, provinces: set[province.Province]):
         if self.retreat_options is None:
             return

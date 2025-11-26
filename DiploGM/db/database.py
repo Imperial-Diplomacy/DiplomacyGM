@@ -524,7 +524,7 @@ class _DatabaseConnection:
                     board.board_id,
                     board.turn.get_indexed_name(),
                     unit.province.get_name(unit.coast),
-                    f"{unit.province.get_name()} coast" if not unit.coast else None,
+                    f"{unit.province.get_name()} coast" if not unit.coast else None, # Legacy coast support
                     unit.province.dislodged_unit == unit,
                 )
                 for unit in units

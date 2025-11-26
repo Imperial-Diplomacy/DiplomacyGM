@@ -100,6 +100,7 @@ class Board:
         name = re.sub(r"[‘’`´′‛]", "'", name)
         name = name.lower()
 
+        # Legacy back-compatibility for coasts
         if name.endswith(" coast"):
             name = name[:-6]
 
