@@ -19,6 +19,8 @@ class TransGL3:
 
         if transform_string.startswith("matrix"):
             match = re.search(r"matrix\((.*),(.*),(.*),(.*),(.*),(.*)\)", transform_string)
+            if not match:
+                raise Exception(f"Malformed matrix transformation: {transform_string}")
             x_dx = float(match.group(1))
             y_dx = float(match.group(2))
             x_dy = float(match.group(3))
@@ -28,6 +30,8 @@ class TransGL3:
 
         elif transform_string.startswith("translate"):
             match = re.search(r"translate\((.*),(.*)\)", transform_string)
+            if not match:
+                raise Exception(f"Malformed translate transformation: {transform_string}")
             x_c = float(match.group(1))
             y_c = float(match.group(2))
         elif transform_string.startswith("rotate"):
@@ -37,6 +41,8 @@ class TransGL3:
                 coord = 0, 0
             else:
                 coord = float(match.group(2)), float(match.group(3))
+            if not match:
+                raise Exception(f"Malformed rotate transformation: {transform_string}")
             angle = float(match.group(1)) * np.pi / 180
             pre = TransGL3().init(x_c=-coord[0], y_c=-coord[1])
             post = TransGL3().init(x_c=coord[0], y_c=coord[1])
@@ -61,7 +67,7 @@ class TransGL3:
             self.matrix = pre.matrix @ self.matrix @ post.matrix
 
     # this is so that functions can create TransGL3 with specific values, not from an element
-    def init(self, x_dx=1, y_dy=1, x_dy=0, y_dx=0, x_c=0, y_c=0):
+    def init(self, x_dx: float = 1, y_dy: float = 1, x_dy: float = 0, y_dx: float = 0, x_c: float = 0, y_c: float = 0):
         self.matrix = np.array([
             [x_dx, y_dx, 0],
             [x_dy, y_dy, 0],

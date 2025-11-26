@@ -12,7 +12,7 @@ import math
 # from diplomacy.adjudicator import utils
 # from diplomacy.map_parser.vector import config_svg as svgcfg
 
-from DiploGM.map_parser.vector.utils import get_element_color, get_svg_element, get_unit_coordinates, initialize_province_resident_data
+from DiploGM.map_parser.vector.utils import clear_svg_element, get_element_color, get_svg_element, get_unit_coordinates, initialize_province_resident_data
 from DiploGM.models import turn
 from DiploGM.models.board import Board
 from DiploGM.db.database import logger
@@ -75,8 +75,7 @@ class Mapper:
 
         self.add_arrow_definition_to_svg(self.board_svg)
 
-        units_layer: Element = get_svg_element(self.board_svg, self.board.data["svg config"]["starting_units"])
-        units_layer.clear()
+        clear_svg_element(self.board_svg, self.board.data["svg config"]["starting_units"])
 
         self.cached_elements = {}
         for element_name in ["army", "fleet", "retreat_army", "retreat_fleet", "unit_output"]:
@@ -109,7 +108,7 @@ class Mapper:
 
     def clean_layers(self, svg: ElementTree):
         for element_name in self.board.data["svg config"]["delete_layer"]:
-            get_svg_element(svg, self.board.data["svg config"][element_name]).clear()
+            clear_svg_element(svg, self.board.data["svg config"][element_name])
     
     def is_moveable(self, unit: Unit):
         if unit.province not in self.adjacent_provinces:
@@ -128,7 +127,12 @@ class Mapper:
         self.current_turn = current_turn
 
         t = self._moves_svg.getroot()
-        arrow_layer = get_svg_element(t, self.board.data["svg config"]["arrow_output"])
+        if t is None:
+            raise ValueError("SVG root is None")
+        arrow_layer = get_svg_element(self._moves_svg, self.board.data["svg config"]["arrow_output"])
+        if arrow_layer is None:
+            raise ValueError("Arrow layer not found in SVG")
+        
         if not current_turn.is_builds():
             units = sorted(self.board.units, key=lambda unit: 0 if unit.order is None else unit.order.display_priority)
             for unit in units:
@@ -195,21 +199,23 @@ class Mapper:
         self.clean_layers(self._moves_svg)
 
         svg_file_name = f"{str(self.board.turn).replace(' ', '_')}_moves_map.svg"
-        return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
+        return elementToString(t, encoding="utf-8"), svg_file_name
 
     def draw_gui_map(self, current_turn: turn.Turn, player_restriction: Player | None) -> tuple[str, str]:
         self.player_restriction = player_restriction
         self.current_turn = current_turn
         self._reset_moves_map()
         self.clean_layers(self._moves_svg)
-        get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["sidebar"]).clear()
-        if self.board.data["svg config"]["power_banners"]:
-            get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["power_banners"]).clear()
+        root = self._moves_svg.getroot()
+        if root is None:
+            raise ValueError("SVG root is None")
+        clear_svg_element(self._moves_svg, self.board.data["svg config"]["sidebar"])
+        clear_svg_element(self._moves_svg, self.board.data["svg config"]["power_banners"])
         with open("diplomacy/adjudicator/mapper.js", 'r') as f:
             js = f.read()
-        
+
         locdict = {}
-        
+
         for province in self.board.provinces:
             if province.unit:
                 locdict[province.name] = list(province.get_primary_unit_coordinates(province.unit.unit_type, province.unit.coast))
@@ -241,10 +247,12 @@ class Mapper:
         for province in self.board.provinces:
             if province.type == ProvinceType.SEA:
                 type = 'sea'
-            if province.type == ProvinceType.ISLAND:
+            elif province.type == ProvinceType.ISLAND:
                 type = 'island'
-            if province.type == ProvinceType.LAND:
+            elif province.type == ProvinceType.LAND:
                 type = 'land'
+            else:
+                raise ValueError(f"Unknown province type {province.type} for province {province.name}")
             province_to_province_type[province.name] = type
         
         immediate = []
@@ -253,9 +261,9 @@ class Mapper:
                 immediate.append(unit.province.get_name(unit.coast))
 
         script.text = js % (str(locdict), self.board.data["svg config"], coast_to_province, province_to_unit_type, province_to_province_type, immediate)
-        self._moves_svg.getroot().append(script)
+        root.append(script)
 
-        coasts = get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["coast_markers"]).getchildren()
+        coasts = get_svg_element(root, self.board.data["svg config"]["coast_markers"]).getchildren()
         def get_text_coordinate(e : etree.Element) -> tuple[float, float]:
             trans = TransGL3(e)
             return trans.transform([float(e.attrib["x"]), float(e.attrib["y"])] + np.array([3.25, -3.576 / 2]))
@@ -270,8 +278,11 @@ class Mapper:
             circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
             if not circles:
                 return None, None
-            circle = circles[0]
-            base_coordinates = float(circle.get("cx")), float(circle.get("cy"))
+            cx = circles[0].get("cx")
+            cy = circles[0].get("cy")
+            if cx is None or cy is None:
+                return None, None
+            base_coordinates = float(cx), float(cy)
             trans = TransGL3(supply_center_data)
             return trans.transform(base_coordinates)
 
@@ -279,17 +290,22 @@ class Mapper:
             e.set("onclick", f'obj_clicked(event, "{p.name}", false)')
             e.set("oncontextmenu", f'obj_clicked(event, "{p.name}", false)')
 
-        initialize_province_resident_data(self.board.provinces, get_svg_element(self._moves_svg, self.board.data["svg config"]["supply_center_icons"]), get_sc_coordinates, set_province_supply_center)
+        supply_center_icons = get_svg_element(root, self.board.data["svg config"]["supply_center_icons"])
+        if supply_center_icons is None:
+            raise ValueError("Supply center icons layer not found in SVG")
+        initialize_province_resident_data(self.board.provinces, supply_center_icons, get_sc_coordinates, set_province_supply_center)
 
         for layer_name in ("land_layer", "island_borders", "island_ring_layer", "island_fill_layer", "sea_borders"):
-            layer = get_svg_element(self._moves_svg, self.board.data["svg config"][layer_name])
+            layer = get_svg_element(root, self.board.data["svg config"][layer_name])
+            if layer is None:
+                raise ValueError(f"Layer {layer_name} not found in SVG")
             for province_data in layer.getchildren():
                 name = Parser._get_province_name(province_data)
                 province_data.set("onclick", f'obj_clicked(event, "{name}", false)')
                 province_data.set("oncontextmenu", f'obj_clicked(event, "{name}", false)')
 
 
-        return elementToString(self._moves_svg.getroot(), encoding="utf-8"), f"{str(self.board.turn).replace(' ', '_')}_gui.svg"
+        return elementToString(root, encoding="utf-8"), f"{str(self.board.turn).replace(' ', '_')}_gui.svg"
 
 
     def load_colors(self, color_mode: str | None = None) -> None:
@@ -336,7 +352,12 @@ class Mapper:
         other_fills = get_svg_element(self.board_svg, self.board.data["svg config"]["other_fills"])
         background = get_svg_element(self.board_svg, self.board.data["svg config"]["background"])
         if self.replacements != None:
-            for element in itertools.chain(other_fills, background):
+            elements_to_process = []
+            if other_fills is not None:
+                elements_to_process.extend(other_fills)
+            if background is not None:
+                elements_to_process.extend(background)
+            for element in elements_to_process:
                 color = get_element_color(element)
                 if color in self.replacements:
                     if color_mode in self.replacements[color]:
@@ -367,7 +388,10 @@ class Mapper:
     def draw_current_map(self) -> tuple[str, str]:
         logger.info("mapper.draw_current_map")
         svg_file_name = f"{str(self.board.turn).replace(' ', '_')}_map.svg"
-        return elementToString(self.state_svg.getroot(), encoding="utf-8"), svg_file_name
+        root = self.state_svg.getroot()
+        if root is None:
+            raise ValueError("SVG root is None")
+        return elementToString(root, encoding="utf-8"), svg_file_name
 
     def draw_side_panel(self, svg: ElementTree) -> None:
         self._draw_side_panel_date(svg)
@@ -381,9 +405,14 @@ class Mapper:
         2-4: "current", "victory", "start" text labels in that order
         5-7: SC counts in that same order
         """
-        if not self.board.data["svg config"]["power_banners"]:
+
+        root = svg.getroot()
+        if root is None:
+            raise ValueError("SVG root is None")
+        all_power_banners_element = get_svg_element(root, self.board.data["svg config"]["power_banners"])
+        if all_power_banners_element is None:
             return
-        all_power_banners_element = get_svg_element(svg.getroot(), self.board.data["svg config"]["power_banners"])
+        
         if self.board.fow and self.restriction != None:
             # don't get info
             players = sorted(self.board.players, key=lambda sort_player: sort_player.name)
@@ -463,7 +492,7 @@ class Mapper:
         if isinstance(order, Build):
             self._draw_build(player, order)
         elif isinstance(order, Disband):
-            disbanding_unit: Unit = order.province.get_unit()
+            disbanding_unit: Unit = order.province.unit
             if disbanding_unit.coast:
                 coord_list = order.province.all_locs[disbanding_unit.coast]
             else:
@@ -507,7 +536,7 @@ class Mapper:
 
     def _draw_retreat_move(self, order: RetreatMove, unit_type: UnitType, coordinate: tuple[float, float], use_moves_svg=True) -> None:
         destination = self.loc_to_point(order.destination, unit_type, order.destination_coast, coordinate)
-        if order.destination.get_unit():
+        if order.destination.unit:
             destination = self.pull_coordinate(coordinate, destination)
         order_path = self.create_element(
             "path",
@@ -524,7 +553,7 @@ class Mapper:
 
     def _path_helper(
         self, source: Province, destination: Province, current: Province, already_checked=()
-    ) -> list[tuple[Province]]:
+    ) -> list[tuple[Province, Province]]:
         if current in already_checked:
             return []
         options = []
@@ -536,7 +565,7 @@ class Mapper:
             if possibility == destination:
                 return [
                     (
-                        current.get_unit().province,
+                        current,
                         destination,
                     )
                 ]
@@ -550,7 +579,7 @@ class Mapper:
                 and possibility.unit.order.destination is destination
             ):
                 options += self._path_helper(source, destination, possibility, new_checked)
-        return list(map((lambda t: (current.get_unit().province,) + t), options))
+        return list(map((lambda t: (current,) + t), options))
 
     def _draw_path(self, d: str, marker_end="arrow", stroke_color="black"):
         order_path = self.create_element(
@@ -565,7 +594,8 @@ class Mapper:
             },
         )
         return order_path
-    def _get_all_paths(self, unit: Unit) -> list[tuple[Province]]:
+
+    def _get_all_paths(self, unit: Unit) -> list[tuple[Province, Province]]:
         paths = self._path_helper(unit.province, unit.order.destination, unit.province)
         if paths == []:
             return [(unit.province, unit.order.destination)]
@@ -592,10 +622,10 @@ class Mapper:
             p = [coordinate]
             start = coordinate
             for loc in path[1:]:
-                p += [self.loc_to_point(loc, unit.unit_type, unit.order.destination_coast if unit.order else None, start)]
+                p += [self.loc_to_point(loc, unit.unit_type, None, start)]
                 start = p[-1]
 
-            if path[-1].get_unit():
+            if path[-1].unit:
                 p[-1] = self.pull_coordinate(p[-2], p[-1])
 
             p = np.array(p)
@@ -604,14 +634,14 @@ class Mapper:
                 return " ".join(map(str, point))
 
             def norm(point: tuple[float, float]) -> tuple[float, float]:
-                return point / ((np.sum(point**2)) ** 0.5)
+                return point / ((np.sum(np.array(point)**2)) ** 0.5)
 
             # given surrounding points, generate a control point
-            def g(point: tuple[tuple[float, float], tuple[float, float], tuple[float, float]]):
+            def g(point: np.ndarray) -> tuple[float, float]:
                 centered = point[::2] - point[1]
 
                 # TODO: possible div / 0 if the two convoyed points are in a straight line with the convoyer on one side
-                vec = norm(centered[0]) - norm(centered[1])
+                vec = tuple(np.subtract(centered[0], norm(centered[1])))
                 return norm(vec) * 30 + point[1]
 
             # this is a bit weird, because the loop is in-between two values
@@ -626,7 +656,11 @@ class Mapper:
             return self._draw_path(s, marker_end = marker_color, stroke_color = stroke_color)
 
     def _draw_support(self, unit: Unit, coordinate: tuple[float, float], hasFailed: bool) -> None:
+        if not isinstance(unit.order, Support):
+            raise ValueError("Trying to draw a non-support order as a support")
         order: Support = unit.order
+        if order.source.unit is None:
+            raise ValueError("Support order has no source unit")
         x1 = coordinate[0]
         y1 = coordinate[1]
         v2 = self.loc_to_point(order.source, unit.unit_type, order.source.unit.coast, coordinate)
@@ -643,32 +677,32 @@ class Mapper:
         marker_start = ""
         ball_type = "redball" if hasFailed else "ball"
         arrow_type = "redarrow" if hasFailed else "arrow"
-        if order.destination.get_unit():
+        if order.destination.unit:
             if order.source == order.destination:
                 (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data["svg config"]["unit_radius"])
             else:
                 (x3, y3) = self.pull_coordinate((x2, y2), (x3, y3))
             # Draw hold around unit that can be support-held
             if order.source == order.destination:
-                if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)) and self.is_moveable(order.destination.get_unit()):
-                    if order.destination.get_unit().coast:
-                        destloc = order.destination.all_locs[order.destination.get_unit().coast]
+                if isinstance(order.source.unit.order, (ConvoyTransport, Support)) and self.is_moveable(order.source.unit):
+                    if order.source.unit.coast:
+                        destloc = order.source.all_locs[order.source.unit.coast]
                     else:
-                        destloc = order.destination.all_locs[order.destination.get_unit().unit_type]
+                        destloc = order.source.all_locs[order.source.unit.unit_type]
                     for coord in destloc:
                         self._draw_hold(coord, False)
 
             # if two units are support-holding each other
-            destorder = order.destination.get_unit().order
+            destorder = order.destination.unit.order
 
             if (
-                isinstance(order.destination.get_unit().order, Support)
+                isinstance(destorder, Support)
                 and destorder.source == destorder.destination == unit.province
                 and order.source == order.destination
             ):
                 # This check is so we only do it once, so it doesn't overlay
                 # it doesn't matter which one is the origin & which is the dest
-                if id(order.destination.get_unit()) > id(unit):
+                if id(order.destination.unit) > id(unit):
                     marker_start = f"url(#{ball_type})"
                     # doesn't matter that v3 has been pulled, as it's still collinear
                     (x1, y1) = (x2, y2) = self.pull_coordinate(
@@ -973,7 +1007,7 @@ class Mapper:
         if not self.board.data["svg config"]["power_banners"]:
             return
         all_power_banners_element = get_svg_element(
-            self.board_svg.getroot(), self.board.data["svg config"]["power_banners"]
+            self.board_svg, self.board.data["svg config"]["power_banners"]
         )
         self.scoreboard_power_locations: list[str] = []
         for power_element in all_power_banners_element:
@@ -1115,7 +1149,7 @@ class Mapper:
 
     # returns closest point in a set
     # will wrap horizontally
-    def get_closest_loc(self, possibilities: set[tuple[float, float]], coord: tuple[float, float]):
+    def get_closest_loc(self, possibilities: set[tuple[float, float]], coord: tuple[float, float]) -> tuple[float, float]:
         possibilities_list = list(possibilities)
         crossed_pos = []
         crossed = []
@@ -1140,11 +1174,11 @@ class Mapper:
         short_ind = np.argmin(np.linalg.norm(dists, axis=1) + 500 * crossed)
         return crossed_pos[short_ind].tolist()
 
-    def loc_to_point(self, loc: Province, unit_type: UnitType, coast: str | None, current: tuple[float, float], use_retreats=False):
+    def loc_to_point(self, loc: Province, unit_type: UnitType, coast: str | None, current: tuple[float, float], use_retreats=False) -> tuple[float, float]:
         # If we're moving to somewhere that's inhabitted, draw to the proper coast
-        if loc.get_unit():
-            unit_type = loc.get_unit().unit_type
-            coast = loc.get_unit().coast
+        if loc.unit:
+            unit_type = loc.unit.unit_type
+            coast = loc.unit.coast
 
         coord_list = loc.all_rets if use_retreats else loc.all_locs
         if coast and coast in coord_list:

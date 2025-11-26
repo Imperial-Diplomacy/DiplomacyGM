@@ -74,12 +74,12 @@ def get_unit_type(command: str) -> UnitType | None:
 
 
 def parse_season(
-    arguments: list[str], default_year: str
+    arguments: list[str], default_year: int
 ) -> Turn | None:
     year, season, retreat = default_year, None, False
     for s in arguments:
         if s.isnumeric() and int(s) > 1640:
-            year = s
+            year = int(s)
 
         if s.lower() in ["spring", "s", "sm", "sr"]:
             season = "Spring"

@@ -6,6 +6,7 @@ from DiploGM.models.province import Province
 
 if TYPE_CHECKING:
     from DiploGM.models.unit import UnitType
+    from DiploGM.models.player import Player
 
 
 class Order:
@@ -214,7 +215,7 @@ class Waive(Order):
 class RelationshipOrder(Order):
     """Vassal, Dual Monarchy, etc"""
 
-    nameId: str = None
+    nameId: str | None = None
 
     def __init__(self, player: Player):
         super().__init__()

@@ -21,7 +21,6 @@ class TestDATC_J(unittest.TestCase):
             the removal of the army in Paris fails (too many disbands).
         """
         b = BoardBuilder()
-        b.inject_centers(b.france, 1)
         b.army("Paris", b.france)
         b.army("Picardy", b.france)
         # technically the order parser will notice that france doesn't own a unit in gulf of lyon so the order 

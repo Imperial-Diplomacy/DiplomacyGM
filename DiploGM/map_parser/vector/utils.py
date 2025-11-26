@@ -11,13 +11,18 @@ from DiploGM.models.province import Province
 
 logger = logging.getLogger(__name__)
 
-def get_svg_element(svg_root: ElementTree, element_id: str) -> Element:
+def get_svg_element(svg_root: Element | ElementTree, element_id: str) -> Element | None:
     try:
         return svg_root.find(f'*[@id="{element_id}"]')
     except:
         logger.error(f"{element_id} isn't contained in svg_root")
 
-def get_element_color(element: Element, prefix="fill:") -> str:
+def clear_svg_element(svg_root: Element | ElementTree, element_id: str) -> None:
+    element = get_svg_element(svg_root, element_id)
+    if element is not None:
+        element.clear()
+
+def get_element_color(element: Element, prefix="fill:") -> str | None:
     style_string = element.get("style")
     if style_string is None:
         return None
@@ -164,8 +169,8 @@ def parse_path(path_string: str, translation: TransGL3):
 # that data in the Province
 def initialize_province_resident_data(
     provinces: set[Province],
-    resident_dataset: list[Element],
-    get_coordinates: Callable[[Element], tuple[float, float]],
+    resident_dataset: Element | set[Element],
+    get_coordinates: Callable[[Element], tuple[float | None, float | None]],
     resident_data_callback: Callable[[Province, Element], None],
 ) -> None:
     resident_dataset = set(resident_dataset)

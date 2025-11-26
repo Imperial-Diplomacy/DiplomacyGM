@@ -37,7 +37,7 @@ class Province():
         local_unit: unit.Unit | None,  # TODO: probably doesn't make sense to init with a unit
     ):
         self.name: str = name
-        self.geometry: Polygon = coordinates
+        self.geometry: Polygon | MultiPolygon = coordinates
         self.primary_unit_coordinates: dict[UnitType | str, tuple[float, float]] = primary_unit_coordinates
         self.retreat_unit_coordinates: dict[UnitType | str, tuple[float, float]] = retreat_unit_coordinates
         self.type: ProvinceType = province_type
@@ -75,19 +75,19 @@ class Province():
             return f"{self.name} {coast}"
         return self.name
     
-    def get_primary_unit_coordinates(self, unit_type: UnitType, coast = None) -> tuple[float, float] | None:
+    def get_primary_unit_coordinates(self, unit_type: UnitType, coast = None) -> tuple[float, float]:
         if coast in self.primary_unit_coordinates:
             return self.primary_unit_coordinates[coast]
         elif unit_type in self.primary_unit_coordinates:
             return self.primary_unit_coordinates[unit_type]
-        return None
+        return (0, 0)
 
-    def get_retreat_unit_coordinates(self, unit_type: UnitType, coast = None) -> tuple[float, float] | None:
+    def get_retreat_unit_coordinates(self, unit_type: UnitType, coast = None) -> tuple[float, float]:
         if coast in self.retreat_unit_coordinates:
             return self.retreat_unit_coordinates[coast]
         elif unit_type in self.retreat_unit_coordinates:
             return self.retreat_unit_coordinates[unit_type]
-        return None
+        return (0, 0)
     
     def set_unit_coordinate(self, coord, is_primary, unit_type, coast = None):
         # Set default cooordinate if none are found

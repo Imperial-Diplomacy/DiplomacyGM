@@ -11,6 +11,7 @@ from DiploGM.utils import simple_player_name
 if TYPE_CHECKING:
     from DiploGM.models import province
     from DiploGM.models import unit
+    from DiploGM.models.board import Board
 
 
 class VassalType(Enum):
@@ -30,7 +31,7 @@ class Player:
     def __init__(
         self,
         name: str,
-        color: str,
+        color: str | dict[str, str],
         win_type: str,
         vscc: int,
         iscc: int,
@@ -58,7 +59,7 @@ class Player:
         self.centers: set[province.Province] = centers
         self.units: set[unit.Unit] = units
 
-        self.build_orders: set[order.PlayerOrder] = set()
+        self.build_orders: set[order.PlayerOrder | order.RelationshipOrder] = set()
         self.waived_orders: int = 0
 
         self.vassal_orders: dict[Player, order.RelationshipOrder] = {}

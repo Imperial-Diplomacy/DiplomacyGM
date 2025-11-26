@@ -2,6 +2,7 @@ from black.trans import defaultdict
 import inspect
 import logging
 
+from discord import app_commands
 from discord.ext import commands
 
 from DiploGM.config import ERROR_COLOUR
@@ -18,7 +19,7 @@ from DiploGM.models.province import ProvinceType
 logger = logging.getLogger(__name__)
 manager = Manager()
 
-
+@app_commands.guild_only()
 class CommandCog(commands.Cog):
     """This is a Cog for general-purpose commands!"""
 
@@ -65,7 +66,7 @@ class CommandCog(commands.Cog):
     )
     async def scoreboard(self, ctx: commands.Context) -> None:
         arguments = (
-            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
             .lower()
             .split()
@@ -76,7 +77,7 @@ class CommandCog(commands.Cog):
         board = manager.get_board(ctx.guild.id)
 
         if board.fow:
-            perms.assert_perms.gm_only(ctx, "get scoreboard")
+            perms.assert_gm_only(ctx, "get scoreboard")
 
         if csv and not board.is_chaos():
             players = sorted(board.players, key=lambda p: p.name)
@@ -388,7 +389,7 @@ class CommandCog(commands.Cog):
         board = manager.get_board(ctx.guild.id)
 
         if not board.orders_enabled:
-            perms.assert_perms.gm_only(
+            perms.assert_gm_only(
                 ctx, "call .all_province_data while orders are locked"
             )
 

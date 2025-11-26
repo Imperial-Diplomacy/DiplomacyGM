@@ -47,6 +47,9 @@ class ExtensionManagementCog(commands.Cog):
         except ExtensionNotLoaded:
             status = f"Extension was not loaded"
             colour=PARTIAL_ERROR_COLOUR
+        except:
+            status = f"Extension failed to unload for an unknown reason"
+            colour = ERROR_COLOUR
         else:
             status = f"Unloaded Extension"
             colour = None
@@ -73,6 +76,9 @@ class ExtensionManagementCog(commands.Cog):
             colour = ERROR_COLOUR
         except ExtensionFailed:
             status = "Extension failed to load"
+            colour = ERROR_COLOUR
+        except:
+            status = f"Extension failed to load for an unknown reason"
             colour = ERROR_COLOUR
         else:
             status = "Loaded extension"
@@ -104,6 +110,9 @@ class ExtensionManagementCog(commands.Cog):
         except ExtensionFailed:
             status=f"Extension failed to load",
             colour=ERROR_COLOUR
+        except:
+            status = f"Extension failed to reload for an unknown reason"
+            colour = ERROR_COLOUR
         else:
             status=f"Reloaded Extension"
             colour=None

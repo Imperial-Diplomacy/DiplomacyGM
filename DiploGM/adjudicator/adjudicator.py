@@ -15,6 +15,7 @@ from DiploGM.adjudicator.defs import (
 if TYPE_CHECKING:
     from DiploGM.models.turn import Turn
     from DiploGM.models.board import Board
+    from DiploGM.models.player import Player
 from DiploGM.models.order import (
     Order,
     NMR,
@@ -126,7 +127,7 @@ def order_is_valid(province: Province, order: Order, strict_convoys_supports=Fal
 
     if isinstance(order, Support) or isinstance(order, ConvoyTransport):
         source = order.source
-        source_unit = source.get_unit()
+        source_unit = source.unit
 
         if source_unit == None:
             return False, f"No unit for supporting / convoying at {source}"
@@ -180,14 +181,11 @@ def order_is_valid(province: Province, order: Order, strict_convoys_supports=Fal
     elif isinstance(order, ConvoyTransport):
         if unit.unit_type != UnitType.FLEET:
             return False, "Only fleets can convoy"
-        source_unit = order.source.get_unit()
+        source_unit = order.source.unit
         if not isinstance(source_unit, Unit):
             return False, "There is no unit to convoy"
         if strict_convoys_supports:
-            corresponding_order_is_move = isinstance(source_unit.order, Move) or isinstance(
-                source_unit.order, ConvoyMove
-            )
-            if not corresponding_order_is_move or source_unit.order.destination != order.destination:
+            if not isinstance(source_unit.order, (Move, ConvoyMove)) or source_unit.order.destination != order.destination:
                 return False, f"Convoyed unit {order.source} did not make corresponding order"
         valid_move, reason = order_is_valid(
             order.source, ConvoyMove(order.destination), strict_convoys_supports
@@ -202,7 +200,7 @@ def order_is_valid(province: Province, order: Order, strict_convoys_supports=Fal
             return False, f"No valid convoy path from {order.source} to {province}"
         return True, None
     elif isinstance(order, Support):
-        source_unit = order.source.get_unit()
+        source_unit = order.source.unit
         if not isinstance(source_unit, Unit):
             return False, "There is no unit to support"
         if isinstance(source_unit.order, Core) and order_is_valid(order.source, source_unit.order):
@@ -223,16 +221,13 @@ def order_is_valid(province: Province, order: Order, strict_convoys_supports=Fal
             return False, "Supported unit can't reach destination"
 
         if strict_convoys_supports:
-            corresponding_order_is_move = isinstance(source_unit.order, Move) or isinstance(
-                source_unit.order, ConvoyMove
-            )
             # if move is invalid then it doesn't go through
             if (
-                is_support_hold and corresponding_order_is_move
+                is_support_hold and isinstance(source_unit.order, (Move, ConvoyMove))
             ) or (
                 not is_support_hold and 
                 (
-                    not corresponding_order_is_move or
+                    not isinstance(source_unit.order, (Move, ConvoyMove)) or
                     source_unit.order.destination != order.destination or
                     (order.destination_coast is not None and source_unit.order.destination_coast != order.destination_coast)
                 )
@@ -270,33 +265,35 @@ class BuildsAdjudicator(Adjudicator):
         super().__init__(board)
 
     def vassal_adju(self):
+        new_vassals: dict[Player, list[Player]] = {}
+        new_lieges: dict[Player, Player | None] = {}
         for player in self._board.players:
             scs = 0
             for vassal in player.vassals:
                 scs += len(vassal.centers)
-            player.new_vassals = player.vassals.copy()
+            new_vassals[player] = player.vassals.copy()
             if scs > len(player.centers):
                 for order in player.vassal_orders.values():
                     if isinstance(order, Disown) and order.player in player.vassals:
-                        player.new_vassals.remove(order.player)
+                        new_vassals[player].remove(order.player)
                     scs2 = 0
-                    for vassal in player.new_vassals:
+                    for vassal in new_vassals[player]:
                         scs2 += len(vassal.centers)
                     if scs2 > len(player.centers):
-                        player.new_vassals = []
+                        new_vassals[player] = []
             else:
                 for order in player.vassal_orders.values():
                     if isinstance(order, Vassal):
                         vassal = order.player
                         if player in vassal.vassal_orders and isinstance(vassal.vassal_orders[player], Liege):
                             if (not vassal.liege) or (vassal.liege in player.vassal_orders and isinstance(player.vassal_orders[vassal.liege], RebellionMarker)):
-                                player.new_vassals.append(vassal)
+                                new_vassals[player].append(vassal)
                 
         for player in self._board.players:
             new_liege = None
             overcommited = False
             for liege in self._board.players:
-                if player in liege.new_vassals:
+                if player in new_vassals[liege]:
                     if new_liege is None:
                         new_liege = liege
                     else:
@@ -304,19 +301,18 @@ class BuildsAdjudicator(Adjudicator):
                         break
             if overcommited:
                 for liege in self._board.players:
-                    if player in liege.new_vassals:
-                        liege.new_vassals.remove(player)
+                    if player in new_vassals[liege]:
+                        new_vassals[liege].remove(player)
             for order in player.vassal_orders:
                 if isinstance(order, Defect):
-                    if player in order.player.new_vassals:
-                        order.player.new_vassals.remove(player)
+                    if player in new_vassals[order.player]:
+                        new_vassals[order.player].remove(player)
                         new_liege = None
-            player.new_liege = new_liege
+            new_lieges[player] = new_liege
             
         for player in self._board.players:
-            player.liege = player.new_liege
-            player.vassals = player.new_vassals
-        
+            player.liege = new_lieges[player]
+            player.vassals = new_vassals[player]
         for player in self._board.players:
             for order in player.vassal_orders.values():
                 if isinstance(order, DualMonarchy) and player in order.player.vassal_orders and isinstance(order.player.vassal_orders[player], DualMonarchy):
@@ -573,7 +569,7 @@ class MovesAdjudicator(Adjudicator):
             order.state = ResolutionState.UNRESOLVED
         for order in self.orders:
             self._resolve_order(order)
-            order.base_unit.order.hasFailed = (order.resolution == Resolution.FAILS)
+            order.get_original_order().hasFailed = (order.resolution == Resolution.FAILS)
         if self.save_orders:
             database.get_connection().save_order_for_units(self._board, set(o.base_unit for o in self.orders))
         self._update_board()
@@ -728,6 +724,7 @@ class MovesAdjudicator(Adjudicator):
         # Algorithm from https://diplom.org/Zine/S2009M/Kruijswijk/DipMath_Chp2.htm
         elif order.type == OrderType.MOVE:
             return self._adjudicate_move_order(order)
+        raise ValueError("Unknown order type for adjudication")
 
     def _adjudicate_move_order(self, order: AdjudicableOrder) -> Resolution:
         # check that convoy path work
@@ -751,11 +748,11 @@ class MovesAdjudicator(Adjudicator):
         attack_strength = 1
         attacked_move = (
             attacked_order == None
-            or attacked_order.type == OrderType.MOVE
-            and self._resolve_order(attacked_order) == Resolution.SUCCEEDS
+            or (attacked_order.type == OrderType.MOVE
+                and self._resolve_order(attacked_order) == Resolution.SUCCEEDS)
         )
 
-        if head_on or not attacked_move:
+        if attacked_order and (head_on or not attacked_move):
             attacked_country = attacked_order.country
 
             if attacked_country == order.country:

@@ -32,21 +32,17 @@ class TreeToOrder(Transformer):
         # ignore the fleet/army signifier, if exists
         loc = s[-1][0]
         if loc is not None and not self.board.fow:
-            unit = loc.get_unit()
+            unit = loc.unit
             if unit is None:
                 raise ValueError(f"No unit in {s[-1][0]}")
-            if not isinstance(unit, Unit):
-                raise Exception(f"Didn't get a unit or None from get_unit(), please report this")
 
         return loc
 
     def unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
-        unit = s[-1][0].get_unit()
+        unit = s[-1][0].unit
         if unit is None:
             raise ValueError(f"No unit in {s[-1][0]}")
-        if not isinstance(unit, Unit):
-            raise Exception(f"Didn't get a unit or None from get_unit(), please report this")
 
         return unit
 
@@ -55,8 +51,6 @@ class TreeToOrder(Transformer):
         unit = s[-1][0].dislodged_unit
         if unit is None:
             raise ValueError(f"No dislodged unit in {s[-1]}")
-        if not isinstance(unit, Unit):
-            raise Exception(f"Didn't get a unit or None from get_unit(), please report this")
 
         return unit
 
@@ -411,7 +405,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
     else:
         # remove unit's order
         # assert that the command user is authorized to order this unit
-        unit = province.get_unit()
+        unit = province.unit
         if unit is not None:
             player = unit.player
             if player_restriction is None or player == player_restriction:

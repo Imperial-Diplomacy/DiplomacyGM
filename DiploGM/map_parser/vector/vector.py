@@ -132,24 +132,24 @@ class Parser:
 
         for province in provinces:
             for coast in province.get_multiple_coasts():
-                if not province.get_primary_unit_coordinates(UnitType.FLEET, coast):
+                if province.get_primary_unit_coordinates(UnitType.FLEET, coast) == (0, 0):
                     logger.warning(f"{self.datafile}: Province {province.get_name(coast)} has no fleet coord. Setting to 0,0 ...")
                     province.set_unit_coordinate(None, True, UnitType.FLEET, coast)
-                if not province.get_retreat_unit_coordinates(UnitType.FLEET, coast):
+                if province.get_retreat_unit_coordinates(UnitType.FLEET, coast) == (0, 0):
                     logger.warning(f"{self.datafile}: Province {province.get_name(coast)} has no fleet retreat coord. Setting to 0,0 ...")
                     province.set_unit_coordinate(None, False, UnitType.FLEET, coast)
             if not province.get_multiple_coasts() and province.get_coastal_adjacent():
-                if not province.get_primary_unit_coordinates(UnitType.FLEET):
+                if province.get_primary_unit_coordinates(UnitType.FLEET) == (0, 0):
                     logger.warning(f"{self.datafile}: Province {province.name} has no fleet coord. Setting to 0,0 ...")
                     province.set_unit_coordinate(None, True, UnitType.FLEET)
-                if not province.get_retreat_unit_coordinates(UnitType.FLEET):
+                if province.get_retreat_unit_coordinates(UnitType.FLEET) == (0, 0):
                     logger.warning(f"{self.datafile}: Province {province.name} has no fleet retreat coord. Setting to 0,0 ...")
                     province.set_unit_coordinate(None, False, UnitType.FLEET)
             if province.type != ProvinceType.SEA:
-                if not province.get_primary_unit_coordinates(UnitType.ARMY):
+                if province.get_primary_unit_coordinates(UnitType.ARMY) == (0, 0):
                     logger.warning(f"{self.datafile}: Province {province.name} has no army coord. Setting to 0,0 ...")
                     province.set_unit_coordinate(None, True, UnitType.ARMY)
-                if not province.get_retreat_unit_coordinates(UnitType.ARMY):
+                if province.get_retreat_unit_coordinates(UnitType.ARMY) == (0, 0):
                     logger.warning(f"{self.datafile}: Province {province.name} has no army retreat coord. Setting to 0,0 ...")
                     province.set_unit_coordinate(None, False, UnitType.ARMY)
         
@@ -454,7 +454,11 @@ class Parser:
             if not circles:
                 return None, None
             circle = circles[0]
-            base_coordinates = float(circle.get("cx")), float(circle.get("cy"))
+            cx = circle.get("cx")
+            cy = circle.get("cy")
+            if cx is None or cy is None:
+                return None, None
+            base_coordinates = float(cx), float(cy)
             trans = TransGL3(supply_center_data)
             return trans.transform(base_coordinates)
 

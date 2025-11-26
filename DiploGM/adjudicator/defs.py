@@ -1,6 +1,6 @@
 from enum import Enum
 
-from DiploGM.models.order import NMR, Hold, Core, Move, ConvoyMove, Support, ConvoyTransport
+from DiploGM.models.order import NMR, Hold, Core, Move, ConvoyMove, Support, ConvoyTransport, UnitOrder
 from DiploGM.models.province import Province
 from DiploGM.models.unit import Unit, UnitType
 
@@ -42,7 +42,7 @@ class AdjudicableOrder:
 
         self.type: OrderType
         self.destination_province: Province = self.current_province
-        self.destination_coast: str = self.current_coast
+        self.destination_coast: str | None = self.current_coast
         self.source_province: Province = self.current_province
         self.is_convoy: bool = False
         # indicates that a move is also a convoy that failed, so no support holds
@@ -73,3 +73,8 @@ class AdjudicableOrder:
     def __str__(self):
         # This could be improved
         return f"{self.current_province} {self.type} {self.source_province if self.source_province else ''} {self.destination_province} [{self.state}:{self.resolution}]"
+    
+    def get_original_order(self) -> UnitOrder:
+        if self.base_unit.order is None:
+            raise ValueError("AdjudicableOrder can't find source order somehow")
+        return self.base_unit.order

@@ -61,8 +61,7 @@ class BoardBuilder():
 
     def army(self, land: str, player: Player) -> Unit:
         province, _ = self.board.get_province_and_coast(land)
-        if province.unit:
-            self.board.delete_unit(province)
+        self.board.delete_unit(province)
         assert province.type == ProvinceType.LAND or ProvinceType.ISLAND
 
         unit = Unit(
@@ -81,14 +80,9 @@ class BoardBuilder():
 
         return unit
     
-    def inject_centers(self, player: Player, c: int):
-        province_stash = ["Belgium", "Holland", "Denmark"]
-        player.centers.update(set([self.board.get_province_and_coast(province_stash[i]) for i in range(c)]))
-    
     def fleet(self, loc: str, player: Player):
         province, coast = self.board.get_province_and_coast(loc)
-        if province.unit:
-            self.board.delete_unit(province)
+        self.board.delete_unit(province)
         unit = Unit(
             UnitType.FLEET,
             player,

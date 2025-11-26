@@ -24,7 +24,7 @@ class AdminCog(commands.Cog):
     @perms.superuser_only("send a GM announcement")
     async def announce(self, ctx: commands.Context) -> None:
         guilds_with_games = manager.list_servers()
-        content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+        content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
         content = re.sub(r"<@&[0-9]{16,20}>", r"{}", content)
         roles = list(map(lambda role: role.name, ctx.message.role_mentions))
         message = ""
@@ -77,7 +77,7 @@ class AdminCog(commands.Cog):
     async def servers(self, ctx: commands.Context) -> None:
         servers_with_games = manager.list_servers()
         message = ""
-        args = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).split(
+        args = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").split(
             " "
         )
         send_id = "id" in args
@@ -127,7 +127,7 @@ class AdminCog(commands.Cog):
     @commands.command(hidden=True)
     @perms.superuser_only("leave server")
     async def leave_server(self, ctx: commands.Context) -> None:
-        leave_id = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+        leave_id = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
         try:
             leave_id = int(leave_id)
         except ValueError:
@@ -195,7 +195,7 @@ class AdminCog(commands.Cog):
 
         # parse usernames from trailing contents
         # .bulk_allocate_role <@B1.4 Player> elisha thisisflare kingofprussia ...
-        content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+        content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
 
         usernames = []
         components = content.split(" ")
@@ -267,14 +267,14 @@ class AdminCog(commands.Cog):
             )
             return
         arguments = (
-            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
             .lower()
             .split()
         )
         server_id = int(arguments[0])
         board = manager.get_board(server_id)
-        season = parse_season(arguments[1:], board.get_year_str())
+        season = parse_season(arguments[1:], board.turn.year)
         file, _ = manager.draw_map(
             server_id,
             draw_moves=True,
@@ -303,7 +303,7 @@ class AdminCog(commands.Cog):
 
         board = manager.get_board(ctx.guild.id)
         code = (
-            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
             .strip("`")
         )

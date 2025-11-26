@@ -187,7 +187,7 @@ class DiploGM(commands.Bot):
 
         # Get the specific channel
         channel = self.get_channel(IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID)
-        if not channel:
+        if not channel or not isinstance(channel, discord.TextChannel):
             logger.warning(
                 f"Cannot find Bot Status Channel [id={IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID}]"
             )
@@ -219,8 +219,9 @@ class DiploGM(commands.Bot):
         await super().close()
 
     async def before_any_command(self, ctx: commands.Context):
-        if isinstance(ctx.channel, discord.DMChannel):
+        if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)):
             return
+        assert isinstance(ctx.guild, discord.Guild)
 
         guild = ctx.guild
         if not guild:
@@ -237,6 +238,8 @@ class DiploGM(commands.Bot):
         await ctx.message.add_reaction("👍")
 
     async def after_any_command(self, ctx: commands.Context):
+        if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) or not ctx.guild:
+            return
         self.last_command_time = ctx.message.created_at
         time_spent = (
             datetime.datetime.now(datetime.timezone.utc) - ctx.message.created_at

@@ -39,7 +39,7 @@ class Board:
         self.orders_enabled: bool = True
         self.data: dict = data
         self.datafile = datafile
-        self.name = None
+        self.name: str | None = None
         self.fow = fow
 
         # store as lower case for user input purposes
@@ -164,7 +164,7 @@ class Board:
         build_counts = sorted(build_counts, key=lambda counts: counts[1])
         return build_counts
 
-    def change_owner(self, province: Province, player: Player):
+    def change_owner(self, province: Province, player: Player | None):
         if province.has_supply_center:
             if province.owner:
                 province.owner.centers.remove(province)
@@ -178,7 +178,7 @@ class Board:
         player: Player,
         province: Province,
         coast: str | None,
-        retreat_options: set[Province] | None,
+        retreat_options: set[tuple[Province, str | None]] | None,
     ) -> Unit:
         unit = Unit(unit_type, player, province, coast, retreat_options)
         if retreat_options is not None:
@@ -202,15 +202,19 @@ class Board:
         unit.coast = new_coast
         return unit
 
-    def delete_unit(self, province: Province) -> Unit:
+    def delete_unit(self, province: Province) -> Unit | None:
         unit = province.unit
+        if not unit:
+            return None
         province.unit = None
         unit.player.units.remove(unit)
         self.units.remove(unit)
         return unit
 
-    def delete_dislodged_unit(self, province: Province) -> Unit:
+    def delete_dislodged_unit(self, province: Province) -> Unit | None:
         unit = province.dislodged_unit
+        if not unit:
+            return None
         province.dislodged_unit = None
         unit.player.units.remove(unit)
         self.units.remove(unit)
@@ -244,9 +248,6 @@ class Board:
             player.units = set()
 
         self.units = set()
-
-    def get_year_int(self) -> int:
-        return self.turn.year
 
     @staticmethod
     def convert_year_int_to_str(year: int) -> str:
