@@ -256,9 +256,6 @@ class Board:
 
         self.units = set()
 
-    def get_year_int(self) -> int:
-        return self.turn.year
-
     @staticmethod
     def convert_year_int_to_str(year: int) -> str:
         # No 0 AD / BC
