@@ -1,3 +1,18 @@
+?.?.?
+=====
+
+Contributors
+- Golden Kumquat
+- chloe
+
+# Developer Changes
+- `.reload_config` command - it probably doesn't work very well but your luck may vary...
+- Moved the last couple functions out of `config.py`.
+- Moved Hardcoded permission roles into `config.toml`.
+- Overall Simplification of `perms.py`.
+- Removed a few references to old turn system.
+- Moved `parse_order.py` and `parse_edit_state.py` into a package with their cogs.
+
 1.3.4
 =====
 

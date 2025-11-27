@@ -16,7 +16,6 @@ from discord.ext import commands
 
 from DiploGM import config
 from DiploGM.config import MAP_ARCHIVE_SAS_TOKEN
-from DiploGM.parse_edit_state import parse_edit_state
 from DiploGM import perms
 from DiploGM.utils import (
     get_orders,
@@ -30,6 +29,8 @@ from DiploGM.db.database import get_connection
 from DiploGM.models.order import Disband, Build
 from DiploGM.models.player import Player
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
+
+from .parse_edit_state import parse_edit_state
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -116,7 +117,7 @@ class GameManagementCog(commands.Cog):
         # get abstract player information
         player_roles: set[Role] = set()
         for r in guild.roles:
-            if config.is_player_role(r.name):
+            if perms.is_player_role(r.name):
                 player_roles.add(r)
 
         if len(player_roles) == 0:
@@ -130,7 +131,7 @@ class GameManagementCog(commands.Cog):
 
         player_categories: list[CategoryChannel] = []
         for c in guild.categories:
-            if config.is_player_category(c.name):
+            if perms.is_player_category(c.name):
                 player_categories.append(c)
 
         if len(player_categories) == 0:
@@ -393,7 +394,7 @@ class GameManagementCog(commands.Cog):
 
         player_categories: list[CategoryChannel] = []
         for c in guild.categories:
-            if config.is_player_category(c.name):
+            if perms.is_player_category(c.name):
                 player_categories.append(c)
 
         for c in player_categories:
@@ -802,12 +803,6 @@ class GameManagementCog(commands.Cog):
         await send_message_and_file(
             channel=channel, message="Finished publicizing void."
         )
-
-
-async def setup(bot):
-    cog = GameManagementCog(bot)
-    await bot.add_cog(cog)
-
 
 def get_maps_channel(guild: Guild) -> GuildChannel | None:
     for channel in guild.channels:

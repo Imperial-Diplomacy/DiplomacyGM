@@ -19,10 +19,11 @@ from DiploGM.config import (
     IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID,
     EXTENSIONS_TO_LOAD_ON_STARTUP,
 )
-from DiploGM.events.eventbus import EventBus
+
 from DiploGM.perms import CommandPermissionError
-from DiploGM.utils import send_message_and_file
 from DiploGM.manager import Manager
+from DiploGM.events.eventbus import EventBus
+from DiploGM.utils import send_message_and_file
 
 logger = logging.getLogger(__name__)
 

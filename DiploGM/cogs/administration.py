@@ -8,7 +8,8 @@ from discord.utils import find as discord_find
 
 from DiploGM import config
 from DiploGM import perms
-from DiploGM.config import MAP_ARCHIVE_SAS_TOKEN
+from DiploGM.config import MAP_ARCHIVE_SAS_TOKEN, GAME_SERVER_MODERATOR_ROLE_NAMES, GM_PERMISSION_ROLE_NAMES, \
+    PLAYER_PERMISSION_ROLE_NAMES, IMPDIP_MOD_ROLES, IMPDIP_BOT_WIZARD_ROLE, IMPDIP_SERVER_ID
 from DiploGM.utils import log_command, parse_season, send_message_and_file, upload_map_to_archive
 from DiploGM.manager import Manager
 
@@ -31,7 +32,7 @@ class AdminCog(commands.Cog):
         for server in ctx.bot.guilds:
             if server is None:
                 continue
-            admin_chat_channels = [channel for channel in server.channels if config.is_gm_channel(channel.name)]
+            admin_chat_channels = [channel for channel in server.channels if perms.is_gm_channel(channel.name)]
 
             if len(admin_chat_channels) == 0:
                 message += f"\n- ~~{server.name}~~ Couldn't find admin channel"
@@ -177,7 +178,8 @@ class AdminCog(commands.Cog):
 
         for role in roles.copy():
             name = role.name.lower()
-            if config.is_gm_role(name) or config.is_mod_role(name):
+            if name in (GAME_SERVER_MODERATOR_ROLE_NAMES + GM_PERMISSION_ROLE_NAMES + PLAYER_PERMISSION_ROLE_NAMES)\
+                    or (guild.id == IMPDIP_SERVER_ID and role.id in IMPDIP_MOD_ROLES + [IMPDIP_BOT_WIZARD_ROLE]):
                 await send_message_and_file(
                     channel=ctx.channel,
                     title="Error!",
@@ -275,7 +277,7 @@ class AdminCog(commands.Cog):
         )
         server_id = int(arguments[0])
         board = manager.get_board(server_id)
-        season = parse_season(arguments[1:], board.get_year_str())
+        season = parse_season(arguments[1:], board.turn.year)
         file, _ = manager.draw_map(
             server_id,
             draw_moves=True,

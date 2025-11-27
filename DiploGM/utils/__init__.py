@@ -1,6 +1,7 @@
 from .sanitise import simple_player_name
 from .logging import log_command, log_command_no_ctx
 from .send_message import send_message_and_file
+from .singleton import SingletonMeta
 from .orders import get_orders, get_filtered_orders
 from .map_archive import upload_map_to_archive
 from .sanitise import (
@@ -11,4 +12,3 @@ from .sanitise import (
     parse_season,
     get_value_from_timestamp
 )
-from .singleton import SingletonMeta

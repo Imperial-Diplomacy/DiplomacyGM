@@ -8,14 +8,14 @@ from itertools import permutations
 import discord
 from discord.ext.commands import Bot
 
-from DiploGM.perms import is_superuser, is_gm
+from DiploGM.perms import is_superuser, is_gm, temporary_bumbles, is_bumble
 from DiploGM.manager import Manager
 from scipy.integrate import odeint
 
 from discord.ext import commands
 
 from DiploGM import perms
-from DiploGM.config import ERROR_COLOUR, is_bumble, temporary_bumbles, IMPDIP_SERVER_ID
+from DiploGM.config import ERROR_COLOUR, IMPDIP_SERVER_ID, AAHOUGHTON_ID, EOLHC_ID
 from DiploGM.utils import log_command, send_message_and_file
 
 from DiploGM.db.database import get_connection
@@ -88,10 +88,7 @@ class PartyCog(commands.Cog):
             content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
             if content == "":
                 content = " nothing"
-            name = author.nick
-            if not name:
-                name = author.name
-            response = name + " " + random.choice(ping_text_choices) + content
+            response = author.display_name + " " + random.choice(ping_text_choices) + content
         await send_message_and_file(channel=ctx.channel, title=response)
 
     @commands.command(hidden=True)
@@ -100,15 +97,15 @@ class PartyCog(commands.Cog):
         random.shuffle(list_of_bumble)
         word_of_bumble = "".join(list_of_bumble)
 
-        if is_bumble(ctx.author.name) and random.randrange(0, 10) == 0:
+        if is_bumble(ctx.author) and random.randrange(0, 10) == 0:
             word_of_bumble = "bumble"
 
         if word_of_bumble == "bumble":
             word_of_bumble = "You are the chosen bumble"
 
-            if ctx.author.name not in temporary_bumbles:
+            if ctx.author.id not in temporary_bumbles:
                 # no keeping temporary bumbleship easily
-                temporary_bumbles.add(ctx.author.name)
+                temporary_bumbles.add(ctx.author.id)
         if word_of_bumble == "elbmub":
             word_of_bumble = "elbmub nesohc eht era uoY"
 
@@ -146,7 +143,7 @@ class PartyCog(commands.Cog):
         message = "Cheating is disabled for this user."
         author = ctx.message.author.name
         board = manager.get_board(ctx.guild.id)
-        if is_bumble(author):
+        if is_bumble(ctx.message.author):
             sample = random.choice(
                 [
                     f"It looks like {author} is getting coalitioned this turn :cry:",
@@ -169,7 +166,7 @@ class PartyCog(commands.Cog):
         await ctx.message.add_reaction("🐟")
 
         message = "No! Phishing is bad!"
-        if is_bumble(ctx.author.name):
+        if is_bumble(ctx.author):
             message = "Please provide your firstborn pet and your soul for a chance at winning your next game!"
         await send_message_and_file(channel=ctx.channel, title=message)
 
@@ -178,7 +175,7 @@ class PartyCog(commands.Cog):
         message = "You are not worthy of advice."
         chance = random.randrange(0, 5)
 
-        if is_bumble(ctx.author.name):
+        if is_bumble(ctx.author):
             message = "Bumble suggests that you go fishing, although typically blasphemous, today is your lucky day!"
         elif chance == 0:
             message = random.choice(
@@ -228,7 +225,7 @@ class PartyCog(commands.Cog):
             fish_num += 20
 
         debumblify = False
-        if is_bumble(ctx.author.name) and random.randrange(0, 10) == 0:
+        if is_bumble(ctx.author) and random.randrange(0, 10) == 0:
             # Bumbles are good fishers
             if fish_num == 1:
                 fish_num = 0
@@ -274,7 +271,7 @@ class PartyCog(commands.Cog):
         elif fish_num < 21:
             fish_num = (21 - fish_num) // 2
 
-            if is_bumble(ctx.author.name):
+            if is_bumble(ctx.author):
                 if random.randrange(0, 20) == 0:
                     # Sometimes Bumbles are so bad at fishing they debumblify
                     debumblify = True
@@ -298,7 +295,7 @@ class PartyCog(commands.Cog):
             )
 
         if debumblify:
-            temporary_bumbles.remove(ctx.author.name)
+            temporary_bumbles.remove(ctx.author.id)
             fish_message = f"\n Your luck has run out! {fish_message}\nBumble is sad, you must once again prove your worth by Bumbling!"
 
         await send_message_and_file(channel=ctx.channel, title=fish_message)
@@ -357,7 +354,7 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def eolhc(self, ctx: commands.Context,):
-        if ctx.author.id == 1352388421003251833:
+        if ctx.author.id == EOLHC_ID:
             if ctx.guild.id != IMPDIP_SERVER_ID and is_gm(ctx.author) and (ctx.guild.id not in self.eolhc_ed_members or ctx.me.id not in self.eolhc_ed_members[ctx.guild.id]):
                 self.eolhc_ed_members.setdefault(ctx.guild.id, list()).append(ctx.me.id)
                 await ctx.reply("*incoherent screaming*"[::-1])
@@ -380,7 +377,7 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True, aliases=eolhc_permutations)
     async def eohlc(self, ctx: commands.Context):
-        if ctx.author.id == 285108244714881024: # aahoughton
+        if ctx.author.id == AAHOUGHTON_ID:
             try:
                 await ctx.reply("*eolhc")
                 await ctx.author.edit(nick="aahuoghton")

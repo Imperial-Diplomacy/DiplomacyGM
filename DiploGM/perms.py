@@ -1,12 +1,15 @@
 from functools import wraps
-from typing import Any, Awaitable, Callable
+from typing import Any, Awaitable, Callable, Union
 
 import discord
+from discord import User, Member
 from discord.ext import commands
 
 from DiploGM import config
 from DiploGM.errors import CommandPermissionError
-from DiploGM.config import IMPDIP_SERVER_ID, SUPERUSERS
+from DiploGM.config import IMPDIP_SERVER_ID, SUPERUSERS, IMPDIP_MOD_ROLES, GM_PERMISSION_ROLE_NAMES, GM_CATEGORY_NAMES, \
+    GM_CHANNEL_NAMES, PLAYER_PERMISSION_ROLE_NAMES, PLAYER_ORDER_CATEGORY_NAMES, GAME_SERVER_MODERATOR_ROLE_NAMES, \
+    BUMBLE_ID
 from DiploGM.utils import (simple_player_name)
 from DiploGM.manager import Manager
 from DiploGM.models.player import Player
@@ -32,10 +35,10 @@ def get_player_by_context(ctx: commands.Context):
 
 
 def is_player_channel(player_role: str, channel: commands.Context.channel) -> bool:
-    player_channel = player_role + config.player_channel_suffix
+    player_channel = player_role + config.PLAYER_ORDER_CHANNEL_SUFFIX
     return simple_player_name(player_channel) == simple_player_name(
         channel.name
-    ) and config.is_player_category(channel.category.name)
+    ) and is_player_category(channel.category.name)
 
 
 
@@ -74,6 +77,13 @@ def require_player_by_context(ctx: commands.Context, description: str):
 
 # Player
 
+def is_player_role(role: str) -> bool:
+    return role.lower() in PLAYER_PERMISSION_ROLE_NAMES
+
+
+def is_player_category(category: str) -> bool:
+    return category.lower() in PLAYER_ORDER_CATEGORY_NAMES
+
 # adds one extra argument, player in a player's channel, which is None if run by a GM in a GM channel
 def player(description: str = "run this command"):
     def decorator(func: Callable[..., Awaitable[Any]]):
@@ -106,12 +116,18 @@ async def assert_mod_only(
             f"You cannot {description} as you could not be found as a member of the Imperial Diplomacy Hub server."
         )
 
-    if not is_moderator(_member):
+    for role in ctx.author.roles:
+        if role in IMPDIP_MOD_ROLES:
+            break
+    else:
         raise CommandPermissionError(
             f"You cannot {description} as you are not a moderator on the Imperial Diplomacy Hub server."
         )
 
-    if not is_moderator(ctx.author):
+    for role in ctx.author.roles:
+        if role in GAME_SERVER_MODERATOR_ROLE_NAMES:
+            break
+    else:
         raise CommandPermissionError(
             f"You cannot {description} as you are not a moderator on the current server."
         )
@@ -122,14 +138,17 @@ async def assert_mod_only(
 def mod_only(description: str = "run this command"):
     return commands.check(lambda ctx: assert_mod_only(ctx, description))
 
-def is_moderator(author: commands.Context.author) -> bool:
-    for role in author.roles:
-        if config.is_mod_role(role.name):
-            return True
+# GM
 
+def is_gm(user: Union[User, Member]) -> bool:
+    for role in user.roles:
+        if role.lower() in GM_PERMISSION_ROLE_NAMES:
+            return True
     return False
 
-# GM
+def is_gm_channel(channel: commands.Context.channel) -> bool:
+    return (channel.name.lower() in GM_CHANNEL_NAMES
+            and channel.category.lower() in GM_CATEGORY_NAMES)
 
 def assert_gm_only(
     ctx: commands.Context, description: str = "run this command", non_gm_alt: str = ""
@@ -147,16 +166,6 @@ def assert_gm_only(
 def gm_only(description: str = "run this command"):
     return commands.check(lambda ctx: assert_gm_only(ctx, description))
 
-def is_gm_channel(channel: commands.Context.channel) -> bool:
-    return config.is_gm_channel(channel.name) and config.is_gm_category(
-        channel.category.name
-    )
-
-def is_gm(author: commands.Context.author) -> bool:
-    for role in author.roles:
-        if config.is_gm_role(role.name):
-            return True
-    return False
 
 # Superuser
 
@@ -172,5 +181,10 @@ def assert_superuser_only(ctx: commands.Context, description: str = "run this co
 def superuser_only(description: str = "run this command"):
     return commands.check(lambda ctx: assert_superuser_only(ctx, description))
 
-def is_superuser(author: commands.Context.author) -> bool:
-    return author.id in SUPERUSERS
+def is_superuser(user: Union[User, Member]) -> bool:
+    return user.id in SUPERUSERS
+
+
+temporary_bumbles: set[int] = set()
+def is_bumble(user: Union[User, Member]) -> bool:
+    return user.id == BUMBLE_ID or user.id in temporary_bumbles
