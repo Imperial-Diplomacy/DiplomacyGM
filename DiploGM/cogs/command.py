@@ -75,7 +75,7 @@ class CommandCog(commands.Cog):
         board = manager.get_board(ctx.guild.id)
 
         if board.fow:
-            perms.assert_perms.gm_only(ctx, "get scoreboard")
+            perms.assert_gm_only(ctx, "get scoreboard")
 
         if csv and not board.is_chaos():
             players = sorted(board.players, key=lambda p: p.name)
@@ -381,7 +381,7 @@ class CommandCog(commands.Cog):
         board = manager.get_board(ctx.guild.id)
 
         if not board.orders_enabled:
-            perms.assert_perms.gm_only(
+            perms.assert_gm_only(
                 ctx, "call .all_province_data while orders are locked"
             )
 

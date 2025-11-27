@@ -116,7 +116,7 @@ class GameManagementCog(commands.Cog):
         # get abstract player information
         player_roles: set[Role] = set()
         for r in guild.roles:
-            if config.is_player_role(r.name):
+            if perms.is_player_role(r.name):
                 player_roles.add(r)
 
         if len(player_roles) == 0:
@@ -130,7 +130,7 @@ class GameManagementCog(commands.Cog):
 
         player_categories: list[CategoryChannel] = []
         for c in guild.categories:
-            if config.is_player_category(c.name):
+            if perms.is_player_category(c.name):
                 player_categories.append(c)
 
         if len(player_categories) == 0:
@@ -393,7 +393,7 @@ class GameManagementCog(commands.Cog):
 
         player_categories: list[CategoryChannel] = []
         for c in guild.categories:
-            if config.is_player_category(c.name):
+            if perms.is_player_category(c.name):
                 player_categories.append(c)
 
         for c in player_categories:

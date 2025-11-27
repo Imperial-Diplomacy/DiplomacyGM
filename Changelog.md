@@ -1,3 +1,12 @@
+?.?.?
+=====
+
+
+# Developer Changes
+- Moved the last couple functions out of `config.py`
+- Moved Hardcoded permission roles into `config.toml`
+- Overall Simplification of `perms.py`
+
 1.3.4
 =====
 

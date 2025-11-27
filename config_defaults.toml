@@ -26,10 +26,50 @@ substitute_log_channel = 1282421565174059053  # currently a threadchannel (#gm-h
 winter_scoreboard_output_channel = 1439377486055215246  # currently a threadchannel
 # Role ids
 bot_wizard = 1424487941857611837
+moderation_team_roles = [
+    1362808752222371840, # Executive
+    1291022633772515329, # Admin
+    1246459984821096478, # Mod Team
+    1391898239858376834  # Moderators
+]
 
 [dev_hub]
 id = 1262215477237645314
 unhandled_errors_channel = 1423396664483381258
+
+
+[game_servers]
+game_server_moderator_role_names = [
+    "Admin",
+    "Moderators",
+]
+gm_permission_role_names = [
+    "admin",
+    "moderator",
+    "moderators",
+    "gm",
+    "heavenly angel",
+    "gm team",
+    "emergency gm",
+    "bot manager",
+]
+gm_category_names = [
+    "gm channels",
+]
+gm_channel_names = [
+    "admin-chat",
+    "admin-spam",
+    "gm-bot-commands",
+]
+player_permission_role_names = [
+    "players",
+]
+player_orders_categories = [
+    "orders"
+]
+# Channel suffix for player orders channels.
+# E.g. if the player is "france" and the suffix is "-orders", the channel is "france-orders"
+player_order_channel_suffix = "-orders"
 
 
 [permissions]
@@ -41,8 +81,8 @@ superusers = [
     490633966974533640,     # Elle
     200279271380353025,     # KingOfPrussia
     1352388421003251833,    # Chloe
-    285108244714881024,     # aahoughton (elle-approved)
-    134870832651567104,     # Golden Kumquat (elle-approved)
+    285108244714881024,     # aahoughton
+    134870832651567104,     # Golden Kumquat
 ]
 
 [extensions]
@@ -76,3 +116,7 @@ simultaneous_svg_exports_limit = 1
 sas_token = ""
 upload_url = ""
 url = "https://imperialdiplomacy.com/maparchive/"
+
+[party]
+bumble = 169995316680982528
+eolhc = 1352388421003251833

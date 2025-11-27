@@ -84,7 +84,7 @@ class FogOfWarCog(commands.Cog):
         )
 
         for category in guild.categories:
-            if config.is_player_category(category.name):
+            if perms.is_player_category(category.name):
                 player_category = category
                 break
 
@@ -128,7 +128,7 @@ async def publish_map(
     board = manager.get_board(guild_id)
 
     for category in guild.categories:
-        if config.is_player_category(category.name):
+        if perms.is_player_category(category.name):
             player_category = category
             break
 

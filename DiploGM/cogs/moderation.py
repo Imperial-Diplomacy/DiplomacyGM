@@ -5,6 +5,7 @@ from discord import Member, User
 from discord.ext import commands
 
 from DiploGM import perms
+from DiploGM.config import IMPDIP_SERVER_ID
 from DiploGM.utils import send_message_and_file
 
 NEW_ACCOUNT_WARNING = datetime.timedelta(weeks=2)
@@ -36,7 +37,7 @@ class ModerationCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: Member):
         guild = member.guild
-        hub = self.bot.get_guild(config.IMPDIP_SERVER_ID)
+        hub = self.bot.get_guild(IMPDIP_SERVER_ID)
         if not hub:
             return
 
@@ -50,7 +51,7 @@ class ModerationCog(commands.Cog):
             problems.append(msg)
 
         # NOT HUB
-        if hub and guild.id != config.IMPDIP_SERVER_ID:
+        if guild.id != IMPDIP_SERVER_ID:
             hub_member = discord.utils.find(lambda m: m.name == member.name, hub.members)
             if not hub_member:
                 msg = "Not a member of the hub server!"

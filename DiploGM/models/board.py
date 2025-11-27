@@ -11,7 +11,8 @@ from DiploGM.models.turn import Turn
 from DiploGM.models.player import Player
 from DiploGM.models.province import Province, ProvinceType, Coast, Location, get_adjacent_provinces
 from DiploGM.models.unit import Unit, UnitType
-from DiploGM.config import player_channel_suffix, is_player_category
+from DiploGM.config import PLAYER_ORDER_CHANNEL_SUFFIX
+from DiploGM.perms import is_player_category
 from DiploGM.utils import simple_player_name
 
 
@@ -292,10 +293,10 @@ class Board:
         if self.is_chaos() and name.endswith("-void"):
             name = name[:-5]
         else:
-            if not name.endswith(player_channel_suffix):
+            if not name.endswith(PLAYER_ORDER_CHANNEL_SUFFIX):
                 return None
 
-            name = name[: -(len(player_channel_suffix))]
+            name = name[: -(len(PLAYER_ORDER_CHANNEL_SUFFIX))]
 
         try:
             return self.get_cleaned_player(name)
