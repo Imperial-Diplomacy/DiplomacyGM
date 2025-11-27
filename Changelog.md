@@ -10,6 +10,7 @@ Contributors
 - Moved Hardcoded permission roles into `config.toml`.
 - Overall Simplification of `perms.py`.
 - Removed a few references to old turn system.
+- Moved `parse_order.py` and `parse_edit_state.py` into a package with their cogs.
 
 1.3.4
 =====

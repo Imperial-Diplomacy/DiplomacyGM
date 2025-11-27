@@ -11,8 +11,7 @@ from DiploGM.models.turn import Turn
 from DiploGM.models.player import Player
 from DiploGM.models.province import Province, ProvinceType, Coast, Location, get_adjacent_provinces
 from DiploGM.models.unit import Unit, UnitType
-from DiploGM.config import PLAYER_ORDER_CHANNEL_SUFFIX
-from DiploGM.perms import is_player_category
+from DiploGM.config import PLAYER_ORDER_CHANNEL_SUFFIX, PLAYER_ORDER_CATEGORY_NAMES
 from DiploGM.utils import simple_player_name
 
 
@@ -284,7 +283,8 @@ class Board:
             channel = channel.parent
 
         name = channel.name
-        if (not ignore_category) and not is_player_category(channel.category.name):
+        # Should realise use `perms.is_player_channel()` but causes a circular import.
+        if (not ignore_category) and channel.category.name.lower() not in PLAYER_ORDER_CATEGORY_NAMES:
             return None
 
         if self.is_chaos() and name.endswith("-void"):

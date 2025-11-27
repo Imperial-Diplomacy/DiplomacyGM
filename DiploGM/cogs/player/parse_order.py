@@ -1,4 +1,6 @@
 import logging
+import os
+
 
 from discord.ext.commands import Paginator
 from lark import Lark, Transformer, UnexpectedEOF, UnexpectedCharacters
@@ -6,7 +8,6 @@ from lark.exceptions import VisitError
 
 from DiploGM.config import ERROR_COLOUR, PARTIAL_ERROR_COLOUR
 from DiploGM.utils import get_unit_type, _manage_coast_signature
-from DiploGM.models import turn
 from DiploGM.models import order
 from DiploGM.models.board import Board
 from DiploGM.db.database import get_connection
@@ -276,7 +277,9 @@ class TreeToOrder(Transformer):
 generator = TreeToOrder()
 
 
-with open("DiploGM/orders.ebnf", "r") as f:
+cog_dir = os.path.dirname(__file__)
+
+with open(f"{cog_dir}/orders.ebnf", "r") as f:
     ebnf = f.read()
 
 movement_parser = Lark(ebnf, start="order", parser="earley")

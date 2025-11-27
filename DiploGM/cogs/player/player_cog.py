@@ -4,10 +4,11 @@ from discord.ext import commands
 
 from DiploGM import config
 from DiploGM import perms
-from DiploGM.parse_order import parse_order, parse_remove_order
 from DiploGM.utils import get_orders, log_command, parse_season, send_message_and_file
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
 from DiploGM.models.player import Player
+
+from .parse_order import parse_order, parse_remove_order
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -406,8 +407,3 @@ class PlayerCog(commands.Cog):
             channel=ctx.channel, message=", ".join([x.name for x in visible_provinces])
         )
         return
-
-
-async def setup(bot):
-    cog = PlayerCog(bot)
-    await bot.add_cog(cog)
