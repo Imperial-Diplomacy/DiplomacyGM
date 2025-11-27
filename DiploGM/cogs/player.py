@@ -167,7 +167,7 @@ class PlayerCog(commands.Cog):
         color_mode = color_arguments[0] if color_arguments else None
         movement_only = "movement" in arguments
         board = manager.get_board(ctx.guild.id)
-        season = parse_season(arguments, board.turn)
+        season = parse_season(arguments, board.turn.year)
         turn = board.turn if not season else season
 
         if player and not board.orders_enabled:
@@ -251,7 +251,7 @@ class PlayerCog(commands.Cog):
         color_arguments = list(config.color_options & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
         board = manager.get_board(ctx.guild.id)
-        season = parse_season(arguments, board.get_year_str())
+        season = parse_season(arguments, board.turn.year)
         turn = board.turn if not season else season
         
         # NOTE: Temporary for Meme's Severence Diplomacy Event
@@ -263,9 +263,6 @@ class PlayerCog(commands.Cog):
                 embed_colour=config.ERROR_COLOUR,
             )
             return
-
-        year = board.get_year_str() if season is None else season[0]
-        phase_str = board.phase.name if season is None else season[1].name
 
         if player and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")

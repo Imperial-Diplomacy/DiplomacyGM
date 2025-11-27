@@ -118,5 +118,6 @@ upload_url = ""
 url = "https://imperialdiplomacy.com/maparchive/"
 
 [party]
-bumble = 169995316680982528
-eolhc = 1352388421003251833
+bumble_id = 169995316680982528
+eolhc_id = 1352388421003251833
+aahoughton_id = 285108244714881024

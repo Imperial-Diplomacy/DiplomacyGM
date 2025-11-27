@@ -1,11 +1,15 @@
 ?.?.?
 =====
 
+Contributors
+- Golden Kumquat
+- chloe
 
 # Developer Changes
-- Moved the last couple functions out of `config.py`
-- Moved Hardcoded permission roles into `config.toml`
-- Overall Simplification of `perms.py`
+- Moved the last couple functions out of `config.py`.
+- Moved Hardcoded permission roles into `config.toml`.
+- Overall Simplification of `perms.py`.
+- Removed a few references to old turn system.
 
 1.3.4
 =====

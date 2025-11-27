@@ -99,3 +99,4 @@ SIMULATRANEOUS_SVG_EXPORT_LIMIT = all_config["inkscape"]["simultaneous_svg_expor
 # PARTY
 BUMBLE_ID = all_config["party"]["bumble_id"]
 EOLHC_ID = all_config["party"]["eolhc_id"]
+AAHOUGHTON_ID = all_config["party"]["aahoughton_id"]
