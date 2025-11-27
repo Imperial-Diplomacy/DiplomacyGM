@@ -2,13 +2,6 @@ import logging
 import tomllib
 from typing import List, Tuple, Any
 
-with open("config_defaults.toml", "rb") as toml_file:
-    _default_toml = tomllib.load(toml_file)
-
-with open("config.toml", "rb") as toml_file:
-    _toml = tomllib.load(toml_file)
-
-
 def merge_toml(main: dict[str, Any], default: dict[str, Any], current_path: str = "") -> Tuple[
     List[Tuple[int, str]], dict[str, Any]]:
     output = {}
@@ -37,6 +30,13 @@ def output_config_logs(logger=None):
 
 class ConfigException(Exception):
     pass
+
+
+with open("config_defaults.toml", "rb") as toml_file:
+    _default_toml = tomllib.load(toml_file)
+
+with open("config.toml", "rb") as toml_file:
+    _toml = tomllib.load(toml_file)
 
 
 toml_errors, all_config = merge_toml(_toml, _default_toml)

@@ -6,6 +6,7 @@ Contributors
 - chloe
 
 # Developer Changes
+- `.reload_config` command - it probably doesn't work very well but your luck may vary...
 - Moved the last couple functions out of `config.py`.
 - Moved Hardcoded permission roles into `config.toml`.
 - Overall Simplification of `perms.py`.

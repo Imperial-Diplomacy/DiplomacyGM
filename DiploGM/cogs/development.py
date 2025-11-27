@@ -1,4 +1,5 @@
 import logging
+import importlib
 
 from discord.ext import commands
 import random
@@ -8,6 +9,7 @@ from DiploGM.config import (
     IMPDIP_BOT_WIZARD_ROLE,
     IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID,
 )
+from DiploGM import config as config_module
 from DiploGM.bot import DiploGM
 from DiploGM import perms
 from DiploGM.utils import send_message_and_file
@@ -75,6 +77,14 @@ class DevelopmentCog(commands.Cog):
         if channel:
             await channel.send(f"{ctx.author.mention} stabbed me")
         await self.bot.close()
+
+    @commands.command(hidden=True)
+    @perms.superuser_only("reload config")
+    async def reload_config(self, ctx: commands.Context):
+        importlib.reload(config_module)
+        await send_message_and_file(
+            channel=ctx.channel, title=f"Reloaded Config"
+        )
 
 
 async def setup(bot: DiploGM):
