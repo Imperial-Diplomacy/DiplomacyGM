@@ -61,7 +61,7 @@ class PartyCog(commands.Cog):
             )
             return
         channel = ctx.message.channel_mentions[0]
-        content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+        content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
         content = content.replace(channel.mention, "").strip()
         if len(content) == 0:
             await send_message_and_file(
@@ -85,7 +85,7 @@ class PartyCog(commands.Cog):
         response = "Beep Boop"
         if random.random() < 0.1:
             author = ctx.message.author
-            content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+            content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             if content == "":
                 content = " nothing"
             name = author.nick

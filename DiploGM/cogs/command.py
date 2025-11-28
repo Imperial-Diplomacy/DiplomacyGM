@@ -2,7 +2,6 @@ from black.trans import defaultdict
 import inspect
 import logging
 
-from discord import app_commands
 from discord.ext import commands
 
 from DiploGM.config import ERROR_COLOUR
@@ -19,7 +18,7 @@ from DiploGM.models.province import ProvinceType
 logger = logging.getLogger(__name__)
 manager = Manager()
 
-@app_commands.guild_only()
+
 class CommandCog(commands.Cog):
     """This is a Cog for general-purpose commands!"""
 
@@ -246,7 +245,7 @@ class CommandCog(commands.Cog):
             return
 
         province_name = ctx.message.content.removeprefix(
-            ctx.prefix + ctx.invoked_with
+            f"{ctx.prefix}{ctx.invoked_with}"
         ).strip()
         if not province_name:
             log_command(logger, ctx, message=f"No province given")
@@ -335,7 +334,7 @@ class CommandCog(commands.Cog):
             return
 
         player_name = ctx.message.content.removeprefix(
-            ctx.prefix + ctx.invoked_with
+            f"{ctx.prefix}{ctx.invoked_with}"
         ).strip()
         if not player_name:
             log_command(logger, ctx, message=f"No player given")
@@ -452,7 +451,7 @@ class CommandCog(commands.Cog):
             prefix = prefix + "] "
         else:
             prefix = ""
-        name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
+        name = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").strip()
         if name == "":
             await send_message_and_file(
                 channel=ctx.channel,

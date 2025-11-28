@@ -169,11 +169,11 @@ def parse_path(path_string: str, translation: TransGL3):
 # that data in the Province
 def initialize_province_resident_data(
     provinces: set[Province],
-    resident_dataset: Element | set[Element],
+    resident_dataset: Element | list[Element],
     get_coordinates: Callable[[Element], tuple[float | None, float | None]],
-    resident_data_callback: Callable[[Province, Element], None],
+    resident_data_callback: Callable[[Province, Element, str | None], None],
 ) -> None:
-    resident_dataset = set(resident_dataset)
+    resident_dataset = list(resident_dataset)
     for province in provinces:
         remove = set()
 

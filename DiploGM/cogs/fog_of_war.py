@@ -51,7 +51,7 @@ class FogOfWarCog(commands.Cog):
             raise ValueError("This is not a fog of war game")
 
         filter_player = board.get_player(
-            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
+            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").strip()
         )
 
         await publish_map(
@@ -80,7 +80,7 @@ class FogOfWarCog(commands.Cog):
             raise ValueError("This is not a fog of war game")
 
         filter_player = board.get_player(
-            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
+            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").strip()
         )
 
         for category in guild.categories:

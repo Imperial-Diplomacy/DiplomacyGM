@@ -79,7 +79,7 @@ class PlayerCog(commands.Cog):
             )
             return
 
-        content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+        content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
 
         message = parse_remove_order(content, player, board)
         log_command(logger, ctx, message=message["message"])
@@ -96,7 +96,7 @@ class PlayerCog(commands.Cog):
     @perms.player("view orders")
     async def view_orders(self, ctx: commands.Context, player: Player | None) -> None:
         arguments = (
-            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
             .lower()
             .split()
@@ -155,7 +155,7 @@ class PlayerCog(commands.Cog):
     @perms.player("view map")
     async def view_map(self, ctx: commands.Context, player: Player | None):
         arguments = (
-            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
             .lower()
             .split()
@@ -242,7 +242,7 @@ class PlayerCog(commands.Cog):
     @perms.player("view current")
     async def view_current(self, ctx: commands.Context, player: Player | None) -> None:
         arguments = (
-            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
             .lower()
             .split()
@@ -329,7 +329,7 @@ class PlayerCog(commands.Cog):
     @perms.player("view gui")
     async def view_gui(self, ctx: commands.Context, player: Player | None) -> None:
         arguments = (
-            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
             .lower()
             .split()
