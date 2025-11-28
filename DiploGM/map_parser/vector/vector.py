@@ -52,9 +52,12 @@ class Parser:
                 raise ValueError(f"Layer {layer} not found in SVG")
             self.layer_data[layer] = l
 
-        self.units_layer: Element | None = None
         if self.layers["detect_starting_units"]:
-            self.units_layer = get_svg_element(svg_root, self.layers["starting_units"])
+            starting_units = get_svg_element(svg_root, self.layers["starting_units"])
+            if starting_units is None:
+                raise ValueError("Starting_units layer expected but not found in SVG")
+            else:
+                self.layer_data["starting_units"] = starting_units
 
         if "impassibles_layer" in self.layers:
             impassibles_layer = get_svg_element(svg_root, self.layers["impassibles_layer"])
@@ -309,7 +312,7 @@ class Parser:
             self._initialize_supply_centers(provinces)
 
         # set units
-        if self.units_layer is not None:
+        if "starting_units" in self.layer_data:
             if self.layers["unit_labels"]:
                 self._initialize_units_assisted()
             else:
@@ -336,8 +339,8 @@ class Parser:
     def _get_province_coordinates(self) -> set[Province]:
         # TODO: (BETA) don't hardcode translation
         land_provinces = self._create_provinces_type(self.layer_data["land_layer"], ProvinceType.LAND)
-        island_provinces = self._create_provinces_type(self.layer_data["island_layer"], ProvinceType.ISLAND)
-        sea_provinces = self._create_provinces_type(self.layer_data["sea_layer"], ProvinceType.SEA)
+        island_provinces = self._create_provinces_type(self.layer_data["island_borders"], ProvinceType.ISLAND)
+        sea_provinces = self._create_provinces_type(self.layer_data["sea_borders"], ProvinceType.SEA)
         # detect impassible to allow for better understanding
         # of coastlines
         # they don't go in board.provinces
@@ -419,7 +422,7 @@ class Parser:
         initialize_province_resident_data(provinces, list(self.layer_data["names_layer"]), get_coordinates, set_province_name)
 
     def _initialize_supply_centers_assisted(self) -> None:
-        for center_data in list(self.layer_data["centers_layer"]):
+        for center_data in list(self.layer_data["supply_center_icons"]):
             name = self._get_province_name(center_data)
             province = self.name_to_province[name]
 
@@ -455,14 +458,14 @@ class Parser:
             trans = TransGL3(supply_center_data)
             return trans.transform(base_coordinates)
 
-        def set_province_supply_center(province: Province, _: Element, _: str | None) -> None:
+        def set_province_supply_center(province: Province, _element: Element, _coast: str | None) -> None:
             if province.has_supply_center:
                 raise RuntimeError(f"{province.name} already has a supply center")
             province.has_supply_center = True
 
-        initialize_province_resident_data(provinces, self.layer_data["centers_layer"], get_coordinates, set_province_supply_center)
+        initialize_province_resident_data(provinces, self.layer_data["supply_center_icons"], get_coordinates, set_province_supply_center)
 
-    def _set_province_unit(self, province: Province, unit_data: Element, coast: str | None = None) -> NOne:
+    def _set_province_unit(self, province: Province, unit_data: Element, coast: str | None = None) -> None:
         if province.unit:
             return
             raise RuntimeError(f"{province.name} already has a unit")
@@ -483,7 +486,7 @@ class Parser:
         return
 
     def _initialize_units_assisted(self) -> None:
-        for unit_data in list(self.layer_data["units_layer"]):
+        for unit_data in self.layer_data["starting_units"]:
             province_name = self._get_province_name(unit_data)
             if self.data["svg config"]["unit_type_labeled"]:
                 province_name = province_name[1:]
@@ -499,7 +502,7 @@ class Parser:
             trans = TransGL3(unit_data)
             return trans.transform(base_coordinates)
 
-        initialize_province_resident_data(provinces, self.layer_data["units_layer"], get_coordinates, self._set_province_unit)
+        initialize_province_resident_data(provinces, self.layer_data["starting_units"], get_coordinates, self._set_province_unit)
 
     def _set_phantom_unit_coordinates(self) -> None:
         army_layer_to_key = [
