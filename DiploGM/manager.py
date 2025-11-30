@@ -77,14 +77,14 @@ class Manager(metaclass=SingletonMeta):
         return "Approved request Logged!"
 
     def get_board(self, server_id: int) -> Board:
+        # NOTE: Temporary for Meme's Severence Diplomacy Event
+        if server_id == SEVERENCE_B_ID:
+            server_id = SEVERENCE_A_ID
+
         # try:
         board = self._boards.get(server_id)
         # except KeyError:
             # board = self._database.get_latest_board(server_id)
-
-        # NOTE: Temporary for Meme's Severence Diplomacy Event
-        if server_id == SEVERENCE_B_ID:
-            server_id = SEVERENCE_A_ID
 
         if not board:
             raise RuntimeError("There is no existing game this this server.")
@@ -102,7 +102,8 @@ class Manager(metaclass=SingletonMeta):
         color_mode: str | None = None,
         turn: Turn | None = None,
         movement_only: bool = False,
-    ) -> tuple[str, str]:
+        is_severance: bool = False,
+    ) -> tuple[bytes, str]:
         cur_board = self.get_board(server_id)
         if turn is None:
             board = cur_board
@@ -124,7 +125,10 @@ class Manager(metaclass=SingletonMeta):
                 or (board.turn.year == cur_board.turn.year
                     and board.turn.phase < cur_board.turn.phase)
             ):
-                player_restriction = None
+                if is_severance:
+                    board = cur_board
+                else:
+                    player_restriction = None
         svg, file_name = self.draw_map_for_board(
             board,
             player_restriction=player_restriction,
@@ -141,7 +145,7 @@ class Manager(metaclass=SingletonMeta):
         draw_moves: bool = False,
         color_mode: str | None = None,
         movement_only: bool = False,
-    ) -> tuple[str, str]:
+    ) -> tuple[bytes, str]:
         start = time.time()
 
         if draw_moves:
@@ -164,6 +168,7 @@ class Manager(metaclass=SingletonMeta):
         old_board = self._database.get_board(
             server_id, board.turn.get_phase(), board.turn.get_year_index(), board.fish, board.name, board.datafile
         )
+        assert old_board is not None
         # mapper = Mapper(self._boards[server_id])
         # mapper.draw_moves_map(None)
         adjudicator = make_adjudicator(old_board)
@@ -185,7 +190,7 @@ class Manager(metaclass=SingletonMeta):
         server_id: int,
         player_restriction: Player | None,
         color_mode: str | None = None,
-    ) -> tuple[str, str]:
+    ) -> tuple[bytes, str]:
         start = time.time()
 
         svg, file_name = Mapper(
@@ -201,7 +206,7 @@ class Manager(metaclass=SingletonMeta):
         server_id: int,
         player_restriction: Player | None,
         color_mode: str | None = None,
-    ) -> tuple[str, str]:
+    ) -> tuple[bytes, str]:
         start = time.time()
 
         if player_restriction:
@@ -219,7 +224,7 @@ class Manager(metaclass=SingletonMeta):
 
     def draw_fow_moves_map(
         self, server_id: int, player_restriction: Player | None
-    ) -> tuple[str, str]:
+    ) -> tuple[bytes, str]:
         start = time.time()
 
         svg, file_name = Mapper(
@@ -235,7 +240,7 @@ class Manager(metaclass=SingletonMeta):
         server_id: int,
         player_restriction: Player | None = None,
         color_mode: str | None = None,
-    ) -> tuple[str, str]:
+    ) -> tuple[bytes, str]:
         start = time.time()
 
         svg, file_name = Mapper(
@@ -251,7 +256,7 @@ class Manager(metaclass=SingletonMeta):
         server_id: int,
         player_restriction: Player | None = None,
         color_mode: str | None = None,
-    ) -> tuple[str, str]:
+    ) -> tuple[bytes, str]:
         start = time.time()
 
         svg, file_name = Mapper(
@@ -262,7 +267,7 @@ class Manager(metaclass=SingletonMeta):
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def rollback(self, server_id: int) -> dict[str, ...]:
+    def rollback(self, server_id: int) -> dict[str, str | bytes]:
         logger.info(f"Rolling back in server {server_id}")
         board = self.get_board(server_id)
         # TODO: what happens if we're on the first phase?
@@ -304,7 +309,7 @@ class Manager(metaclass=SingletonMeta):
         )
         return old_board
 
-    def reload(self, server_id: int) -> dict[str, ...]:
+    def reload(self, server_id: int) -> dict[str, str | bytes]:
         logger.info(f"Reloading server {server_id}")
         board = self.get_board(server_id)
 

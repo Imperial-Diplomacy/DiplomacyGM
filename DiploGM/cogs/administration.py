@@ -275,7 +275,7 @@ class AdminCog(commands.Cog):
         )
         server_id = int(arguments[0])
         board = manager.get_board(server_id)
-        season = parse_season(arguments[1:], board.turn.year)
+        season = parse_season(arguments[1:], board.turn)
         file, _ = manager.draw_map(
             server_id,
             draw_moves=True,

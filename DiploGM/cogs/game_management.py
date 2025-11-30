@@ -551,16 +551,16 @@ class GameManagementCog(commands.Cog):
             sevb_player = discord.utils.find(lambda r: r.name == "Player", sevb.roles)
             bperms = sevb_player.permissions
 
-            if "Spring" in new_board.phase.name:
+            if "Spring" in new_board.turn.get_phase():
                 await send_message_and_file(channel=ctx.channel, message="Game A is permitted to play.")
                 aperms.update(send_messages=True)
                 bperms.update(send_messages=False)
 
-            if "Fall" in new_board.phase.name:
+            if "Fall" in new_board.turn.get_phase():
                 await send_message_and_file(channel=ctx.channel, message="Game B is permitted to play.")
                 aperms.update(send_messages=False)
                 bperms.update(send_messages=True)
-            if "Winter" in new_board.phase.name:
+            if "Winter" in new_board.turn.get_phase():
                 if random.choice([0,1]) == 0:
                     await send_message_and_file(channel=ctx.channel, message="Game A is permitted to play.")
                     aperms.update(send_messages=True)

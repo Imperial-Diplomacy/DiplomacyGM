@@ -122,8 +122,8 @@ class TestDATC_F(unittest.TestCase):
         f_north_sea = b.convoy(b.england, "North Sea", a_london, "Holland")
         a_holland = b.army("Holland", b.germany)
         a_belgium = b.army("Belgium", b.germany)
-        a_holland.order = b.supportHold(b.germany, UnitType.ARMY, "Holland", a_belgium)
-        a_belgium.order = b.supportHold(b.germany, UnitType.ARMY, "Belgium", a_holland)
+        a_holland = b.supportHold(b.germany, UnitType.ARMY, "Holland", a_belgium)
+        a_belgium = b.supportHold(b.germany, UnitType.ARMY, "Belgium", a_holland)
         f_skagerrak = b.move(b.germany, UnitType.FLEET, "Skagerrak", "North Sea")
         f_heligoland_bight = b.supportMove(b.germany, UnitType.FLEET, "Heligoland Bight", f_skagerrak, "North Sea")
         a_picardy = b.move(b.france, UnitType.ARMY, "Picardy", "Belgium")
@@ -150,11 +150,12 @@ class TestDATC_F(unittest.TestCase):
         f_north_sea = b.convoy(b.england, "North Sea", a_london, "Holland")
         f_skagerrak = b.move(b.germany, UnitType.FLEET, "Skagerrak", "North Sea")
         f_heligoland_bight = b.supportMove(b.germany, UnitType.FLEET, "Heligoland Bight", f_skagerrak, "North Sea")
+        p_holland = b.board.get_province("Holland")
 
         b.assertFail(a_london, f_north_sea)
         b.assertDislodge(f_north_sea)
         b.moves_adjudicate(self)
-        self.assertTrue("Holland" in f_north_sea.retreat_options, "Holland not in North Sea Retreat Options")
+        self.assertIn((p_holland, None), f_north_sea.retreat_options or [], "Holland not in North Sea Retreat Options")
 
     def test_6_f_8(self):
         """ 6.F.8. TEST CASE, DISLODGED CONVOY DOES NOT CAUSE A BOUNCE

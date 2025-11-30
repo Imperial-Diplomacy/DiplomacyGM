@@ -140,7 +140,7 @@ def _parse_command(command: str, board: Board) -> None:
 
 def _set_phase(keywords: list[str], board: Board) -> None:
     old_turn = board.turn.get_indexed_name()
-    new_turn = parse_season(keywords, board.turn.year)
+    new_turn = parse_season(keywords, board.turn)
     if new_turn is None:
         raise ValueError(f"{' '.join(keywords)} is not a valid phase name")
     board.turn = new_turn
@@ -474,7 +474,7 @@ def _load_state(keywords: list[str], board: Board) -> None:
 
     logger.error(keywords)
     server = int(keywords[0])
-    turn = parse_season(keywords[1:], board.turn.year)
+    turn = parse_season(keywords[1:], board.turn)
 
     year = int(keywords[2])
     epoch_year = board.year_offset - turn.year

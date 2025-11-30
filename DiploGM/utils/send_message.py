@@ -123,8 +123,8 @@ async def send_message_and_file(
             embeds[-1].add_field(name=field[0], value=field[1], inline=True)
 
     discord_file = None
-    if file is not None:
-        if file_name[-4:].lower() == ".png" and len(file) > discord_file_limit:
+    if file is not None and file_name is not None:
+        if file_name.lower().endswith(".png") and len(file) > discord_file_limit:
             log_command_no_ctx(
                 logger,
                 "?",
@@ -164,20 +164,18 @@ async def send_message_and_file(
                 file_name = None
                 discord_file = None
 
-    if file is not None:
+    if file is not None and file_name is not None:
         with io.BytesIO(file) as vfile:
             discord_file = discord.File(fp=vfile, filename=file_name)
 
         if file_in_embed or (
             file_in_embed is None
             and any(
-                map(
-                    lambda x: file_name.lower().endswith(x),
-                    (
-                        ".png",
-                        ".jpg",
-                        ".jpeg",  # , ".gif", ".gifv", ".webm", ".mp4", "wav", ".mp3", ".ogg"
-                    ),
+                file_name.lower().endswith(x)
+                for x in (
+                    ".png",
+                    ".jpg",
+                    ".jpeg",  # , ".gif", ".gifv", ".webm", ".mp4", "wav", ".mp3", ".ogg"
                 )
             )
         ):

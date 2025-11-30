@@ -43,7 +43,7 @@ class TestDATC_H(unittest.TestCase):
         b.moves_adjudicate(self)
 
         b.retreat(f_trieste, "Albania")
-        a_serbia.order = Support(f_trieste, b.board.get_province("Albania"))
+        a_serbia.order = Support(f_trieste.province, b.board.get_province("Albania"))
         b.retreat(f_greece, "Albania")
         b.assertForcedDisband(f_trieste, f_greece)
         b.retreats_adjudicate(self)
@@ -84,7 +84,7 @@ class TestDATC_H(unittest.TestCase):
         b.moves_adjudicate(self)
         
         b.retreat(f_norway, "North Sea")
-        f_holland.order = Support(f_edinburgh, b.board.get_province("North Sea"))
+        f_holland.order = Support(f_edinburgh.province, b.board.get_province("North Sea"))
         b.retreat(f_edinburgh, "North Sea")
 
         b.assertForcedDisband(f_norway, f_edinburgh, f_holland)
@@ -112,7 +112,7 @@ class TestDATC_H(unittest.TestCase):
         b.moves_adjudicate(self)
 
         b.retreat(a_holland, "Yorkshire")
-        f_north_sea.order = ConvoyTransport(a_holland, b.board.get_province("Yorkshire"))
+        f_north_sea.order = ConvoyTransport(a_holland.province, b.board.get_province("Yorkshire"))
         
         b.assertForcedDisband(a_holland)
         b.retreats_adjudicate(self)
@@ -157,10 +157,11 @@ class TestDATC_H(unittest.TestCase):
         f_black_sea = b.move(b.russia, UnitType.FLEET, "Black Sea", "Ankara")
         f_constantinople = b.supportMove(b.russia, UnitType.FLEET, "Constantinople", f_black_sea, "Ankara")
         f_ankara = b.hold(b.turkey, UnitType.FLEET, "Ankara")
-
+        p_black_sea = b.board.get_province("Black Sea")
+        
         b.assertDislodge(f_ankara)
         b.moves_adjudicate(self)
-        self.assertTrue("Black Sea" not in f_ankara.retreat_options, "Black Sea should not be in treat options")
+        self.assertNotIn((p_black_sea, None), f_ankara.retreat_options or [], "Black Sea should not be in treat options")
 
         b.retreat(f_ankara, "Black Sea")
         b.assertForcedDisband(f_ankara)
@@ -183,12 +184,13 @@ class TestDATC_H(unittest.TestCase):
         a_munich = b.move(b.germany, UnitType.ARMY, "Munich", "Bohemia")
         a_silesia = b.move(b.germany, UnitType.ARMY, "Silesia", "Bohemia")
         a_vienna = b.hold(b.italy, UnitType.ARMY, "Vienna")
+        p_bohemia = b.board.get_province("Bohemia")
         
         # Check outcomes for dislodging and success/failure assertions
         b.assertFail(a_munich, a_silesia)
         b.assertDislodge(a_vienna)
         b.moves_adjudicate(self)
-        self.assertFalse("Bohemia" in a_vienna.retreat_options, "Bohemia should not be a retreat option")
+        self.assertNotIn((p_bohemia, None), a_vienna.retreat_options or [], "Bohemia should not be a retreat option")
 
         b.retreat(a_vienna, "Bohemia")
         b.assertForcedDisband(a_vienna)
@@ -290,8 +292,7 @@ class TestDATC_H(unittest.TestCase):
         b.assertDislodge(f_kiel, a_prussia)
         b.moves_adjudicate(self)
         p_berlin = b.board.get_province("Berlin")
-        self.assertTrue((p_berlin, None) in f_kiel.retreat_options,
-                        f"Berlin should be a retreat option. Retreat options are {', '.join(p[0].name for p in f_kiel.retreat_options)}.")
+        self.assertIn((p_berlin, None), f_kiel.retreat_options or [], f"Berlin should be a retreat option.")
 
         b.retreat(f_kiel, "Berlin")
         b.assertNotForcedDisband(f_kiel)
@@ -326,8 +327,8 @@ class TestDATC_H(unittest.TestCase):
         
         b.moves_adjudicate(self)
         p_berlin = b.board.get_province("Berlin")
-        self.assertFalse((p_berlin, None) in a_kiel.retreat_options, "Berlin should not be a retreat option for Kiel")
-        self.assertTrue((p_berlin, None) in a_prussia.retreat_options, "Berlin should be a retreat option for Kiel")
+        self.assertNotIn((p_berlin, None), a_kiel.retreat_options or [], "Berlin should not be a retreat option for Kiel")
+        self.assertIn((p_berlin, None), a_prussia.retreat_options or [], "Berlin should be a retreat option for Kiel")
 
         b.retreat(a_kiel, "Berlin")
         b.retreat(a_prussia, "Berlin")
@@ -370,10 +371,10 @@ class TestDATC_H(unittest.TestCase):
         b.assertDislodge(a_marseilles)
         b.moves_adjudicate(self)
         p_gascony = b.board.get_province("Gascony")
-        self.assertFalse((p_gascony, None) in a_marseilles.retreat_options, "Gascony should not be a retreat option for Kiel")
+        self.assertNotIn((p_gascony, None), a_marseilles.retreat_options or [], "Gascony should not be a retreat option for Kiel")
 
         b.retreat(a_marseilles, "Gascony")
-        b.assertDisbanded(a_marseilles)
+        b.assertDisbanded(a_marseilles.province)
         b.retreats_adjudicate(self)
 
     def test_6_h_12(self):
@@ -437,13 +438,14 @@ class TestDATC_H(unittest.TestCase):
 
         a_picardy = b.hold(b.england, UnitType.ARMY, "Picardy")
         f_english_channel = b.convoy(b.england, "English Channel", a_picardy, "London")
+        p_london = b.board.get_province("London")
         
         a_paris = b.move(b.france, UnitType.ARMY, "Paris", "Picardy")
         a_brest = b.supportMove(b.france, UnitType.ARMY, "Brest", a_paris, "Picardy")
 
         b.assertDislodge(a_picardy)
         b.moves_adjudicate(self)
-        self.assertFalse("London" in a_picardy.retreat_options, "London should not be a retreat option for Kiel")
+        self.assertNotIn((p_london, None), a_picardy.retreat_options or [], "London should not be a retreat option for Picardy")
 
         b.retreat(a_picardy, "London")
         b.assertForcedDisband(a_picardy)

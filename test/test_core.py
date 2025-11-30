@@ -87,7 +87,7 @@ class TestCore(unittest.TestCase):
         
         self.assertFalse(p_holland.core == b.germany, "Holland shouldn't be cored")
 
-    def test_core_5(self):
+    def test_core_6(self):
         """ 
             Coring should fail when the attacking unit is of the same nationality.
             Germany owns Holland.
@@ -108,7 +108,7 @@ class TestCore(unittest.TestCase):
         
         self.assertFalse(p_holland.core == b.germany, "Holland shouldn't be half-cored")
 
-    def test_core_6(self):
+    def test_core_7(self):
         """ 
             Coring should fail when attacked by convoy.
             Germany owns Holland.
@@ -131,7 +131,7 @@ class TestCore(unittest.TestCase):
         
         self.assertFalse(p_holland.core == b.germany, "Holland shouldn't be half-cored")
 
-    def test_core_7(self):
+    def test_core_8(self):
         """ 
             Coring should fail when attacked by convoy of the same nationality.
             Germany owns Holland.
@@ -155,7 +155,7 @@ class TestCore(unittest.TestCase):
         self.assertFalse(p_holland.core == b.germany, "Holland shouldn't be half-cored")
 
 
-    def test_core_8(self):
+    def test_core_9(self):
         """ 
             Coring should succeed when only attacked by a disrupted convoy.
             Germany owns Holland.

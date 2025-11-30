@@ -15,7 +15,7 @@ from DiploGM.utils import log_command, send_message_and_file
 logger = logging.getLogger(__name__)
 
 
-async def upload_map_to_archive(ctx: commands.Context, server_id: int, board: Board, map: str, turn: Turn | None = None) -> None:
+async def upload_map_to_archive(ctx: commands.Context, server_id: int, board: Board, map: bytes, turn: Turn | None = None) -> None:
     if not MAP_ARCHIVE_SAS_TOKEN:
         return
     turnstr = board.turn.get_short_name() if turn is None else turn.get_short_name()

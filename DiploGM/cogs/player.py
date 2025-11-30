@@ -167,9 +167,8 @@ class PlayerCog(commands.Cog):
         color_mode = color_arguments[0] if color_arguments else None
         movement_only = "movement" in arguments
         board = manager.get_board(ctx.guild.id)
-        season = parse_season(arguments, board.turn)
-        turn = board.turn if not season else season
-
+        turn = parse_season(arguments, board.turn)
+        
         if player and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
             await send_message_and_file(
@@ -189,6 +188,7 @@ class PlayerCog(commands.Cog):
                     color_mode=color_mode,
                     turn=turn,
                     movement_only=movement_only,
+                    is_severance=ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID],
                 )
             else:
                 file, file_name = manager.draw_fow_players_moves_map(
@@ -251,39 +251,19 @@ class PlayerCog(commands.Cog):
         color_arguments = list(config.color_options & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
         board = manager.get_board(ctx.guild.id)
-        season = parse_season(arguments, board.get_year_str())
-        turn = board.turn if not season else season
+        turn = parse_season(arguments, board.turn)
         
-        # NOTE: Temporary for Meme's Severence Diplomacy Event
-        if player is not None and season is not None and ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Don't think above your station!",
-                message="We don't allow that here...",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        year = board.get_year_str() if season is None else season[0]
-        phase_str = board.phase.name if season is None else season[1].name
-
-        if player and not board.orders_enabled:
-            log_command(logger, ctx, "Orders locked - not processing")
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Orders locked!",
-                message="If you think this is an error, contact a GM.",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
         try:
             if not board.fow:
                 file, file_name = manager.draw_map(
-                    ctx.guild.id, color_mode=color_mode, turn=turn
+                    ctx.guild.id,
+                    player_restriction=player,
+                    color_mode=color_mode,
+                    turn=turn,
+                    is_severance=ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID],
                 )
             else:
-                file, file_name = manager.draw_fow_current_map(
+                file, file_name = manager.draw_fow_players_moves_map(
                     ctx.guild.id, player, color_mode
                 )
         except Exception as err:

@@ -119,7 +119,7 @@ class Mapper:
             return False
         return True
 
-    def draw_moves_map(self, current_turn: turn.Turn, player_restriction: Player | None, movement_only: bool = False) -> tuple[str, str]:
+    def draw_moves_map(self, current_turn: turn.Turn, player_restriction: Player | None, movement_only: bool = False) -> tuple[bytes, str]:
         logger.info("mapper.draw_moves_map")
 
         self._reset_moves_map()
@@ -201,7 +201,7 @@ class Mapper:
         svg_file_name = f"{str(self.board.turn).replace(' ', '_')}_moves_map.svg"
         return elementToString(t, encoding="utf-8"), svg_file_name
 
-    def draw_gui_map(self, current_turn: turn.Turn, player_restriction: Player | None) -> tuple[str, str]:
+    def draw_gui_map(self, current_turn: turn.Turn, player_restriction: Player | None) -> tuple[bytes, str]:
         self.player_restriction = player_restriction
         self.current_turn = current_turn
         self._reset_moves_map()
@@ -268,7 +268,7 @@ class Mapper:
             trans = TransGL3(e)
             return trans.transform([float(e.attrib["x"]), float(e.attrib["y"])] + np.array([3.25, -3.576 / 2]))
 
-        def match(p: Province, e: etree.Element):
+        def match(p: Province, e: Element, _:str | None):
             e.set("onclick", f'obj_clicked(event, "{p} {e[0].text}", false)')
             e.set("oncontextmenu", f'obj_clicked(event, "{p} {e[0].text}", false)')
 
@@ -286,7 +286,7 @@ class Mapper:
             trans = TransGL3(supply_center_data)
             return trans.transform(base_coordinates)
 
-        def set_province_supply_center(p: Province, e: Element) -> None:
+        def set_province_supply_center(p: Province, e: Element, _:str | None) -> None:
             e.set("onclick", f'obj_clicked(event, "{p.name}", false)')
             e.set("oncontextmenu", f'obj_clicked(event, "{p.name}", false)')
 
@@ -299,7 +299,7 @@ class Mapper:
             layer = get_svg_element(root, self.board.data["svg config"][layer_name])
             if layer is None:
                 raise ValueError(f"Layer {layer_name} not found in SVG")
-            for province_data in layer.getchildren():
+            for province_data in layer:
                 name = Parser._get_province_name(province_data)
                 province_data.set("onclick", f'obj_clicked(event, "{name}", false)')
                 province_data.set("oncontextmenu", f'obj_clicked(event, "{name}", false)')
@@ -385,7 +385,7 @@ class Mapper:
         #     else:
         #         print(text)
 
-    def draw_current_map(self) -> tuple[str, str]:
+    def draw_current_map(self) -> tuple[bytes, str]:
         logger.info("mapper.draw_current_map")
         svg_file_name = f"{str(self.board.turn).replace(' ', '_')}_map.svg"
         root = self.state_svg.getroot()
@@ -452,7 +452,9 @@ class Mapper:
                         break       
 
     def _draw_side_panel_date(self, svg: ElementTree) -> None:
-        date = get_svg_element(svg.getroot(), self.board.data["svg config"]["season"])
+        date = get_svg_element(svg, self.board.data["svg config"]["season"])
+        if date is None:
+            return
         game_name = self.board.name
         name_text = "" if game_name is None else f"{game_name} — "
         # TODO: this is hacky; I don't know a better way
@@ -602,7 +604,7 @@ class Mapper:
         return paths
 
     # removes unnesseary convoys, for instance [A->B->C & A->C] -> [A->C]
-    def get_shortest_paths(self, args: list[tuple[Province]]) -> list[tuple[Province]]:
+    def get_shortest_paths(self, args: list[tuple]) -> list[tuple]:
         args.sort(key=len)
         min_subsets = []
         for s in args:
@@ -808,7 +810,7 @@ class Mapper:
 
         visited_provinces: set[str] = set()
 
-        for province_element in itertools.chain(province_layer, island_fill_layer):
+        for province_element in itertools.chain(province_layer or [], island_fill_layer or []):
             try:
                 province = self._get_province_from_element_by_label(province_element)
             except ValueError as ex:
@@ -824,7 +826,7 @@ class Mapper:
 
             self.color_element(province_element, color)
 
-        for province_element in sea_layer:
+        for province_element in sea_layer or []:
             try:
                 province = self._get_province_from_element_by_label(province_element)
             except ValueError as ex:
@@ -836,7 +838,7 @@ class Mapper:
 
             visited_provinces.add(province.name)
 
-        for province_element in island_layer:
+        for province_element in island_layer or []:
             try:
                 province = self._get_province_from_element_by_label(province_element)
             except ValueError as ex:
@@ -847,7 +849,7 @@ class Mapper:
                 self.color_element(province_element, self.clear_seas_color)
 
         # Try to combine this with the code above? A lot of repeated stuff here
-        for island_ring in island_ring_layer:
+        for island_ring in island_ring_layer or []:
             try:
                 province = self._get_province_from_element_by_label(island_ring)
             except ValueError as ex:
@@ -870,6 +872,8 @@ class Mapper:
 
     def _color_centers(self) -> None:
         centers_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["supply_center_icons"])
+        if centers_layer is None:
+            raise ValueError("Supply Center layer not found in SVG")
 
         for center_element in centers_layer:
             try:
@@ -907,7 +911,7 @@ class Mapper:
             # for path in center_element.getchildren():
             #     print(f"\t{path}")
             #     self.color_element(path, color)
-            for elem in center_element.getchildren():
+            for elem in center_element:
                 if elem.attrib["id"].startswith("Capital_Marker"):
                     pass
                 elif "{http://www.inkscape.org/namespaces/inkscape}label" in elem.attrib and elem.attrib[
@@ -943,7 +947,7 @@ class Mapper:
     def _draw_unit(self, unit: Unit, use_moves_svg=False):
         unit_element = self._get_element_for_unit_type(unit.unit_type)
 
-        for path in unit_element.getchildren():
+        for path in unit_element:
             self.color_element(path, self.player_colors[unit.player.name])
 
         current_coords = get_unit_coordinates(unit_element)
@@ -989,14 +993,14 @@ class Mapper:
             layer: Element = self.cached_elements["army"]
         else:
             layer: Element = self.cached_elements["fleet"]
-        return copy.deepcopy(layer.getchildren()[0])
+        return copy.deepcopy(layer[0])
 
     def _draw_retreat_options(self, unit: Unit, svg):
         root = svg.getroot()
         if not unit.retreat_options:
             self._draw_force_disband(unit.province.get_retreat_unit_coordinates(unit.unit_type, unit.coast), svg)
 
-        for retreat_province, retreat_coast in unit.retreat_options:
+        for retreat_province, retreat_coast in unit.retreat_options or []:
             root.append(
                 self._draw_retreat_move(
                     RetreatMove(retreat_province, retreat_coast), unit.unit_type, unit.province.get_retreat_unit_coordinates(unit.unit_type, unit.coast), use_moves_svg=False
@@ -1010,7 +1014,7 @@ class Mapper:
             self.board_svg, self.board.data["svg config"]["power_banners"]
         )
         self.scoreboard_power_locations: list[str] = []
-        for power_element in all_power_banners_element:
+        for power_element in all_power_banners_element or []:
             self.scoreboard_power_locations.append(power_element.get("transform"))
 
         # each power is placed in the right spot based on the transform field which has value of "translate($x,$y)" where x,y

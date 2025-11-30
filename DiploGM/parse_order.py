@@ -71,6 +71,8 @@ class TreeToOrder(Transformer):
             unit_type = s[2]
 
         unit_type = get_unit_type(unit_type)
+        if unit_type is None:
+            raise ValueError(f"{s[2]} isn't a valid unit type")
 
         if not province.has_supply_center:
                 raise ValueError(f"{province} does not have a supply center.")  
@@ -375,7 +377,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
         return {"message": "Orders removed successfully."}
 
 
-def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | str:
+def _parse_remove_order(command: str, player_restriction: Player | None, board: Board) -> Unit | str:
     command = command.lower().strip()
     province, coast = board.get_province_and_coast(command)
     if command.startswith("relationship"):
@@ -394,9 +396,10 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
     elif board.turn.is_builds():
         # remove build order
         player = province.owner
-        if player_restriction is not None and player != player_restriction:
+        if player is None or (player_restriction is not None and player != player_restriction):
             raise PermissionError(
-                f"{player_restriction.name} does not control the unit in {command} which belongs to {player.name}"
+                f"{player_restriction.name if player_restriction else 'Someone'} " +
+                f"does not control the unit in {command} which belongs to {player.name if player else 'no one'}"
             )
 
         remove_player_order_for_province(board, player, province)
