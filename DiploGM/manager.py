@@ -110,8 +110,7 @@ class Manager(metaclass=SingletonMeta):
         else:
             board = self._database.get_board(
                 cur_board.board_id,
-                turn.get_phase(),
-                turn.get_year_index(),
+                turn,
                 cur_board.fish,
                 cur_board.name,
                 cur_board.datafile,
@@ -123,7 +122,7 @@ class Manager(metaclass=SingletonMeta):
             if (
                 board.turn.year < cur_board.turn.year
                 or (board.turn.year == cur_board.turn.year
-                    and board.turn.phase < cur_board.turn.phase)
+                    and board.turn.phase.value < cur_board.turn.phase.value)
             ):
                 if is_severance:
                     board = cur_board
@@ -166,7 +165,7 @@ class Manager(metaclass=SingletonMeta):
 
         board = self.get_board(server_id)
         old_board = self._database.get_board(
-            server_id, board.turn.get_phase(), board.turn.get_year_index(), board.fish, board.name, board.datafile
+            server_id, board.turn, board.fish, board.name, board.datafile
         )
         assert old_board is not None
         # mapper = Mapper(self._boards[server_id])
@@ -267,7 +266,7 @@ class Manager(metaclass=SingletonMeta):
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def rollback(self, server_id: int) -> dict[str, str | bytes]:
+    def rollback(self, server_id: int) -> tuple[str, bytes, str]:
         logger.info(f"Rolling back in server {server_id}")
         board = self.get_board(server_id)
         # TODO: what happens if we're on the first phase?
@@ -275,8 +274,7 @@ class Manager(metaclass=SingletonMeta):
 
         old_board = self._database.get_board(
             board.board_id,
-            last_turn.get_phase(),
-            last_turn.get_year_index(),
+            last_turn,
             board.fish,
             board.name,
             board.datafile,
@@ -293,7 +291,7 @@ class Manager(metaclass=SingletonMeta):
 
         message = f"Rolled back to {old_board.turn.get_indexed_name()}"
         file, file_name = mapper.draw_current_map()
-        return {"message": message, "file": file, "file_name": file_name}
+        return (message, file, file_name)
 
     def get_previous_board(self, server_id: int) -> Board | None:
         board = self.get_board(server_id)
@@ -301,20 +299,19 @@ class Manager(metaclass=SingletonMeta):
         last_turn = board.turn.get_previous_turn()
         old_board = self._database.get_board(
             board.board_id,
-            last_turn.get_phase(),
-            last_turn.get_year_index(),
+            last_turn,
             board.fish,
             board.name,
             board.datafile,
         )
         return old_board
 
-    def reload(self, server_id: int) -> dict[str, str | bytes]:
+    def reload(self, server_id: int) -> tuple[str, bytes, str]:
         logger.info(f"Reloading server {server_id}")
         board = self.get_board(server_id)
 
         loaded_board = self._database.get_board(
-            server_id, board.turn.get_phase(), board.turn.get_year_index(), board.fish, board.name, board.datafile
+            server_id, board.turn, board.fish, board.name, board.datafile
         )
         if loaded_board is None:
             raise ValueError(
@@ -326,7 +323,7 @@ class Manager(metaclass=SingletonMeta):
 
         message = f"Reloaded board for phase {loaded_board.turn.get_indexed_name()}"
         file, file_name = mapper.draw_current_map()
-        return {"message": message, "file": file, "file_name": file_name}
+        return (message, file, file_name)
 
     def get_member_player_object(self, member: Member) -> Player | None:
             for role in member.roles:

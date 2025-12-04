@@ -366,6 +366,7 @@ class GameManagementCog(commands.Cog):
             )
             return
 
+        assert isinstance(order_text, list)
         log = await send_message_and_file(
             channel=orders_log_channel,
             title=f"{board.turn}",
@@ -590,16 +591,16 @@ class GameManagementCog(commands.Cog):
     @commands.command(brief="Rolls back to the previous game state.")
     @perms.gm_only("rollback")
     async def rollback(self, ctx: commands.Context) -> None:
-        message = manager.rollback(ctx.guild.id)
-        log_command(logger, ctx, message=message["message"])
-        await send_message_and_file(channel=ctx.channel, **message)
+        message, file, file_name = manager.rollback(ctx.guild.id)
+        log_command(logger, ctx, message=message)
+        await send_message_and_file(channel=ctx.channel, message=message, file=file, file_name=file_name)
 
     @commands.command(brief="Reloads the current board with what is in the DB")
     @perms.gm_only("reload")
     async def reload(self, ctx: commands.Context) -> None:
-        message = manager.reload(ctx.guild.id)
-        log_command(logger, ctx, message=message["message"])
-        await send_message_and_file(channel=ctx.channel, **message)
+        message, file, file_name = manager.reload(ctx.guild.id)
+        log_command(logger, ctx, message=message)
+        await send_message_and_file(channel=ctx.channel, message=message, file=file, file_name=file_name)
 
     @commands.command(
         brief="Edits the game state and outputs the results map.",
@@ -636,9 +637,9 @@ class GameManagementCog(commands.Cog):
         edit_commands = ctx.message.content.removeprefix(
             f"{ctx.prefix}{ctx.invoked_with}"
         ).strip()
-        message = parse_edit_state(edit_commands, manager.get_board(ctx.guild.id))
-        log_command(logger, ctx, message=message["title"])
-        await send_message_and_file(channel=ctx.channel, **message)
+        title, message, file, file_name, embed_colour = parse_edit_state(edit_commands, manager.get_board(ctx.guild.id))
+        log_command(logger, ctx, message=title)
+        await send_message_and_file(channel=ctx.channel, title=title, message=message, file=file, file_name=file_name, embed_colour=embed_colour)
 
     @commands.command(
         brief="blitz",

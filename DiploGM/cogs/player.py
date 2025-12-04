@@ -133,6 +133,7 @@ class PlayerCog(commands.Cog):
             ctx,
             message=f"Success - generated orders for {board.turn}",
         )
+        assert isinstance(order_text, str)
         await send_message_and_file(
             channel=ctx.channel,
             title=f"{board.turn}",

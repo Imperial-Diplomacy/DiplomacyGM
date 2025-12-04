@@ -27,7 +27,7 @@ async def send_message_and_file(
     title: str | None = None,
     message: str | None = None,
     messages: list[str] | None = None,
-    embed_colour: str | None = None,
+    embed_colour: int | None = None,
     file: bytes | None = None,
     file_name: str | None = None,
     file_in_embed: bool | None = None,

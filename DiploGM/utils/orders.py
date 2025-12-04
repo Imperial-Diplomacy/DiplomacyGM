@@ -58,7 +58,7 @@ def get_orders(
                     if player.waived_orders > 0:
                         body += f"\nWaive {player.waived_orders}"
 
-                if fields:
+                if isinstance(response, list):
                     response.append((f"", f"{title}{body}"))
                 else:
                     response += f"\n{title}{body}"
@@ -108,7 +108,7 @@ def get_orders(
                     for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
                         body += f"{unit} {unit.order}\n"
 
-            if fields:
+            if isinstance(response, list):
                 response.append((f"", f"{title}\n{body}"))
             else:
                 response += f"{title}\n{body}"

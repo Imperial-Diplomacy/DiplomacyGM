@@ -76,7 +76,7 @@ def _parse_path_command(
     command: str,
     args: list[tuple[float, float]],
     coordinate: tuple[float, float],
-) -> tuple[tuple[float, float], tuple[float, float]]:
+) -> tuple[float, float]:
     reset = command.isupper()
     command = command.lower()
 
@@ -85,21 +85,22 @@ def _parse_path_command(
             coordinate = (0, 0)
         return move_coordinate(coordinate, args[-1])  # Ignore all args except the last
     elif command in ["h", "v"]:
-        coordinate = list(coordinate)
+        coordlist = list(coordinate)
         if command == "h":
             index = 0
         else:
             index = 1
         if reset:
-            coordinate[index] = 0
-        coordinate[index] += args[0][0]
-        return tuple(coordinate)
+            coordlist[index] = 0
+        coordlist[index] += args[0][0]
+        return (coordlist[0], coordlist[1])
     else:
         raise RuntimeError(f"Unknown SVG path command: {command}")
 
 def parse_path(path_string: str, translation: TransGL3):
     province_coordinates = [[]]
     command = None
+    arguments_by_command = {"a": 5, "c": 3, "h": 1, "l": 1, "m": 1, "q": 2, "s": 2, "t": 1, "v": 1}
     expected_arguments = 0
     current_index = 0
     path: list[str] = path_string.split()
@@ -127,18 +128,15 @@ def parse_path(path_string: str, translation: TransGL3):
                 else:
                     break
 
-            elif command.lower() in ["m", "l", "h", "v", "t"]:
-                expected_arguments = 1
-            elif command.lower() in ["s", "q"]:
-                expected_arguments = 2
-            elif command.lower() in ["c"]:
-                expected_arguments = 3
-            elif command.lower() in ["a"]:
-                expected_arguments = 5
+            elif command.lower() in arguments_by_command:
+                expected_arguments = arguments_by_command[command.lower()]
             else:
                 raise RuntimeError(f"Unknown SVG path command {command}")
 
             current_index += 1
+
+        if command is None:
+            raise RuntimeError("Path string does not start with a command")
 
         if command.lower() == "z":
             raise Exception("Invalid path, 'z' was followed by arguments")
@@ -188,7 +186,7 @@ def initialize_province_resident_data(
             point = Point((x, y))
             if province.geometry.contains(point):
                 found = True
-                resident_data_callback(province, resident_data)
+                resident_data_callback(province, resident_data, None)
                 remove.add(resident_data)
 
         # if not found:

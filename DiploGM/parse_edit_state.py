@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 manager = Manager()
 
 
-def parse_edit_state(message: str, board: Board) -> dict[str, str | bytes | int | None]:
+def parse_edit_state(message: str, board: Board) -> tuple[str, str, bytes | None, str | None, int | None]:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
     for command in commands:
@@ -73,13 +73,13 @@ def parse_edit_state(message: str, board: Board) -> dict[str, str | bytes | int 
     else:
         file, file_name = None, None
 
-    return {
-        "title": response_title,
-        "message": response_body,
-        "file": file,
-        "file_name": file_name,
-        "embed_colour": embed_colour,
-    }
+    return (
+        response_title,
+        response_body,
+        file,
+        file_name,
+        embed_colour,
+    )
 
 
 def _parse_command(command: str, board: Board) -> None:
@@ -492,8 +492,7 @@ def _load_state(keywords: list[str], board: Board) -> None:
 
     other = manager._database.get_board(
         server,
-        turn.get_phase(),
-        turn.get_year_index(),
+        turn,
         board.fish,
         name=board.name,
         data_file=board.datafile,

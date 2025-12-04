@@ -42,7 +42,7 @@ NAMESPACE: dict[str, str] = {
     "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
     "svg": "http://www.w3.org/2000/svg",
 }
-
+SVG_CONFIG_KEY = "svg config"
 
 # OUTPUTLAYER = "layer16"
 # UNITLAYER = "layer17"
@@ -65,8 +65,8 @@ class Mapper:
         self._initialize_scoreboard_locations()
 
         # different colors
-        if "color replacements" in self.board.data["svg config"]:
-            self.replacements = self.board.data["svg config"]["color replacements"]
+        if "color replacements" in self.board.data[SVG_CONFIG_KEY]:
+            self.replacements = self.board.data[SVG_CONFIG_KEY]["color replacements"]
         else:
             self.replacements = None
         self.load_colors(color_mode)
@@ -75,12 +75,12 @@ class Mapper:
 
         self.add_arrow_definition_to_svg(self.board_svg)
 
-        clear_svg_element(self.board_svg, self.board.data["svg config"]["starting_units"])
+        clear_svg_element(self.board_svg, self.board.data[SVG_CONFIG_KEY]["starting_units"])
 
         self.cached_elements = {}
         for element_name in ["army", "fleet", "retreat_army", "retreat_fleet", "unit_output"]:
             self.cached_elements[element_name] = get_svg_element(
-                self.board_svg, self.board.data["svg config"][element_name]
+                self.board_svg, self.board.data[SVG_CONFIG_KEY][element_name]
             )
 
         self.restriction = restriction
@@ -98,7 +98,7 @@ class Mapper:
 
         self._moves_svg = copy.deepcopy(self.board_svg)
         self.cached_elements["unit_output_moves"] = get_svg_element(
-            self._moves_svg, self.board.data["svg config"]["unit_output"]
+            self._moves_svg, self.board.data[SVG_CONFIG_KEY]["unit_output"]
         )
 
         self.state_svg = copy.deepcopy(self.board_svg)
@@ -107,8 +107,8 @@ class Mapper:
         self.highlight_retreating_units(self.state_svg)
 
     def clean_layers(self, svg: ElementTree):
-        for element_name in self.board.data["svg config"]["delete_layer"]:
-            clear_svg_element(svg, self.board.data["svg config"][element_name])
+        for element_name in self.board.data[SVG_CONFIG_KEY]["delete_layer"]:
+            clear_svg_element(svg, self.board.data[SVG_CONFIG_KEY][element_name])
     
     def is_moveable(self, unit: Unit):
         if unit.province.name not in self.adjacent_provinces:
@@ -119,6 +119,53 @@ class Mapper:
             return False
         return True
 
+    def draw_moves_and_retreats(self, arrow_layer: Element, current_turn: turn.Turn, movement_only: bool):
+        units = sorted(self.board.units, key=lambda unit: 0 if unit.order is None else unit.order.display_priority)
+        for unit in units:
+            if not self.is_moveable(unit):
+                continue
+            
+            # Only show moves that succeed if requested
+            if movement_only and not (
+                isinstance(unit.order, (RetreatMove, Move)) and not unit.order.hasFailed):
+                continue
+                
+            unit_locs = unit.province.all_rets if current_turn.is_retreats() else unit.province.all_locs
+            unit_locs = unit_locs[unit.coast] if unit.coast else unit_locs[unit.unit_type]
+
+            # TODO: Maybe there's a better way to handle convoys?
+            if isinstance(unit.order, (RetreatMove, Move, Support)):
+                new_locs = []
+                if unit.unit_type not in unit.order.destination.all_locs:
+                    e_list = next(iter(unit.order.destination.all_locs.values()))
+                elif unit.order.destination_coast:
+                    e_list = unit.order.destination.all_locs[unit.order.destination_coast]
+                else:
+                    e_list = unit.order.destination.all_locs[unit.unit_type]
+                
+                # Unspecified coast, so default to army location
+                if isinstance(e_list, dict):
+                    e_list = unit.order.destination.all_locs[UnitType.ARMY]
+                for endpoint in e_list:
+                    new_locs += [self.normalize(self.get_closest_loc(unit_locs, endpoint))]
+                unit_locs = new_locs
+            try:
+                for loc in unit_locs:
+                    val = self._draw_order(unit, loc, current_turn)
+                    if val is not None:
+                        # if something returns, that means it could potentially go across the edge
+                        # copy it 3 times (-1, 0, +1)
+                        lval = copy.deepcopy(val)
+                        rval = copy.deepcopy(val)
+                        lval.attrib["transform"] = f"translate({-self.board.data['svg config']['map_width']}, 0)"
+                        rval.attrib["transform"] = f"translate({self.board.data['svg config']['map_width']}, 0)"
+
+                        arrow_layer.append(lval)
+                        arrow_layer.append(rval)
+                        arrow_layer.append(val)
+            except Exception as err:
+                logger.error(f"Drawing move failed for {unit}", exc_info=err)
+
     def draw_moves_map(self, current_turn: turn.Turn, player_restriction: Player | None, movement_only: bool = False) -> tuple[bytes, str]:
         logger.info("mapper.draw_moves_map")
 
@@ -127,72 +174,19 @@ class Mapper:
         self.current_turn = current_turn
 
         t = self._moves_svg.getroot()
-        if t is None:
-            raise ValueError("SVG root is None")
-        arrow_layer = get_svg_element(self._moves_svg, self.board.data["svg config"]["arrow_output"])
+        assert t is not None
+        arrow_layer = get_svg_element(self._moves_svg, self.board.data[SVG_CONFIG_KEY]["arrow_output"])
         if arrow_layer is None:
             raise ValueError("Arrow layer not found in SVG")
         
         if not current_turn.is_builds():
-            units = sorted(self.board.units, key=lambda unit: 0 if unit.order is None else unit.order.display_priority)
-            for unit in units:
-                if not self.is_moveable(unit):
-                    continue
-                
-                # Only show moves that succeed if requested
-                if movement_only and not (
-                    isinstance(unit.order, (RetreatMove, Move)) and not unit.order.hasFailed):
-                    continue
-                    
-                if current_turn.is_retreats():
-                    unit_locs = unit.province.all_rets
-                else:
-                    unit_locs = unit.province.all_locs
-                unit_locs = unit_locs[unit.coast] if unit.coast else unit_locs[unit.unit_type]
-
-                # TODO: Maybe there's a better way to handle convoys?
-                if isinstance(unit.order, (RetreatMove, Move, Support)):
-                    new_locs = []
-                    if unit.unit_type not in unit.order.destination.all_locs:
-                        e_list = next(iter(unit.order.destination.all_locs.values()))
-                    elif unit.order.destination_coast:
-                        e_list = unit.order.destination.all_locs[unit.order.destination_coast]
-                    else:
-                        e_list = unit.order.destination.all_locs[unit.unit_type]
-                    
-                    # Unspecified coast, so default to army location
-                    if isinstance(e_list, dict):
-                        e_list = unit.order.destination.all_locs[UnitType.ARMY]
-                    for endpoint in e_list:
-                        new_locs += [self.normalize(self.get_closest_loc(unit_locs, endpoint))]
-                    unit_locs = new_locs
-                try:
-                    for loc in unit_locs:
-                        val = self._draw_order(unit, loc, current_turn)
-                        if val is not None:
-                            # if something returns, that means it could potentially go across the edge
-                            # copy it 3 times (-1, 0, +1)
-                            lval = copy.deepcopy(val)
-                            rval = copy.deepcopy(val)
-                            lval.attrib["transform"] = f"translate({-self.board.data['svg config']['map_width']}, 0)"
-                            rval.attrib["transform"] = f"translate({self.board.data['svg config']['map_width']}, 0)"
-
-                            arrow_layer.append(lval)
-                            arrow_layer.append(rval)
-                            arrow_layer.append(val)
-                except Exception as err:
-                    logger.error(f"Drawing move failed for {unit}", exc_info=err)
+            self.draw_moves_and_retreats(arrow_layer, current_turn, movement_only)
         else:
-            players: set[Player]
-            if player_restriction is None:
-                players = self.board.players
-            else:
-                players = {player_restriction}
+            players = self.board.players if player_restriction is None else {player_restriction}
             for player in players:
                 for build_order in player.build_orders:
-                    if isinstance(build_order, PlayerOrder):
-                        if build_order.province.name in self.adjacent_provinces:
-                            self._draw_player_order(player, build_order)
+                    if isinstance(build_order, PlayerOrder) and build_order.province.name in self.adjacent_provinces:
+                        self._draw_player_order(player, build_order)
 
         self.draw_side_panel(self._moves_svg)
 
@@ -209,8 +203,8 @@ class Mapper:
         root = self._moves_svg.getroot()
         if root is None:
             raise ValueError("SVG root is None")
-        clear_svg_element(self._moves_svg, self.board.data["svg config"]["sidebar"])
-        clear_svg_element(self._moves_svg, self.board.data["svg config"]["power_banners"])
+        clear_svg_element(self._moves_svg, self.board.data[SVG_CONFIG_KEY]["sidebar"])
+        clear_svg_element(self._moves_svg, self.board.data[SVG_CONFIG_KEY]["power_banners"])
         with open("DiploGM/adjudicator/mapper.js", 'r') as f:
             js = f.read()
 
@@ -260,10 +254,10 @@ class Mapper:
             if self.is_moveable(unit):
                 immediate.append(unit.province.get_name(unit.coast))
 
-        script.text = js % (str(locdict), self.board.data["svg config"], coast_to_province, province_to_unit_type, province_to_province_type, immediate)
+        script.text = js % (str(locdict), self.board.data[SVG_CONFIG_KEY], coast_to_province, province_to_unit_type, province_to_province_type, immediate)
         root.append(script)
 
-        coasts = get_svg_element(root, self.board.data["svg config"]["coast_markers"]).getchildren()
+        coasts = get_svg_element(root, self.board.data[SVG_CONFIG_KEY]["coast_markers"])
         def get_text_coordinate(e : etree.Element) -> tuple[float, float]:
             trans = TransGL3(e)
             return trans.transform([float(e.attrib["x"]), float(e.attrib["y"])] + np.array([3.25, -3.576 / 2]))
@@ -272,7 +266,8 @@ class Mapper:
             e.set("onclick", f'obj_clicked(event, "{p} {e[0].text}", false)')
             e.set("oncontextmenu", f'obj_clicked(event, "{p} {e[0].text}", false)')
 
-        initialize_province_resident_data(self.board.provinces, coasts, get_text_coordinate, match)
+        if coasts is not None:
+            initialize_province_resident_data(self.board.provinces, coasts, get_text_coordinate, match)
 
         def get_sc_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
             circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
@@ -290,13 +285,13 @@ class Mapper:
             e.set("onclick", f'obj_clicked(event, "{p.name}", false)')
             e.set("oncontextmenu", f'obj_clicked(event, "{p.name}", false)')
 
-        supply_center_icons = get_svg_element(root, self.board.data["svg config"]["supply_center_icons"])
+        supply_center_icons = get_svg_element(root, self.board.data[SVG_CONFIG_KEY]["supply_center_icons"])
         if supply_center_icons is None:
             raise ValueError("Supply center icons layer not found in SVG")
         initialize_province_resident_data(self.board.provinces, supply_center_icons, get_sc_coordinates, set_province_supply_center)
 
         for layer_name in ("land_layer", "island_borders", "island_ring_layer", "island_fill_layer", "sea_borders"):
-            layer = get_svg_element(root, self.board.data["svg config"][layer_name])
+            layer = get_svg_element(root, self.board.data[SVG_CONFIG_KEY][layer_name])
             if layer is None:
                 raise ValueError(f"Layer {layer_name} not found in SVG")
             for province_data in layer:
@@ -337,20 +332,20 @@ class Mapper:
                         for vassal in player.vassals:
                             self.player_colors[vassal.name] = self.player_colors[player.name]
 
-        neutral_colors = self.board.data["svg config"]["neutral"]
+        neutral_colors = self.board.data[SVG_CONFIG_KEY]["neutral"]
         if isinstance(neutral_colors, str):
             self.neutral_color = neutral_colors
         else:
             self.neutral_color = neutral_colors[color_mode] if color_mode in neutral_colors else neutral_colors["standard"]
         
-        self.clear_seas_color = self.board.data["svg config"]["default_sea_color"]
+        self.clear_seas_color = self.board.data[SVG_CONFIG_KEY]["default_sea_color"]
         if self.replacements != None and self.clear_seas_color in self.replacements:
             if color_mode in self.replacements[self.clear_seas_color]:
                 self.clear_seas_color = self.replacements[self.clear_seas_color][color_mode]
 
     def replace_colors(self, color_mode: str) -> None:
-        other_fills = get_svg_element(self.board_svg, self.board.data["svg config"]["other_fills"])
-        background = get_svg_element(self.board_svg, self.board.data["svg config"]["background"])
+        other_fills = get_svg_element(self.board_svg, self.board.data[SVG_CONFIG_KEY]["other_fills"])
+        background = get_svg_element(self.board_svg, self.board.data[SVG_CONFIG_KEY]["background"])
         if self.replacements != None:
             elements_to_process = []
             if other_fills is not None:
@@ -370,8 +365,8 @@ class Mapper:
         # Difficult to detect correctly using either geometry or province names
         # Marking manually would work, but for all svgs is time consuming. TODO
 
-        # get_svg_element(self.board_svg, self.board.data["svg config"]["starting_units"])
-        # province_names = get_svg_element(self.board_svg, self.board.data["svg config"]["province_names"]).getchildren()
+        # get_svg_element(self.board_svg, self.board.data[SVG_CONFIG_KEY]["starting_units"])
+        # province_names = get_svg_element(self.board_svg, self.board.data[SVG_CONFIG_KEY]["province_names"]).getchildren()
         # for text_box in province_names:
         #     try:
         #         text = text_box[0].text.lower()
@@ -409,7 +404,7 @@ class Mapper:
         root = svg.getroot()
         if root is None:
             raise ValueError("SVG root is None")
-        all_power_banners_element = get_svg_element(root, self.board.data["svg config"]["power_banners"])
+        all_power_banners_element = get_svg_element(root, self.board.data[SVG_CONFIG_KEY]["power_banners"])
         if all_power_banners_element is None:
             return
         
@@ -419,9 +414,9 @@ class Mapper:
         else:
             players = self.board.get_players_sorted_by_score()
 
-        sc_index = self.board.data["svg config"]["power_sc_index"] if "power_sc_index" in self.board.data["svg config"] else 5
+        sc_index = self.board.data[SVG_CONFIG_KEY]["power_sc_index"] if "power_sc_index" in self.board.data[SVG_CONFIG_KEY] else 5
 
-        if not "vassal system" in self.board.data.get("adju flags", []):
+        if "vassal system" not in self.board.data.get("adju flags", []):
             for power_element in all_power_banners_element:
                 for i, player in enumerate(players):
                     if i >= len(self.scoreboard_power_locations):
@@ -452,7 +447,7 @@ class Mapper:
                         break       
 
     def _draw_side_panel_date(self, svg: ElementTree) -> None:
-        date = get_svg_element(svg, self.board.data["svg config"]["season"])
+        date = get_svg_element(svg, self.board.data[SVG_CONFIG_KEY]["season"])
         if date is None:
             return
         game_name = self.board.name
@@ -494,6 +489,7 @@ class Mapper:
         if isinstance(order, Build):
             self._draw_build(player, order)
         elif isinstance(order, Disband):
+            assert order.province.unit is not None
             disbanding_unit: Unit = order.province.unit
             if disbanding_unit.coast:
                 coord_list = order.province.all_locs[disbanding_unit.coast]
@@ -506,31 +502,33 @@ class Mapper:
 
     def _draw_hold(self, coordinate: tuple[float, float], hasFailed: bool) -> None:
         element = self._moves_svg.getroot()
+        assert element is not None
         drawn_order = self.create_element(
             "circle",
             {
                 "cx": coordinate[0],
                 "cy": coordinate[1],
-                "r": self.board.data["svg config"]["unit_radius"],
+                "r": self.board.data[SVG_CONFIG_KEY]["unit_radius"],
                 "fill": "none",
                 "stroke": "red" if hasFailed else "black",
-                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
+                "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"],
             },
         )
         element.append(drawn_order)
 
     def _draw_core(self, coordinate: tuple[float, float], hasFailed: bool) -> None:
         element = self._moves_svg.getroot()
+        assert element is not None
         drawn_order = self.create_element(
             "rect",
             {
-                "x": coordinate[0] - self.board.data["svg config"]["unit_radius"],
-                "y": coordinate[1] - self.board.data["svg config"]["unit_radius"],
-                "width": self.board.data["svg config"]["unit_radius"] * 2,
-                "height": self.board.data["svg config"]["unit_radius"] * 2,
+                "x": coordinate[0] - self.board.data[SVG_CONFIG_KEY]["unit_radius"],
+                "y": coordinate[1] - self.board.data[SVG_CONFIG_KEY]["unit_radius"],
+                "width": self.board.data[SVG_CONFIG_KEY]["unit_radius"] * 2,
+                "height": self.board.data[SVG_CONFIG_KEY]["unit_radius"] * 2,
                 "fill": "none",
                 "stroke": "red" if hasFailed else "black",
-                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
+                "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"],
                 "transform": f"rotate(45 {coordinate[0]} {coordinate[1]})",
             },
         )
@@ -546,7 +544,7 @@ class Mapper:
                 "d": f"M {coordinate[0]},{coordinate[1]} L {destination[0]},{destination[1]}",
                 "fill": "none",
                 "stroke": "red",
-                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
+                "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"],
                 "stroke-linecap": "round",
                 "marker-end": "url(#redarrow)",
             },
@@ -590,7 +588,7 @@ class Mapper:
                 "d": d,
                 "fill": "none",
                 "stroke": stroke_color,
-                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
+                "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"],
                 "stroke-linecap": "round",
                 "marker-end": f"url(#{marker_end})",
             },
@@ -598,6 +596,7 @@ class Mapper:
         return order_path
 
     def _get_all_paths(self, unit: Unit) -> list[tuple[Province, Province]]:
+        assert unit.order is not None and unit.order.destination is not None
         paths = self._path_helper(unit.province, unit.order.destination, unit.province)
         if paths == []:
             return [(unit.province, unit.order.destination)]
@@ -681,7 +680,7 @@ class Mapper:
         arrow_type = "redarrow" if hasFailed else "arrow"
         if order.destination.unit:
             if order.source == order.destination:
-                (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data["svg config"]["unit_radius"])
+                (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data[SVG_CONFIG_KEY]["unit_radius"])
             else:
                 (x3, y3) = self.pull_coordinate((x2, y2), (x3, y3))
             # Draw hold around unit that can be support-held
@@ -708,12 +707,12 @@ class Mapper:
                     marker_start = f"url(#{ball_type})"
                     # doesn't matter that v3 has been pulled, as it's still collinear
                     (x1, y1) = (x2, y2) = self.pull_coordinate(
-                        (x3, y3), (x1, y1), self.board.data["svg config"]["unit_radius"]
+                        (x3, y3), (x1, y1), self.board.data[SVG_CONFIG_KEY]["unit_radius"]
                     )
                 else:
                     return
 
-        dasharray_size = 2.5 * self.board.data["svg config"]["order_stroke_width"]
+        dasharray_size = 2.5 * self.board.data[SVG_CONFIG_KEY]["order_stroke_width"]
         drawn_order = self.create_element(
             "path",
             {
@@ -721,7 +720,7 @@ class Mapper:
                 "fill": "none",
                 "stroke": "red" if hasFailed else "black",
                 "stroke-dasharray": f"{dasharray_size} {dasharray_size}",
-                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
+                "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"],
                 "stroke-linecap": "round",
                 "marker-start": marker_start,
                 "marker-end": f"url(#{ball_type if order.source == order.destination else arrow_type})",
@@ -731,21 +730,23 @@ class Mapper:
 
     def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float], hasFailed: bool) -> None:
         element = self._moves_svg.getroot()
+        assert element is not None
         drawn_order = self.create_element(
             "circle",
             {
                 "cx": coordinate[0],
                 "cy": coordinate[1],
-                "r": self.board.data["svg config"]["unit_radius"] / 2,
+                "r": self.board.data[SVG_CONFIG_KEY]["unit_radius"] / 2,
                 "fill": "none",
                 "stroke": "red" if hasFailed else "black",
-                "stroke-width": self.board.data["svg config"]["order_stroke_width"] * 2 / 3,
+                "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"] * 2 / 3,
             },
         )
         element.append(drawn_order)
 
     def _draw_build(self, player, order: Build) -> None:
         element = self._moves_svg.getroot()
+        assert element is not None
         build_location = order.province.get_primary_unit_coordinates(order.unit_type, order.coast)
         drawn_order = self.create_element(
             "circle",
@@ -755,7 +756,7 @@ class Mapper:
                 "r": 10,
                 "fill": "none",
                 "stroke": "green",
-                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
+                "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"],
             },
         )
 
@@ -769,18 +770,18 @@ class Mapper:
             {
                 "cx": coordinate[0],
                 "cy": coordinate[1],
-                "r": self.board.data["svg config"]["unit_radius"],
+                "r": self.board.data[SVG_CONFIG_KEY]["unit_radius"],
                 "fill": "none",
                 "stroke": "red",
-                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
+                "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"],
             },
         )
         element.append(drawn_order)
 
     def _draw_force_disband(self, coordinate: tuple[float, float], svg) -> None:
         element = svg.getroot()
-        cross_width = self.board.data["svg config"]["order_stroke_width"] / (2**0.5)
-        square_rad = self.board.data["svg config"]["unit_radius"] / (2**0.5)
+        cross_width = self.board.data[SVG_CONFIG_KEY]["order_stroke_width"] / (2**0.5)
+        square_rad = self.board.data[SVG_CONFIG_KEY]["unit_radius"] / (2**0.5)
         # two corner and a center point. Rotate and concat them to make the correct object
         init = np.array(
             [
@@ -802,11 +803,11 @@ class Mapper:
         element.append(drawn_order)
 
     def _color_provinces(self, color_mode: str | None) -> None:
-        province_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["land_layer"])
-        island_fill_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_fill_layer"])
-        island_ring_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_ring_layer"])
-        sea_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["sea_borders"])
-        island_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_borders"])
+        province_layer = get_svg_element(self.board_svg, self.board.data[SVG_CONFIG_KEY]["land_layer"])
+        island_fill_layer = get_svg_element(self.board_svg, self.board.data[SVG_CONFIG_KEY]["island_fill_layer"])
+        island_ring_layer = get_svg_element(self.board_svg, self.board.data[SVG_CONFIG_KEY]["island_ring_layer"])
+        sea_layer = get_svg_element(self.board_svg, self.board.data[SVG_CONFIG_KEY]["sea_borders"])
+        island_layer = get_svg_element(self.board_svg, self.board.data[SVG_CONFIG_KEY]["island_borders"])
 
         visited_provinces: set[str] = set()
 
@@ -820,7 +821,7 @@ class Mapper:
             visited_provinces.add(province.name)
             color = self.neutral_color
             if province.name not in self.adjacent_provinces:
-                color = self.board.data["svg config"]["unknown"]
+                color = self.board.data[SVG_CONFIG_KEY]["unknown"]
             elif province.owner:
                 color = self.player_colors[province.owner.name]
 
@@ -858,7 +859,7 @@ class Mapper:
 
             color = self.neutral_color
             if province.name not in self.adjacent_provinces:
-                color = self.board.data["svg config"]["unknown"]
+                color = self.board.data[SVG_CONFIG_KEY]["unknown"]
             elif province.owner:
                 color = self.player_colors[province.owner.name]
             self.color_element(island_ring, color, key="stroke")
@@ -871,7 +872,7 @@ class Mapper:
             print(f"Warning: Province {province.name} was not recolored by mapper!")
 
     def _color_centers(self) -> None:
-        centers_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["supply_center_icons"])
+        centers_layer = get_svg_element(self.board_svg, self.board.data[SVG_CONFIG_KEY]["supply_center_icons"])
         if centers_layer is None:
             raise ValueError("Supply Center layer not found in SVG")
 
@@ -887,7 +888,7 @@ class Mapper:
                 continue
 
             if province.name not in self.adjacent_provinces:
-                core_color = self.board.data["svg config"]["unknown"]
+                core_color = self.board.data[SVG_CONFIG_KEY]["unknown"]
                 half_color = core_color
             else:
                 if province.core:
@@ -1008,10 +1009,10 @@ class Mapper:
             )
 
     def _initialize_scoreboard_locations(self) -> None:
-        if not self.board.data["svg config"]["power_banners"]:
+        if not self.board.data[SVG_CONFIG_KEY]["power_banners"]:
             return
         all_power_banners_element = get_svg_element(
-            self.board_svg, self.board.data["svg config"]["power_banners"]
+            self.board_svg, self.board.data[SVG_CONFIG_KEY]["power_banners"]
         )
         self.scoreboard_power_locations: list[str] = []
         for power_element in all_power_banners_element or []:
@@ -1149,7 +1150,7 @@ class Mapper:
 
     # returns equivalent point within the map
     def normalize(self, point: tuple[float, float]):
-        return (point[0] % self.board.data["svg config"]["map_width"], point[1])
+        return (point[0] % self.board.data[SVG_CONFIG_KEY]["map_width"], point[1])
 
     # returns closest point in a set
     # will wrap horizontally
@@ -1160,12 +1161,12 @@ class Mapper:
         for p in possibilities_list:
             x = p[0]
             cx = coord[0]
-            if abs(x - cx) > self.board.data["svg config"]["map_width"] / 2:
+            if abs(x - cx) > self.board.data[SVG_CONFIG_KEY]["map_width"] / 2:
                 crossed += [1]
                 if x > cx:
-                    x -= self.board.data["svg config"]["map_width"]
+                    x -= self.board.data[SVG_CONFIG_KEY]["map_width"]
                 else:
-                    x += self.board.data["svg config"]["map_width"]
+                    x += self.board.data[SVG_CONFIG_KEY]["map_width"]
             else:
                 crossed += [0]
             crossed_pos += [(x, p[1])]
@@ -1202,7 +1203,7 @@ class Mapper:
         no more than the given percent of the distance because otherwise small province size areas are hard to see.
         """
         if pull is None:
-            pull = 1.5 * self.board.data["svg config"]["unit_radius"]
+            pull = 1.5 * self.board.data[SVG_CONFIG_KEY]["unit_radius"]
 
         ax, ay = anchor
         cx, cy = coordinate

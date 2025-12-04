@@ -155,7 +155,7 @@ class TestDATC_E(unittest.TestCase):
         f_heligoland_bight = b.supportMove(b.germany, UnitType.FLEET, "Heligoland Bight", f_holland, "North Sea")
         f_north_sea = b.move(b.france, UnitType.FLEET, "North Sea", "Holland")
         f_belgium = b.supportMove(b.france, UnitType.FLEET, "Belgium", f_north_sea, "Holland")
-        f_english_channel = b.supportMove(b.france, UnitType.FLEET, "English Channel", f_holland, "North Sea")
+        b.supportMove(b.france, UnitType.FLEET, "English Channel", f_holland, "North Sea")
         a_ruhr = b.move(b.austria, UnitType.ARMY, "Ruhr", "Holland")
         a_kiel = b.supportMove(b.austria, UnitType.ARMY, "Kiel", a_ruhr, "Holland")
 

@@ -141,7 +141,9 @@ class Province():
                 return True
         return False
 
-    def set_adjacent(self, other: Province):
+    def set_adjacent(self, other: Province | tuple[Province, str | None]):
+        if isinstance(other, tuple):
+            other = other[0]
         if other.type == ProvinceType.IMPASSIBLE:
             self.impassible_adjacent.add(other)
         else:
