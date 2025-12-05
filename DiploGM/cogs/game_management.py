@@ -95,6 +95,48 @@ class GameManagementCog(commands.Cog):
         log_command(logger, ctx, message=f"Archived {len(categories)} Channels")
         await send_message_and_file(channel=ctx.channel, message=message)
 
+    def ping_player_builds(self, player: Player, users: set[discord.User], build_anywhere: bool) -> str:
+        response = ""
+        user_str = ''.join([u.mention for u in users])
+
+        count = len(player.centers) - len(player.units)
+        current = player.waived_orders
+        has_disbands = False
+        has_builds = player.waived_orders > 0
+        for order in player.build_orders:
+            if isinstance(order, Disband):
+                current -= 1
+                has_disbands = True
+            elif isinstance(order, Build):
+                current += 1
+                has_builds = True
+
+        difference = abs(current - count)
+        order_text = f"order{'s' if difference != 1 else ''}"
+
+        if has_builds and has_disbands:
+            response = f"Hey {user_str}, you have both build and disband orders. Please get this looked at."
+        elif count >= 0:
+            available_centers = [
+                center
+                for center in player.centers
+                if center.unit is None
+                and (center.core == player or build_anywhere)
+            ]
+            available = min(len(available_centers), count)
+
+            difference = abs(current - available)
+            if current > available:
+                response = f"Hey {user_str}, you have {difference} more build {order_text} than possible. Please get this looked at."
+            elif current < available:
+                response = f"Hey {user_str}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
+        elif count < 0:
+            if current < count:
+                response = f"Hey {user_str}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
+            elif current > count:
+                response = f"Hey {user_str}, you have {difference} less disband {order_text} than required. Please get this looked at."
+        return response
+    
     @commands.command(
         brief="pings players who don't have the expected number of orders.",
         description="""Pings all players in their orders channel that satisfy the following constraints:
@@ -170,13 +212,9 @@ class GameManagementCog(commands.Cog):
                         )
                     )
                 else:
-                    users = set()
-                    # Find users with access to this channel
-                    for overwritter, permission in channel.overwrites.items():
-                        if isinstance(overwritter, Member):
-                            if permission.view_channel:
-                                users.add(overwritter)
-                            pass
+                    users = {overwritter for overwritter, permission
+                             in channel.overwrites.items()
+                             if isinstance(overwritter, Member) and permission.view_channel}
 
                 if len(users) == 0:
                     failed_players.append(player)
@@ -185,71 +223,24 @@ class GameManagementCog(commands.Cog):
                     users.add(role)
 
                 if board.turn.is_builds():
-                    count = len(player.centers) - len(player.units)
-
-                    current = player.waived_orders
-                    has_disbands = False
-                    has_builds = player.waived_orders > 0
-                    for order in player.build_orders:
-                        if isinstance(order, Disband):
-                            current -= 1
-                            has_disbands = True
-                        elif isinstance(order, Build):
-                            current += 1
-                            has_builds = True
-
-                    difference = abs(current - count)
-                    if difference != 1:
-                        order_text = "orders"
-                    else:
-                        order_text = "order"
-
-                    if has_builds and has_disbands:
-                        response = f"Hey {''.join([u.mention for u in users])}, you have both build and disband orders. Please get this looked at."
-                    elif count >= 0:
-                        available_centers = [
-                            center
-                            for center in player.centers
-                            if center.unit is None
-                            and (
-                                center.core == player
-                                or "build anywhere" in board.data.get("adju flags", [])
-                            )
-                        ]
-                        available = min(len(available_centers), count)
-
-                        difference = abs(current - available)
-                        if current > available:
-                            response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more build {order_text} than possible. Please get this looked at."
-                        elif current < available:
-                            response = f"Hey {''.join([u.mention for u in users])}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
-                    elif count < 0:
-                        if current < count:
-                            response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
-                        elif current > count:
-                            response = f"Hey {''.join([u.mention for u in users])}, you have {difference} less disband {order_text} than required. Please get this looked at."
+                    self.ping_player_builds(player, users, "build anywhere" in board.data.get("adju flags", []))
                 else:
-                    if board.turn.is_retreats():
-                        in_moves = lambda u: u == u.province.dislodged_unit
-                    else:
-                        in_moves = lambda _: True
+                    in_moves = lambda u: u == u.province.dislodged_unit or board.turn.is_moves()
 
                     missing = [
                         unit
                         for unit in player.units
                         if unit.order is None and in_moves(unit)
                     ]
-                    if len(missing) != 1:
-                        unit_text = "units"
-                    else:
-                        unit_text = "unit"
+                    unit_text = f"unit{'s' if len(missing) != 1 else ''}"
+                    if not missing:
+                        continue
 
-                    if missing:
-                        response = f"Hey **{''.join([u.mention for u in users])}**, you are missing moves for the following {len(missing)} {unit_text}:"
-                        for unit in sorted(
-                            missing, key=lambda _unit: _unit.province.name
-                        ):
-                            response += f"\n{unit}"
+                    response = f"Hey **{''.join([u.mention for u in users])}**, you are missing moves for the following {len(missing)} {unit_text}:"
+                    for unit in sorted(
+                        missing, key=lambda _unit: _unit.province.name
+                    ):
+                        response += f"\n{unit}"
 
                 if response:
                     pinged_players += 1
@@ -493,17 +484,18 @@ class GameManagementCog(commands.Cog):
             file_name=file_name,
             convert_svg=return_svg,
         )
-        if full_adjudicate:
-            map_channel = get_maps_channel(ctx.guild)
-            if map_channel:
-                map_message = await send_message_and_file(
-                    channel=map_channel,
-                    title=f"{title} Orders Map",
-                    file=file,
-                    file_name=file_name,
-                    convert_svg=True,
-                )
-        #           await map_message.publish()
+        if full_adjudicate and (map_channel := get_maps_channel(ctx.guild)):
+            map_message = await send_message_and_file(
+                channel=map_channel,
+                title=f"{title} Orders Map",
+                file=file,
+                file_name=file_name,
+                convert_svg=True,
+            )
+            try:
+                await map_message.publish()
+            except:
+                pass
 
         if movement_adjudicate:
             file, file_name = manager.draw_map(
@@ -535,17 +527,20 @@ class GameManagementCog(commands.Cog):
             convert_svg=return_svg,
         )
 
+        if full_adjudicate and (map_channel := get_maps_channel(ctx.guild)):
+            map_message = await send_message_and_file(
+                channel=map_channel,
+                title=f"{title} Results Map",
+                file=file,
+                file_name=file_name,
+                convert_svg=True,
+            )      
+            try:
+                await map_message.publish()
+            except:
+                pass
+
         if full_adjudicate:
-            map_channel = get_maps_channel(ctx.guild)
-            if map_channel:
-                map_message = await send_message_and_file(
-                    channel=map_channel,
-                    title=f"{title} Results Map",
-                    file=file,
-                    file_name=file_name,
-                    convert_svg=True,
-                )
-            #            await map_message.publish()
             await self.publish_orders(ctx)
             await self.unlock_orders(ctx)
 
@@ -559,24 +554,12 @@ class GameManagementCog(commands.Cog):
             sevb_player = discord.utils.find(lambda r: r.name == "Player", sevb.roles)
             bperms = sevb_player.permissions
 
-            if "Spring" in new_board.turn.get_phase():
-                await send_message_and_file(channel=ctx.channel, message="Game A is permitted to play.")
-                aperms.update(send_messages=True)
-                bperms.update(send_messages=False)
-
-            if "Fall" in new_board.turn.get_phase():
-                await send_message_and_file(channel=ctx.channel, message="Game B is permitted to play.")
-                aperms.update(send_messages=False)
-                bperms.update(send_messages=True)
-            if "Winter" in new_board.turn.get_phase():
-                if random.choice([0,1]) == 0:
-                    await send_message_and_file(channel=ctx.channel, message="Game A is permitted to play.")
-                    aperms.update(send_messages=True)
-                    bperms.update(send_messages=False)
-                else:
-                    await send_message_and_file(channel=ctx.channel, message="Game B is permitted to play.")
-                    aperms.update(send_messages=False)
-                    bperms.update(send_messages=True)
+            a_allowed = ("Spring" in new_board.turn.get_phase()
+                        or ("Winter" in new_board.turn.get_phase()
+                            and random.choice([0, 1]) == 0))
+            await send_message_and_file(channel=ctx.channel, message=f"Game {'A' if a_allowed else 'B'} is permitted to play.")
+            aperms.update(send_messages=a_allowed)
+            bperms.update(send_messages=(not a_allowed))
 
             await seva_player.edit(permissions=aperms)
             await sevb_player.edit(permissions=bperms)
@@ -667,11 +650,8 @@ class GameManagementCog(commands.Cog):
                     c = f"{p1.name}-{p2.name}"
                     cs.append((c, p1, p2))
 
-        cos: list[CategoryChannel] = []
-
-        for category in ctx.guild.categories:
-            if category.name.lower().startswith("comms"):
-                cos.append(category)
+        cos: list[CategoryChannel] = [category for category in ctx.guild.categories
+                                      if category.name.lower().startswith("comms")]
 
         available = 0
         for cat in cos:
@@ -760,10 +740,9 @@ class GameManagementCog(commands.Cog):
         user_permissions: list[tuple[Member, PermissionOverwrite]] = []
         # Find users with access to this channel
         for overwritter, user_permission in channel.overwrites.items():
-            if isinstance(overwritter, Member):
-                if user_permission.view_channel:
-                    users.append(overwritter)
-                    user_permissions.append((overwritter, user_permission))
+            if isinstance(overwritter, Member) and user_permission.view_channel:
+                users.append(overwritter)
+                user_permissions.append((overwritter, user_permission))
 
         # TODO don't hardcode
         staff_role = None

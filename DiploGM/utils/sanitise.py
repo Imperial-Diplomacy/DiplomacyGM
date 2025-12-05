@@ -88,24 +88,19 @@ def parse_season(
         elif s.lower() in ["winter", "w", "wa"]:
             season = PhaseName.WINTER_BUILDS
             
-        if s.lower() in ["retreat", "retreats", "r", "sr", "fr"]:
-            retreat = True
+        retreat = retreat != s.lower() in ["retreat", "retreats", "r", "sr", "fr"]
 
     if year is None:
         if season is None:
             return default_turn
         year = default_turn.year
-    if season is None:
-        season = PhaseName.SPRING_MOVES
+    season = season or PhaseName.SPRING_MOVES
 
     if retreat and season != PhaseName.WINTER_BUILDS:
         season = PhaseName(season.value + 1)
 
     new_turn = Turn(year, season, default_turn.start_year)
-    if new_turn.year > default_turn.year:
-        new_turn.year = default_turn.year
-    if new_turn.year < default_turn.start_year:
-        new_turn.year = default_turn.start_year
+    new_turn.year = min(new_turn.year, default_turn.year)
     if new_turn.year == default_turn.year and new_turn.phase.value > default_turn.phase.value:
         if new_turn.year == default_turn.start_year:
             new_turn = default_turn
