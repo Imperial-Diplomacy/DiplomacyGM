@@ -214,8 +214,10 @@ class Mapper:
         for province in self.board.provinces:
             if province.unit:
                 locdict[province.name] = list(province.get_primary_unit_coordinates(province.unit.unit_type, province.unit.coast))
+            elif province.type == ProvinceType.SEA:
+                locdict[province.name] = list(province.get_primary_unit_coordinates(UnitType.FLEET, None))
             else:
-                locdict[province.name] = list(province.get_primary_unit_coordinates(UnitType.ARMY))
+                locdict[province.name] = list(province.get_primary_unit_coordinates(UnitType.ARMY, None))
             for coast in province.get_multiple_coasts():
                 locdict[province.get_name(coast)] = list(province.get_primary_unit_coordinates(UnitType.FLEET, coast))
 

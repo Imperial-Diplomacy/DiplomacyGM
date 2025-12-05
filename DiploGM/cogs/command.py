@@ -1,3 +1,5 @@
+from DiploGM.models.turn import PhaseName
+from DiploGM.utils.sanitise import parse_season
 from black.trans import defaultdict
 import inspect
 import logging
@@ -62,7 +64,7 @@ class CommandCog(commands.Cog):
         description="""Outputs the scoreboard.
         In Chaos, is shortened and sorted by points, unless "standard" is an argument
         * Use `csv` to obtain a raw list of sc counts (in alphabetical order)""",
-        aliases=["leaderboard"],
+        aliases=["leaderboard", "sb"],
     )
     async def scoreboard(self, ctx: commands.Context) -> None:
         assert ctx.guild is not None
@@ -74,6 +76,7 @@ class CommandCog(commands.Cog):
         )
         csv = "csv" in arguments
         alphabetical = {"a", "alpha", "alphabetical"} & set(arguments)
+        show_builds = {"b", "build", "builds"} & set(arguments)
 
         board = manager.get_board(ctx.guild.id)
 
@@ -90,7 +93,7 @@ class CommandCog(commands.Cog):
         the_player = perms.get_player_by_context(ctx)
 
         response = ""
-        if board.is_chaos() and not "standard" in ctx.message.content:
+        if board.is_chaos() and "standard" not in ctx.message.content:
             scoreboard_rows = []
 
             latest_index = -1
@@ -122,6 +125,17 @@ class CommandCog(commands.Cog):
                 )
         else:
             response = ""
+            old_board = board
+            if not show_builds:
+                old_board = manager._database.get_board(
+                    board.board_id,
+                    parse_season([str(PhaseName.FALL_MOVES)], board.turn.get_previous_turn()),
+                    board.fish,
+                    board.name,
+                    board.datafile,
+                )
+                if old_board is None:
+                    old_board = board
             player_list = (
                 sorted(board.players, key=lambda p: p.name)
                 if alphabetical
@@ -135,10 +149,18 @@ class CommandCog(commands.Cog):
                 else:
                     player_name = player.name
 
+                
+                if show_builds:
+                    to_compare = len(player.units)
+                else:
+                    old_player = old_board.get_player(player.name)
+                    assert old_player is not None
+                    to_compare = len(old_player.centers)
+                
                 response += (
                     f"\n**{player_name}**: "
-                    f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
-                    f"{len(player.centers) - len(player.units)}) [{round(player.score() * 100, 1)}%]"
+                    f"{len(player.centers)} ({'+' if len(player.centers) - to_compare >= 0 else ''}"
+                    f"{len(player.centers) - to_compare}) [{round(player.score() * 100, 1)}%]"
                 )
 
         log_command(logger, ctx, message="Generated scoreboard")
