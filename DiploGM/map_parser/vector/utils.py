@@ -146,10 +146,10 @@ def parse_path(path_string: str, translation: TransGL3):
         if len(path) < (current_index + expected_arguments):
             raise RuntimeError(f"Ran out of arguments for {command}")
 
-        args = [
-            (float(coord_string.split(",")[0]), float(coord_string.split(",")[-1]))
-            for coord_string in path[current_index : current_index + expected_arguments]
-        ]
+        args = []
+        for coord_string in path[current_index : current_index + expected_arguments]:
+            split_str = coord_string.split(",")
+            args.append((float(split_str[0]), float(split_str[-1])))
 
         coordinate = _parse_path_command(
             command, args, coordinate

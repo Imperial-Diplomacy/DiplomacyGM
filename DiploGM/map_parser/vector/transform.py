@@ -76,7 +76,7 @@ class TransGL3:
         return self
 
     def transform(self, point: tuple[float, float]) -> tuple[float, float]:
-        point_array = np.concatenate((point, (1,)))
+        point_array = np.array((point[0], point[1], 1))
         return tuple((point_array @ self.matrix)[:2].tolist())
 
     # represents a convolution

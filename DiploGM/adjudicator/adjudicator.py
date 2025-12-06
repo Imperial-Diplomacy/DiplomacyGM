@@ -379,9 +379,6 @@ class BuildsAdjudicator(Adjudicator):
         if "vassal system" in self._board.data.get("adju flags", []):
             self.vassal_adju()
 
-
-
-
         for player in self._board.players:
             player.build_orders = set()
             player.waived_orders = 0

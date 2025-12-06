@@ -34,8 +34,6 @@ class Parser:
     def __init__(self, data: str):
         self.datafile = data
 
-
-
         with open(f"variants/{data}/config.json", "r") as f:
             self.data = json.load(f)
 
@@ -322,6 +320,7 @@ class Parser:
         return provinces
 
     def _get_province_coordinates(self) -> set[Province]:
+        start = time.time()
         # TODO: (BETA) don't hardcode translation
         land_provinces = self._create_provinces_type(self.layer_data["land_layer"], ProvinceType.LAND)
         island_provinces = self._create_provinces_type(self.layer_data["island_borders"], ProvinceType.ISLAND)
@@ -332,6 +331,7 @@ class Parser:
         impassible_provinces = set()
         if self.layer_data.get("impassibles_layer") is not None:
             impassible_provinces = self._create_provinces_type(self.layer_data["impassibles_layer"], ProvinceType.IMPASSIBLE)
+        print(time.time() - start)
         return land_provinces | island_provinces | sea_provinces | impassible_provinces
 
     # TODO: (BETA) can a library do all of this for us? more safety from needing to support wild SVG legal syntax
@@ -472,7 +472,6 @@ class Parser:
         unit = Unit(unit_type, player, province, coast, None)
         province.unit = unit
         unit.player.units.add(unit)
-        return
 
     def _initialize_units_assisted(self) -> None:
         for unit_data in self.layer_data["starting_units"]:
@@ -586,10 +585,10 @@ class Parser:
 
     def _get_unit_type(self, unit_data: Element) -> UnitType:
         if self.data[SVG_CONFIG_KEY]["unit_type_labeled"]:
-            first_letter = self._get_province_name(unit_data).lower()[0]
-            if first_letter == "f":
+            name = self._get_province_name(unit_data).lower()
+            if name[0] == "f":
                 return UnitType.FLEET
-            if first_letter == "a":
+            if name[0] == "a":
                 return UnitType.ARMY
             raise RuntimeError(f"Unit types are labeled, but {name} doesn't start with F or A")
 
