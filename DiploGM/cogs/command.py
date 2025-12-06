@@ -1,7 +1,10 @@
+from DiploGM.models.turn import PhaseName
+from DiploGM.utils.sanitise import parse_season
 from black.trans import defaultdict
 import inspect
 import logging
 
+from discord import Member
 from discord.ext import commands
 
 from DiploGM.config import ERROR_COLOUR
@@ -56,14 +59,90 @@ class CommandCog(commands.Cog):
             ),
         )
 
+    def generate_chaos_scoreboard(self, board, ctx) -> str:
+        response = ""
+        the_player = perms.get_player_by_context(ctx)
+        scoreboard_rows = []
+
+        latest_index = -1
+        latest_points = float("inf")
+
+        for i, player in enumerate(board.get_players_sorted_by_points()):
+            points = player.points
+
+            if points < latest_points:
+                latest_index = i
+                latest_points = points
+
+            if i <= 25 or player == the_player:
+                scoreboard_rows.append((latest_index + 1, player))
+            elif the_player == None:
+                break
+            elif the_player == player:
+                scoreboard_rows.append((latest_index + 1, player))
+                break
+
+        index_length = len(str(scoreboard_rows[-1][0]))
+        points_length = len(str(scoreboard_rows[0][1]))
+
+        for index, player in scoreboard_rows:
+            response += (
+                f"\n\\#{index: >{index_length}} | {player.points: <{points_length}} | **{player.name}**: "
+                f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
+                f"{len(player.centers) - len(player.units)})"
+            )
+        return response
+
+    def generate_scoreboard(self, board, ctx, alphabetical, show_builds) -> str:
+        response = ""
+        old_board = board
+        if not show_builds:
+            old_board = manager._database.get_board(
+                board.board_id,
+                parse_season([str(PhaseName.FALL_MOVES)], board.turn.get_previous_turn()),
+                board.fish,
+                board.name,
+                board.datafile,
+            )
+            if old_board is None:
+                old_board = board
+        player_list = (
+            sorted(board.players, key=lambda p: p.name)
+            if alphabetical
+            else board.get_players_sorted_by_score()
+        )
+        for player in player_list:
+            if (
+                player_role := player.find_discord_role(ctx.guild.roles)
+            ) is not None:
+                player_name = player_role.mention
+            else:
+                player_name = player.name
+
+            
+            if show_builds:
+                to_compare = len(player.units)
+            else:
+                old_player = old_board.get_player(player.name)
+                assert old_player is not None
+                to_compare = len(old_player.centers)
+            
+            response += (
+                f"\n**{player_name}**: "
+                f"{len(player.centers)} ({'+' if len(player.centers) - to_compare >= 0 else ''}"
+                f"{len(player.centers) - to_compare}) [{round(player.score() * 100, 1)}%]"
+            )
+        return response
+
     @commands.command(
         brief="Outputs the scoreboard.",
         description="""Outputs the scoreboard.
         In Chaos, is shortened and sorted by points, unless "standard" is an argument
         * Use `csv` to obtain a raw list of sc counts (in alphabetical order)""",
-        aliases=["leaderboard"],
+        aliases=["leaderboard", "sb"],
     )
     async def scoreboard(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         arguments = (
             ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
@@ -72,6 +151,7 @@ class CommandCog(commands.Cog):
         )
         csv = "csv" in arguments
         alphabetical = {"a", "alpha", "alphabetical"} & set(arguments)
+        show_builds = {"b", "build", "builds"} & set(arguments)
 
         board = manager.get_board(ctx.guild.id)
 
@@ -85,59 +165,11 @@ class CommandCog(commands.Cog):
             await ctx.send(counts)
             return
 
-        the_player = perms.get_player_by_context(ctx)
 
-        response = ""
-        if board.is_chaos() and not "standard" in ctx.message.content:
-            scoreboard_rows = []
-
-            latest_index = -1
-            latest_points = float("inf")
-
-            for i, player in enumerate(board.get_players_sorted_by_points()):
-                points = player.points
-
-                if points < latest_points:
-                    latest_index = i
-                    latest_points = points
-
-                if i <= 25 or player == the_player:
-                    scoreboard_rows.append((latest_index + 1, player))
-                elif the_player == None:
-                    break
-                elif the_player == player:
-                    scoreboard_rows.append((latest_index + 1, player))
-                    break
-
-            index_length = len(str(scoreboard_rows[-1][0]))
-            points_length = len(str(scoreboard_rows[0][1]))
-
-            for index, player in scoreboard_rows:
-                response += (
-                    f"\n\\#{index: >{index_length}} | {player.points: <{points_length}} | **{player.name}**: "
-                    f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
-                    f"{len(player.centers) - len(player.units)})"
-                )
+        if board.is_chaos() and "standard" not in ctx.message.content:
+            response = self.generate_chaos_scoreboard(board, ctx)
         else:
-            response = ""
-            player_list = (
-                sorted(board.players, key=lambda p: p.name)
-                if alphabetical
-                else board.get_players_sorted_by_score()
-            )
-            for player in player_list:
-                if (
-                    player_role := player.find_discord_role(ctx.guild.roles)
-                ) is not None:
-                    player_name = player_role.mention
-                else:
-                    player_name = player.name
-
-                response += (
-                    f"\n**{player_name}**: "
-                    f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
-                    f"{len(player.centers) - len(player.units)}) [{round(player.score() * 100, 1)}%]"
-                )
+            response = self.generate_scoreboard(board, ctx, alphabetical, show_builds)
 
         log_command(logger, ctx, message="Generated scoreboard")
         await send_message_and_file(
@@ -148,6 +180,7 @@ class CommandCog(commands.Cog):
 
     @commands.command(brief="outputs information about the current game", aliases=["i"])
     async def info(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         try:
             board = manager.get_board(ctx.guild.id)
         except RuntimeError:
@@ -234,6 +267,7 @@ class CommandCog(commands.Cog):
         aliases=["province"],
     )
     async def province_info(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
 
         if not board.orders_enabled:
@@ -389,6 +423,7 @@ class CommandCog(commands.Cog):
 
     @commands.command(brief="outputs all provinces per owner")
     async def all_province_data(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
 
         if not board.orders_enabled:
@@ -447,8 +482,9 @@ class CommandCog(commands.Cog):
 
     @commands.command(brief="Changes your nickname")
     async def nick(self, ctx: commands.Context) -> None:
-        name: str = ctx.author.nick
-        if name == None:
+        assert isinstance(ctx.author, Member)
+        name = ctx.author.nick
+        if name is None:
             name = ctx.author.name
         if "]" in name:
             prefix = name.split("] ", 1)[0]

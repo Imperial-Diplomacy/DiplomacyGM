@@ -11,7 +11,7 @@ from lxml import etree
 
 from DiploGM.map_parser.vector.transform import TransGL3
 from DiploGM.map_parser.vector.utils import get_element_color, get_unit_coordinates, get_svg_element, parse_path, initialize_province_resident_data
-from DiploGM.models.turn import Turn
+from DiploGM.models.turn import Turn, PhaseName
 from DiploGM.models.board import Board
 from DiploGM.models.player import Player
 from DiploGM.models.province import Province, ProvinceType
@@ -24,6 +24,8 @@ NAMESPACE: dict[str, str] = {
     "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
     "svg": "http://www.w3.org/2000/svg",
 }
+HIGH_PROVINCES_KEY = "high provinces"
+SVG_CONFIG_KEY = "svg config"
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +34,6 @@ class Parser:
     def __init__(self, data: str):
         self.datafile = data
 
-
-
         with open(f"variants/{data}/config.json", "r") as f:
             self.data = json.load(f)
 
@@ -41,7 +41,7 @@ class Parser:
 
         svg_root = etree.parse(self.data["file"])
 
-        self.layers = self.data["svg config"]
+        self.layers = self.data[SVG_CONFIG_KEY]
         self.layer_data: dict[str, Element] = {}
 
         for layer in ["land_layer", "island_borders", "island_fill_layer",
@@ -98,20 +98,16 @@ class Parser:
                     color = color["standard"]
                 self.color_to_player[color] = player
 
-            neutral_colors = self.data["svg config"]["neutral"]
+            neutral_colors = self.data[SVG_CONFIG_KEY]["neutral"]
             if isinstance(neutral_colors, dict):
                 self.color_to_player[neutral_colors["standard"]] = None
             else:
                 self.color_to_player[neutral_colors] = None
-            self.color_to_player[self.data["svg config"]["neutral_sc"]] = None
+            self.color_to_player[self.data[SVG_CONFIG_KEY]["neutral_sc"]] = None
 
         provinces = self._get_provinces()
 
-        units = set()
-        for province in provinces:
-            unit = province.unit
-            if unit:
-                units.add(unit)
+        units = {province.unit for province in provinces if province.unit}
 
         elapsed = time.time() - start
         logger.info(f"map_parser.vector.parse: {elapsed}s")
@@ -149,7 +145,7 @@ class Parser:
                     logger.warning(f"{self.datafile}: Province {province.name} has no army retreat coord. Setting to 0,0 ...")
                     province.set_unit_coordinate(None, False, UnitType.ARMY)
         
-        initial_turn = Turn(self.year_offset, "Spring Moves", self.year_offset)
+        initial_turn = Turn(self.year_offset, PhaseName.SPRING_MOVES, self.year_offset)
         if "adju flags" in self.data and "initial builds" in self.data["adju flags"]:
             initial_turn = initial_turn.get_previous_turn()
 
@@ -188,86 +184,91 @@ class Parser:
         self.name_to_province[province.name] = province
         return provinces
 
+    def add_high_provinces(self, provinces: set[Province]):
+        for name, data in self.data["overrides"][HIGH_PROVINCES_KEY].items():
+            high_provinces: list[Province] = []
+            for index in range(1, data["num"] + 1):
+                province = Province(
+                    name + str(index),
+                    shapely.Polygon(),
+                    dict(),
+                    dict(),
+                    getattr(ProvinceType, data["type"]),
+                    False,
+                    set(),
+                    set(),
+                    None,
+                    None,
+                    None,
+                )
+                provinces = self.add_province_to_board(provinces, province)
+                high_provinces.append(province)
+
+            # Add connections between each high province
+            for provinceA in high_provinces:
+                provinceA.adjacent.update(provinceB for provinceB in high_provinces
+                                          if provinceA.name != provinceB.name)
+
+        for name, data in self.data["overrides"][HIGH_PROVINCES_KEY].items():
+            adjacent = {self.name_to_province[n] for n in data["adjacencies"]}
+            for index in range(1, data["num"] + 1):
+                high_province = self.name_to_province[name + str(index)]
+                high_province.adjacent.update(adjacent)
+                for ad in adjacent:
+                    ad.adjacent.add(high_province)
+        return provinces
+
     def json_cheats(self, provinces: set[Province]) -> set[Province]:
         if "overrides" not in self.data:
             return set()
-        if "high provinces" in self.data["overrides"]:
-            for name, data in self.data["overrides"]["high provinces"].items():
-                high_provinces: list[Province] = []
-                for index in range(1, data["num"] + 1):
-                    province = Province(
-                        name + str(index),
-                        shapely.Polygon(),
-                        dict(),
-                        dict(),
-                        getattr(ProvinceType, data["type"]),
-                        False,
-                        set(),
-                        set(),
-                        None,
-                        None,
-                        None,
-                    )
-                    provinces = self.add_province_to_board(provinces, province)
-                    high_provinces.append(province)
-
-                # Add connections between each high province
-                for provinceA in high_provinces:
-                    for provinceB in high_provinces:
-                        if provinceA.name != provinceB.name:
-                            provinceA.adjacent.add(provinceB)
-
-            for name, data in self.data["overrides"]["high provinces"].items():
-                adjacent = {self.name_to_province[n] for n in data["adjacencies"]}
-                for index in range(1, data["num"] + 1):
-                    high_province = self.name_to_province[name + str(index)]
-                    high_province.adjacent.update(adjacent)
-                    for ad in adjacent:
-                        ad.adjacent.add(high_province)
+        if HIGH_PROVINCES_KEY in self.data["overrides"]:
+            provinces = self.add_high_provinces(provinces)
 
         x_offset = 0
         y_offset = 0
 
-        if "loc_x_offset" in self.data["svg config"]:
-            x_offset = self.data["svg config"]["loc_x_offset"]
+        if "loc_x_offset" in self.data[SVG_CONFIG_KEY]:
+            x_offset = self.data[SVG_CONFIG_KEY]["loc_x_offset"]
         
-        if "loc_y_offset" in self.data["svg config"]:
-            x_offset = self.data["svg config"]["loc_y_offset"]
+        if "loc_y_offset" in self.data[SVG_CONFIG_KEY]:
+            x_offset = self.data[SVG_CONFIG_KEY]["loc_y_offset"]
 
         offset = np.array([x_offset, y_offset])
 
-        if "provinces" in self.data["overrides"]:
-            for name, data in self.data["overrides"]["provinces"].items():
-                province = self.name_to_province[name]
-                # TODO: Some way to specify whether or not to clear other adjacencies?
-                if "adjacencies" in data:
-                    province.adjacent.update({self.name_to_province[n] for n in data["adjacencies"]})
-                if "remove_adjacencies" in data:
-                    province.adjacent.difference_update({self.name_to_province[n] for n in data["remove_adjacencies"]})
-                if "remove_adjacent_coasts" in data:
-                    province.nonadjacent_coasts.update(data["remove_adjacent_coasts"])
-                if "coasts" in data:
-                    province.fleet_adjacent = {}
-                    for coast_name, coast_adjacent in data["coasts"].items():
-                        province.fleet_adjacent[coast_name] = {self._get_province_and_coast(n) for n in coast_adjacent}
-                if "unit_loc" in data:
-                    # For compatability reasons, we assume these are sea tiles
-                    # TODO: Add support for armies/multicoastal tiles
-                    for coordinate in data["unit_loc"]:
-                        coordinate = tuple((tuple(coordinate) + offset).tolist())
-                        if UnitType.FLEET not in province.all_locs:
-                            province.all_locs[UnitType.FLEET] = {coordinate}
-                        else:
-                            province.all_locs[UnitType.FLEET].add(coordinate)
-                        province.primary_unit_coordinates[UnitType.FLEET] = coordinate
-                if "retreat_unit_loc" in data:
-                    for coordinate in data["retreat_unit_loc"]:
-                        coordinate = tuple((tuple(coordinate) + offset).tolist())
-                        if UnitType.FLEET not in province.all_rets:
-                            province.all_rets[UnitType.FLEET] = {coordinate}
-                        else:
-                            province.all_rets[UnitType.FLEET].add(coordinate)
-                        province.retreat_unit_coordinates[UnitType.FLEET] = coordinate
+        if "provinces" not in self.data["overrides"]:
+            return provinces
+        
+        for name, data in self.data["overrides"]["provinces"].items():
+            province = self.name_to_province[name]
+            # TODO: Some way to specify whether or not to clear other adjacencies?
+            if "adjacencies" in data:
+                province.adjacent.update({self.name_to_province[n] for n in data["adjacencies"]})
+            if "remove_adjacencies" in data:
+                province.adjacent.difference_update({self.name_to_province[n] for n in data["remove_adjacencies"]})
+            if "remove_adjacent_coasts" in data:
+                province.nonadjacent_coasts.update(data["remove_adjacent_coasts"])
+            if "coasts" in data:
+                province.fleet_adjacent = {}
+                for coast_name, coast_adjacent in data["coasts"].items():
+                    province.fleet_adjacent[coast_name] = {self._get_province_and_coast(n) for n in coast_adjacent}
+            if "unit_loc" in data:
+                # For compatability reasons, we assume these are sea tiles
+                # TODO: Add support for armies/multicoastal tiles
+                for coordinate in data["unit_loc"]:
+                    coordinate = tuple((tuple(coordinate) + offset).tolist())
+                    if UnitType.FLEET not in province.all_locs:
+                        province.all_locs[UnitType.FLEET] = {coordinate}
+                    else:
+                        province.all_locs[UnitType.FLEET].add(coordinate)
+                    province.primary_unit_coordinates[UnitType.FLEET] = coordinate
+            if "retreat_unit_loc" in data:
+                for coordinate in data["retreat_unit_loc"]:
+                    coordinate = tuple((tuple(coordinate) + offset).tolist())
+                    if UnitType.FLEET not in province.all_rets:
+                        province.all_rets[UnitType.FLEET] = {coordinate}
+                    else:
+                        province.all_rets[UnitType.FLEET].add(coordinate)
+                    province.retreat_unit_coordinates[UnitType.FLEET] = coordinate
 
         return provinces
 
@@ -311,22 +312,15 @@ class Parser:
         # set phantom unit coordinates for optimal unit placements
         self._set_phantom_unit_coordinates()
 
-        # TODO: There's a better way to do this
         for province in provinces:
             for unit in province.primary_unit_coordinates.keys():
-                if unit not in province.all_locs:
-                    province.all_locs[unit] = {province.primary_unit_coordinates[unit]}
-                else:
-                    province.all_locs[unit].add(province.primary_unit_coordinates[unit])
-  
-                if unit not in province.all_rets:
-                    province.all_rets[unit] = {province.retreat_unit_coordinates[unit]}
-                else:
-                    province.all_rets[unit].add(province.retreat_unit_coordinates[unit])
+                province.all_locs.setdefault(unit, set()).add(province.primary_unit_coordinates[unit])
+                province.all_rets.setdefault(unit, set()).add(province.retreat_unit_coordinates[unit])
 
         return provinces
 
     def _get_province_coordinates(self) -> set[Province]:
+        start = time.time()
         # TODO: (BETA) don't hardcode translation
         land_provinces = self._create_provinces_type(self.layer_data["land_layer"], ProvinceType.LAND)
         island_provinces = self._create_provinces_type(self.layer_data["island_borders"], ProvinceType.ISLAND)
@@ -337,6 +331,7 @@ class Parser:
         impassible_provinces = set()
         if self.layer_data.get("impassibles_layer") is not None:
             impassible_provinces = self._create_provinces_type(self.layer_data["impassibles_layer"], ProvinceType.IMPASSIBLE)
+        print(time.time() - start)
         return land_provinces | island_provinces | sea_provinces | impassible_provinces
 
     # TODO: (BETA) can a library do all of this for us? more safety from needing to support wild SVG legal syntax
@@ -371,10 +366,10 @@ class Parser:
 
             province_coordinates = shapely.MultiPolygon()
 
-            name = None
+            name = ""
             if self.layers["province_labels"]:
                 name = self._get_province_name(province_data)
-                if name == None:
+                if name == "":
                     raise RuntimeError(f"Province name not found in province with data {province_data}")
 
             province = Province(
@@ -402,12 +397,16 @@ class Parser:
     # Sets province names given the names layer
     def _initialize_province_names(self, provinces: set[Province]) -> None:
         def get_coordinates(name_data: Element) -> tuple[float, float]:
-            return float(name_data.get("x")), float(name_data.get("y"))
+            x, y = name_data.get("x"), name_data.get("y")
+            assert(x is not None and y is not None)
+            return float(x), float(y)
 
         def set_province_name(province: Province, name_data: Element, _: str | None) -> None:
-            if province.name is not None:
+            if province.name != "":
                 raise RuntimeError(f"Province already has name: {province.name}")
-            province.name = name_data.findall(".//svg:tspan", namespaces=NAMESPACE)[0].text
+            new_name = name_data.findall(".//svg:tspan", namespaces=NAMESPACE)[0].text
+            assert new_name is not None
+            province.name = new_name
 
         initialize_province_resident_data(provinces, list(self.layer_data["names_layer"]), get_coordinates, set_province_name)
 
@@ -473,12 +472,11 @@ class Parser:
         unit = Unit(unit_type, player, province, coast, None)
         province.unit = unit
         unit.player.units.add(unit)
-        return
 
     def _initialize_units_assisted(self) -> None:
         for unit_data in self.layer_data["starting_units"]:
             province_name = self._get_province_name(unit_data)
-            if self.data["svg config"]["unit_type_labeled"]:
+            if self.data[SVG_CONFIG_KEY]["unit_type_labeled"]:
                 province_name = province_name[1:]
             province, coast = self._get_province_and_coast(province_name)
             self._set_province_unit(province, unit_data, coast)
@@ -489,6 +487,7 @@ class Parser:
             base_coordinates = tuple(
                 map(float, unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("d").split()[1].split(","))
             )
+            assert len(base_coordinates) == 2
             trans = TransGL3(unit_data)
             return trans.transform(base_coordinates)
 
@@ -526,7 +525,9 @@ class Parser:
 
     @staticmethod
     def _get_province_name(province_data: Element) -> str:
-        return province_data.get(f"{NAMESPACE.get('inkscape')}label")
+        province_name = province_data.get(f"{NAMESPACE.get('inkscape')}label")
+        assert province_name is not None
+        return province_name
 
     def _get_province(self, province_data: Element) -> Province:
         return self.name_to_province[self._get_province_name(province_data)]
@@ -568,7 +569,7 @@ class Parser:
         color = get_element_color(element)
         #FIXME: only works if there's one person per province
         if self.autodetect_players:
-            neutral_color = self.data["svg config"]["neutral"]
+            neutral_color = self.data[SVG_CONFIG_KEY]["neutral"]
             if isinstance(neutral_color, dict):
                 neutral_color = neutral_color["standard"]
             if color is None or color == neutral_color:
@@ -583,26 +584,23 @@ class Parser:
             raise Exception(f"Unknown player color: {color} (in object {tostring(element)})")
 
     def _get_unit_type(self, unit_data: Element) -> UnitType:
-        if self.data["svg config"]["unit_type_labeled"]:
-            name = self._get_province_name(unit_data)
-            if name is None:
-                raise RuntimeError("Unit has no name, but unit_type_labeled = true")
-            if name.lower().startswith("f"):
+        if self.data[SVG_CONFIG_KEY]["unit_type_labeled"]:
+            name = self._get_province_name(unit_data).lower()
+            if name[0] == "f":
                 return UnitType.FLEET
-            if name.lower().startswith("a"):
+            if name[0] == "a":
                 return UnitType.ARMY
-            else:
-                raise RuntimeError(f"Unit types are labeled, but {name} doesn't start with F or A")
+            raise RuntimeError(f"Unit types are labeled, but {name} doesn't start with F or A")
 
-        if "unit_type_from_names" in self.data["svg config"] and self.data["svg config"]["unit_type_from_names"]:
+        if "unit_type_from_names" in self.data[SVG_CONFIG_KEY] and self.data[SVG_CONFIG_KEY]["unit_type_from_names"]:
             # unit_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
             name = unit_data[1].get(f"{NAMESPACE.get('inkscape')}label")
+            assert name is not None
             if name.lower().startswith("sail"):
                 return UnitType.FLEET
             if name.lower().startswith("shield"):
                 return UnitType.ARMY
-            else:
-                raise RuntimeError(f"Unit types are labeled, but {name} wasn't sail or shield")
+            raise RuntimeError(f"Unit types are labeled, but {name} wasn't sail or shield")
 
         unit_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
         num_sides = unit_data.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides")

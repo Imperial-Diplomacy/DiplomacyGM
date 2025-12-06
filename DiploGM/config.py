@@ -3,6 +3,8 @@ import tomllib
 import sys
 from typing import List, Tuple, Any
 
+import discord
+
 with open("config_defaults.toml", "rb") as toml_file:
     _default_toml = tomllib.load(toml_file)
 
@@ -132,9 +134,10 @@ _gm_categories: set[str] = {
 }
 
 
-def is_gm_category(category: str) -> bool:
-    return _is_member(category, _gm_categories)
-
+def is_gm_category(category: discord.CategoryChannel | None) -> bool:
+    if category is None:
+        return False
+    return _is_member(category.name, _gm_categories)
 
 # Discord channels in which GMs are allowed to use non-public commands (e.g. adjudication)
 _gm_channels: set[str] = {"admin-chat", "admin-spam", "gm-bot-commands"}
@@ -151,8 +154,10 @@ _player_categories: set[str] = {
 }
 
 
-def is_player_category(category: str) -> bool:
-    return _is_member(category, _player_categories)
+def is_player_category(category: discord.CategoryChannel | None) -> bool:
+    if category is None:
+        return False
+    return _is_member(category.name, _player_categories)
 
 
 # Channel suffix for player orders channels.

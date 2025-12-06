@@ -77,7 +77,7 @@ class TestDATC_A(unittest.TestCase):
         f_north_sea = b.convoy(b.england, "North Sea", a_yorkshire, "Yorkshire")
         a_liverpool = b.supportMove(b.england, UnitType.ARMY, "Liverpool", a_yorkshire, "Yorkshire")
         f_london = b.move(b.germany, UnitType.FLEET, "London", "Yorkshire");
-        a_wales = b.supportMove(b.germany, UnitType.ARMY, "Wales", f_london, "Yorkshire")
+        b.supportMove(b.germany, UnitType.ARMY, "Wales", f_london, "Yorkshire")
 
         b.assertIllegal(a_yorkshire, f_north_sea, a_liverpool)
         b.assertSuccess(f_london)
@@ -109,7 +109,7 @@ class TestDATC_A(unittest.TestCase):
         """
         b = BoardBuilder()
         a_venice = b.move(b.italy, UnitType.ARMY, "Venice", "Trieste")
-        a_tyrolia = b.supportMove(b.italy, UnitType.ARMY, "Tyrolia", a_venice, "Trieste")
+        b.supportMove(b.italy, UnitType.ARMY, "Tyrolia", a_venice, "Trieste")
         f_trieste = b.fleet("Trieste", b.austria)
         f_trieste = b.supportHold(b.austria, UnitType.FLEET, "Trieste", f_trieste)
 

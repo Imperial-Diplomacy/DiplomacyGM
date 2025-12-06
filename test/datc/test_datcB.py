@@ -81,7 +81,7 @@ class TestDATC_B(unittest.TestCase):
         b = BoardBuilder()
         f_marseilles = b.move(b.france, UnitType.FLEET, "Marseilles", "Gulf of Lyon")
         f_spain_nc = b.supportMove(b.france, UnitType.FLEET, "Spain nc", f_marseilles, "Gulf of Lyon")
-        f_gulf_of_lyon = b.hold(b.italy, UnitType.FLEET, "Gulf of Lyon")
+        b.hold(b.italy, UnitType.FLEET, "Gulf of Lyon")
 
         b.assertIllegal(f_spain_nc)
         b.assertFail(f_marseilles)
@@ -101,7 +101,7 @@ class TestDATC_B(unittest.TestCase):
         """
         b = BoardBuilder()
         f_north_atlantic_ocean = b.move(b.england, UnitType.FLEET, "North Atlantic Ocean", "Mid-Atlantic Ocean")
-        f_irish_sea = b.supportMove(b.england, UnitType.FLEET, "Irish Sea", f_north_atlantic_ocean, "Mid-Atlantic Ocean")
+        b.supportMove(b.england, UnitType.FLEET, "Irish Sea", f_north_atlantic_ocean, "Mid-Atlantic Ocean")
         f_mid_atlantic_ocean = b.hold(b.france, UnitType.FLEET, "Mid-Atlantic Ocean")
         f_spain_nc = b.supportHold(b.france, UnitType.FLEET, "Spain nc", f_mid_atlantic_ocean)
         f_gulf_of_lyon = b.move(b.italy, UnitType.FLEET, "Gulf of Lyon", "Spain sc")

@@ -24,6 +24,9 @@ class UnitOrder(Order):
     def __init__(self):
         super().__init__()
         self.hasFailed = False
+        self.destination = None
+        self.destination_coast = None
+        self.source = None
     
     # Used for DB storage
     def get_source_str(self) -> str | None:
@@ -175,6 +178,7 @@ class PlayerOrder(Order):
     def __init__(self, province: Province):
         super().__init__()
         self.province: Province = province
+        self.coast = None
 
     def __hash__(self):
         return hash(self.province.name)
@@ -189,7 +193,7 @@ class Build(PlayerOrder):
     def __init__(self, province: Province, unit_type: UnitType, coast: str | None = None):
         super().__init__(province)
         self.unit_type: UnitType = unit_type
-        self.coast = coast
+        self.coast: str | None = coast
 
     def __str__(self):
         return f"Build {self.unit_type.value} {self.province}" + (f" {self.coast}" if self.coast else "")
@@ -220,6 +224,7 @@ class RelationshipOrder(Order):
     def __init__(self, player: Player):
         super().__init__()
         self.player = player
+        self.coast = None
     
     def __hash__(self):
         return hash(self.player)

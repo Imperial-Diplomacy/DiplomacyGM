@@ -34,6 +34,7 @@ class PlayerCog(commands.Cog):
         ctx: commands.Context,
         player: Player | None,
     ) -> None:
+        assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
 
         if player and not board.orders_enabled:
@@ -67,6 +68,7 @@ class PlayerCog(commands.Cog):
     )
     @perms.player("remove orders")
     async def remove_order(self, ctx: commands.Context, player: Player | None) -> None:
+        assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
 
         if player and not board.orders_enabled:
@@ -95,6 +97,7 @@ class PlayerCog(commands.Cog):
     )
     @perms.player("view orders")
     async def view_orders(self, ctx: commands.Context, player: Player | None) -> None:
+        assert ctx.guild is not None
         arguments = (
             ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
@@ -133,6 +136,7 @@ class PlayerCog(commands.Cog):
             ctx,
             message=f"Success - generated orders for {board.turn}",
         )
+        assert isinstance(order_text, str)
         await send_message_and_file(
             channel=ctx.channel,
             title=f"{board.turn}",
@@ -154,6 +158,7 @@ class PlayerCog(commands.Cog):
     )
     @perms.player("view map")
     async def view_map(self, ctx: commands.Context, player: Player | None):
+        assert ctx.guild is not None
         arguments = (
             ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
@@ -241,6 +246,7 @@ class PlayerCog(commands.Cog):
     )
     @perms.player("view current")
     async def view_current(self, ctx: commands.Context, player: Player | None) -> None:
+        assert ctx.guild is not None
         arguments = (
             ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
@@ -308,6 +314,7 @@ class PlayerCog(commands.Cog):
     )
     @perms.player("view gui")
     async def view_gui(self, ctx: commands.Context, player: Player | None) -> None:
+        assert ctx.guild is not None
         arguments = (
             ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             .strip()
@@ -370,6 +377,7 @@ class PlayerCog(commands.Cog):
     async def visible_provinces(
         self, ctx: commands.Context, player: Player | None
     ) -> None:
+        assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
 
         if not player or not board.fow:

@@ -61,6 +61,14 @@ class PartyCog(commands.Cog):
             )
             return
         channel = ctx.message.channel_mentions[0]
+        if not isinstance(channel, discord.abc.Messageable):
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="Error",
+                message="Channel is not messageable",
+                embed_colour=ERROR_COLOUR,
+            )
+            return
         content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
         content = content.replace(channel.mention, "").strip()
         if len(content) == 0:
@@ -85,6 +93,7 @@ class PartyCog(commands.Cog):
         response = "Beep Boop"
         if random.random() < 0.1:
             author = ctx.message.author
+            assert isinstance(author, discord.Member)
             content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
             if content == "":
                 content = " nothing"
@@ -96,6 +105,7 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def bumble(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         list_of_bumble = list("bumble")
         random.shuffle(list_of_bumble)
         word_of_bumble = "".join(list_of_bumble)
@@ -118,6 +128,7 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def pelican(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         pelican_places = {
             "your home": 15,
             "a kebab store": 12,
@@ -143,6 +154,7 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def cheat(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         message = "Cheating is disabled for this user."
         author = ctx.message.author.name
         board = manager.get_board(ctx.guild.id)
@@ -202,6 +214,7 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def fish(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         await ctx.message.add_reaction("🐟")
 
         board = manager.get_board(ctx.guild.id)
@@ -305,6 +318,7 @@ class PartyCog(commands.Cog):
 
     @commands.command(brief="Show global fishing leaderboard")
     async def global_leaderboard(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         sorted_boards = sorted(
             manager._boards.items(), key=lambda board: board[1].fish, reverse=True
         )
@@ -357,6 +371,7 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def eolhc(self, ctx: commands.Context,):
+        assert ctx.guild is not None
         if ctx.author.id == 1352388421003251833:
             if ctx.guild.id != IMPDIP_SERVER_ID and is_gm(ctx.author) and (ctx.guild.id not in self.eolhc_ed_members or ctx.me.id not in self.eolhc_ed_members[ctx.guild.id]):
                 self.eolhc_ed_members.setdefault(ctx.guild.id, list()).append(ctx.me.id)
@@ -369,7 +384,8 @@ class PartyCog(commands.Cog):
             return
 
         try:
-            await ctx.author.edit(nick=ctx.author.display_name[::-1])
+            if isinstance(ctx.author, discord.Member):
+                await ctx.author.edit(nick=ctx.author.display_name[::-1])
         except discord.Forbidden:
             await ctx.reply("Pesky Admin")
 

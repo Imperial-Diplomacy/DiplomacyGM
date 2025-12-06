@@ -1,6 +1,6 @@
 import unittest
 
-from DiploGM.models.turn import Turn
+from DiploGM.models.turn import PhaseName, Turn
 from DiploGM.models.unit import UnitType
 from DiploGM.parse_edit_state import _parse_command
 from test.utils import BoardBuilder
@@ -68,7 +68,7 @@ class TestParseEditState(unittest.TestCase):
     
     def test_create_dislodged_unit(self):
         b = BoardBuilder()
-        b.board.turn = Turn(1901, "Spring Retreats")
+        b.board.turn = Turn(1901, PhaseName.SPRING_RETREATS)
         p_serbia = b.board.get_province("Serbia")
         p_trieste = b.board.get_province("Trieste")
         p_budapest = b.board.get_province("Budapest")
@@ -102,11 +102,11 @@ class TestParseEditState(unittest.TestCase):
     def test_delete_dislodged_unit(self):
         b = BoardBuilder()
         a_burgundy = b.move(b.germany, UnitType.ARMY, "Burgundy", "Paris")
-        a_gascony = b.supportMove(b.germany, UnitType.ARMY, "Gascony", a_burgundy, "Paris")
-        a_paris = b.hold(b.france, UnitType.ARMY, "Paris")
+        b.supportMove(b.germany, UnitType.ARMY, "Gascony", a_burgundy, "Paris")
+        b.hold(b.france, UnitType.ARMY, "Paris")
         p_paris = b.board.get_province("Paris")
         b.moves_adjudicate(self)
-        b.board.turn = Turn(1901, "Spring Retreats")
+        b.board.turn = Turn(1901, PhaseName.SPRING_RETREATS)
 
         _parse_command("delete_dislodged_unit Paris", b.board)
         self.assertIsNone(p_paris.dislodged_unit, "Failed to delete dislodged Army unit in Paris")
@@ -121,8 +121,8 @@ class TestParseEditState(unittest.TestCase):
     
     def test_dislodge_unit(self):
         b = BoardBuilder()
-        b.board.turn = Turn(1901, "Spring Retreats")
-        a_munich = b.army("Munich", b.germany)
+        b.board.turn = Turn(1901, PhaseName.SPRING_RETREATS)
+        b.army("Munich", b.germany)
         p_munich = b.board.get_province("Munich")
         
         _parse_command("dislodge_unit Munich", b.board)
@@ -133,8 +133,8 @@ class TestParseEditState(unittest.TestCase):
     
     def test_make_units_claim_provinces(self):
         b = BoardBuilder()
-        f_tunis = b.fleet("Tunis", b.italy)
-        a_north_africa = b.army("North Africa", b.italy)
+        b.fleet("Tunis", b.italy)
+        b.army("North Africa", b.italy)
         p_tunis = b.board.get_province("Tunis")
         p_north_africa = b.board.get_province("North Africa")
 

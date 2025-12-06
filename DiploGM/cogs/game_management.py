@@ -8,6 +8,7 @@ from discord import (
     Member,
     PermissionOverwrite,
     Role,
+    TextChannel,
     Thread,
     Guild,
 )
@@ -45,6 +46,7 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("create a game")
     async def create_game(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         gametype = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
         if gametype == "":
             gametype = "impdip"
@@ -58,6 +60,7 @@ class GameManagementCog(commands.Cog):
     @commands.command(brief="permanently deletes a game, cannot be undone")
     @perms.gm_only("delete the game")
     async def delete_game(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         manager.total_delete(ctx.guild.id)
         log_command(logger, ctx, message="Deleted game")
         await send_message_and_file(channel=ctx.channel, title="Deleted game")
@@ -65,7 +68,8 @@ class GameManagementCog(commands.Cog):
     @commands.command(brief="")
     @perms.gm_only("archive the category")
     async def archive(self, ctx: commands.Context) -> None:
-        categories = [channel.category for channel in ctx.message.channel_mentions]
+        assert ctx.guild is not None
+        categories = [channel.category for channel in ctx.message.channel_mentions if channel.category is not None]
         if not categories:
             await send_message_and_file(
                 channel=ctx.channel,
@@ -91,6 +95,48 @@ class GameManagementCog(commands.Cog):
         log_command(logger, ctx, message=f"Archived {len(categories)} Channels")
         await send_message_and_file(channel=ctx.channel, message=message)
 
+    def ping_player_builds(self, player: Player, users: set[discord.User], build_anywhere: bool) -> str:
+        response = ""
+        user_str = ''.join([u.mention for u in users])
+
+        count = len(player.centers) - len(player.units)
+        current = player.waived_orders
+        has_disbands = False
+        has_builds = player.waived_orders > 0
+        for order in player.build_orders:
+            if isinstance(order, Disband):
+                current -= 1
+                has_disbands = True
+            elif isinstance(order, Build):
+                current += 1
+                has_builds = True
+
+        difference = abs(current - count)
+        order_text = f"order{'s' if difference != 1 else ''}"
+
+        if has_builds and has_disbands:
+            response = f"Hey {user_str}, you have both build and disband orders. Please get this looked at."
+        elif count >= 0:
+            available_centers = [
+                center
+                for center in player.centers
+                if center.unit is None
+                and (center.core == player or build_anywhere)
+            ]
+            available = min(len(available_centers), count)
+
+            difference = abs(current - available)
+            if current > available:
+                response = f"Hey {user_str}, you have {difference} more build {order_text} than possible. Please get this looked at."
+            elif current < available:
+                response = f"Hey {user_str}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
+        elif count < 0:
+            if current < count:
+                response = f"Hey {user_str}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
+            elif current > count:
+                response = f"Hey {user_str}, you have {difference} less disband {order_text} than required. Please get this looked at."
+        return response
+    
     @commands.command(
         brief="pings players who don't have the expected number of orders.",
         description="""Pings all players in their orders channel that satisfy the following constraints:
@@ -102,8 +148,8 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("ping players")
     async def ping_players(self, ctx: commands.Context) -> None:
-        guild = ctx.guild
-        board = manager.get_board(guild.id)
+        assert ctx.guild is not None
+        board = manager.get_board(ctx.guild.id)
 
         # extract deadline argument
         timestamp = re.match(
@@ -115,7 +161,7 @@ class GameManagementCog(commands.Cog):
 
         # get abstract player information
         player_roles: set[Role] = set()
-        for r in guild.roles:
+        for r in ctx.guild.roles:
             if config.is_player_role(r.name):
                 player_roles.add(r)
 
@@ -129,8 +175,8 @@ class GameManagementCog(commands.Cog):
             return
 
         player_categories: list[CategoryChannel] = []
-        for c in guild.categories:
-            if config.is_player_category(c.name):
+        for c in ctx.guild.categories:
+            if config.is_player_category(c):
                 player_categories.append(c)
 
         if len(player_categories) == 0:
@@ -153,7 +199,7 @@ class GameManagementCog(commands.Cog):
                     await ctx.send(f"No Player for {channel.name}")
                     continue
 
-                role = player.find_discord_role(guild.roles)
+                role = player.find_discord_role(ctx.guild.roles)
                 if role is None:
                     await ctx.send(f"No Role for {player.name}")
                     continue
@@ -166,13 +212,9 @@ class GameManagementCog(commands.Cog):
                         )
                     )
                 else:
-                    users = set()
-                    # Find users with access to this channel
-                    for overwritter, permission in channel.overwrites.items():
-                        if isinstance(overwritter, Member):
-                            if permission.view_channel:
-                                users.add(overwritter)
-                            pass
+                    users = {overwritter for overwritter, permission
+                             in channel.overwrites.items()
+                             if isinstance(overwritter, Member) and permission.view_channel}
 
                 if len(users) == 0:
                     failed_players.append(player)
@@ -181,71 +223,24 @@ class GameManagementCog(commands.Cog):
                     users.add(role)
 
                 if board.turn.is_builds():
-                    count = len(player.centers) - len(player.units)
-
-                    current = player.waived_orders
-                    has_disbands = False
-                    has_builds = player.waived_orders > 0
-                    for order in player.build_orders:
-                        if isinstance(order, Disband):
-                            current -= 1
-                            has_disbands = True
-                        elif isinstance(order, Build):
-                            current += 1
-                            has_builds = True
-
-                    difference = abs(current - count)
-                    if difference != 1:
-                        order_text = "orders"
-                    else:
-                        order_text = "order"
-
-                    if has_builds and has_disbands:
-                        response = f"Hey {''.join([u.mention for u in users])}, you have both build and disband orders. Please get this looked at."
-                    elif count >= 0:
-                        available_centers = [
-                            center
-                            for center in player.centers
-                            if center.unit is None
-                            and (
-                                center.core == player
-                                or "build anywhere" in board.data.get("adju flags", [])
-                            )
-                        ]
-                        available = min(len(available_centers), count)
-
-                        difference = abs(current - available)
-                        if current > available:
-                            response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more build {order_text} than possible. Please get this looked at."
-                        elif current < available:
-                            response = f"Hey {''.join([u.mention for u in users])}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
-                    elif count < 0:
-                        if current < count:
-                            response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
-                        elif current > count:
-                            response = f"Hey {''.join([u.mention for u in users])}, you have {difference} less disband {order_text} than required. Please get this looked at."
+                    self.ping_player_builds(player, users, "build anywhere" in board.data.get("adju flags", []))
                 else:
-                    if board.turn.is_retreats():
-                        in_moves = lambda u: u == u.province.dislodged_unit
-                    else:
-                        in_moves = lambda _: True
+                    in_moves = lambda u: u == u.province.dislodged_unit or board.turn.is_moves()
 
                     missing = [
                         unit
                         for unit in player.units
                         if unit.order is None and in_moves(unit)
                     ]
-                    if len(missing) != 1:
-                        unit_text = "units"
-                    else:
-                        unit_text = "unit"
+                    unit_text = f"unit{'s' if len(missing) != 1 else ''}"
+                    if not missing:
+                        continue
 
-                    if missing:
-                        response = f"Hey **{''.join([u.mention for u in users])}**, you are missing moves for the following {len(missing)} {unit_text}:"
-                        for unit in sorted(
-                            missing, key=lambda _unit: _unit.province.name
-                        ):
-                            response += f"\n{unit}"
+                    response = f"Hey **{''.join([u.mention for u in users])}**, you are missing moves for the following {len(missing)} {unit_text}:"
+                    for unit in sorted(
+                        missing, key=lambda _unit: _unit.province.name
+                    ):
+                        response += f"\n{unit}"
 
                 if response:
                     pinged_players += 1
@@ -275,6 +270,7 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("lock orders")
     async def lock_orders(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
         board.orders_enabled = False
         log_command(logger, ctx, message="Locked orders")
@@ -287,6 +283,7 @@ class GameManagementCog(commands.Cog):
     @commands.command(brief="re-enables orders", aliases=["unlock"])
     @perms.gm_only("unlock orders")
     async def unlock_orders(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
         board.orders_enabled = True
         log_command(logger, ctx, message="Unlocked orders")
@@ -299,6 +296,7 @@ class GameManagementCog(commands.Cog):
     @commands.command(brief="Clears all players orders.")
     @perms.gm_only("remove all orders")
     async def remove_all(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
         for unit in board.units:
             unit.order = None
@@ -314,12 +312,10 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("publish orders")
     async def publish_orders(self, ctx: commands.Context) -> None:
-        guild = ctx.guild
-        if not guild:
-            return
+        assert ctx.guild is not None
 
         board = manager.get_previous_board(ctx.guild.id)
-        curr_board = manager.get_board(guild.id)
+        curr_board = manager.get_board(ctx.guild.id)
         if not board:
             await send_message_and_file(
                 channel=ctx.channel,
@@ -352,7 +348,7 @@ class GameManagementCog(commands.Cog):
             )
             return
         orders_log_channel = get_orders_log(ctx.guild)
-        if not orders_log_channel:
+        if not orders_log_channel or not isinstance(orders_log_channel, discord.TextChannel):
             log_command(
                 logger,
                 ctx,
@@ -366,6 +362,7 @@ class GameManagementCog(commands.Cog):
             )
             return
 
+        assert isinstance(order_text, list)
         log = await send_message_and_file(
             channel=orders_log_channel,
             title=f"{board.turn}",
@@ -382,7 +379,7 @@ class GameManagementCog(commands.Cog):
         roles = {}
         sc_changes = {}
         for player in curr_board.players:
-            roles[player.name] = player.find_discord_role(guild.roles)
+            roles[player.name] = player.find_discord_role(ctx.guild.roles)
             sc_changes[player.name] = len(player.centers)
 
         for player in board.players:
@@ -392,8 +389,8 @@ class GameManagementCog(commands.Cog):
         sc_changes = '\n'.join(sc_changes)
 
         player_categories: list[CategoryChannel] = []
-        for c in guild.categories:
-            if config.is_player_category(c.name):
+        for c in ctx.guild.categories:
+            if config.is_player_category(c):
                 player_categories.append(c)
 
         for c in player_categories:
@@ -402,7 +399,7 @@ class GameManagementCog(commands.Cog):
                 if not player or (len(player.units) + len(player.centers) == 0):
                     continue
 
-                role = player.find_discord_role(guild.roles)
+                role = player.find_discord_role(ctx.guild.roles)
                 out = f"Hey **{role.mention if role else player.name}**, the Game has adjudicated!\n"
                 await ch.send(out, silent=True)
                 await send_message_and_file(
@@ -434,9 +431,7 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("adjudicate")
     async def adjudicate(self, ctx: commands.Context) -> None:
-        guild = ctx.guild
-        if not guild:
-            return
+        assert ctx.guild is not None
 
         board = manager.get_board(ctx.guild.id)
 
@@ -489,15 +484,18 @@ class GameManagementCog(commands.Cog):
             file_name=file_name,
             convert_svg=return_svg,
         )
-        if full_adjudicate:
+        if full_adjudicate and (map_channel := get_maps_channel(ctx.guild)):
             map_message = await send_message_and_file(
-                channel=get_maps_channel(ctx.guild),
+                channel=map_channel,
                 title=f"{title} Orders Map",
                 file=file,
                 file_name=file_name,
                 convert_svg=True,
             )
-        #           await map_message.publish()
+            try:
+                await map_message.publish()
+            except:
+                pass
 
         if movement_adjudicate:
             file, file_name = manager.draw_map(
@@ -529,20 +527,25 @@ class GameManagementCog(commands.Cog):
             convert_svg=return_svg,
         )
 
-        if full_adjudicate:
+        if full_adjudicate and (map_channel := get_maps_channel(ctx.guild)):
             map_message = await send_message_and_file(
-                channel=get_maps_channel(ctx.guild),
+                channel=map_channel,
                 title=f"{title} Results Map",
                 file=file,
                 file_name=file_name,
                 convert_svg=True,
-            )
-            #            await map_message.publish()
+            )      
+            try:
+                await map_message.publish()
+            except:
+                pass
+
+        if full_adjudicate:
             await self.publish_orders(ctx)
             await self.unlock_orders(ctx)
 
         # NOTE: Temporary for Meme's Severence Diplomacy Event
-        if guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
+        if ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
             seva = self.bot.get_guild(SEVERENCE_A_ID)
             sevb = self.bot.get_guild(SEVERENCE_B_ID)
             
@@ -551,35 +554,23 @@ class GameManagementCog(commands.Cog):
             sevb_player = discord.utils.find(lambda r: r.name == "Player", sevb.roles)
             bperms = sevb_player.permissions
 
-            if "Spring" in new_board.turn.get_phase():
-                await send_message_and_file(channel=ctx.channel, message="Game A is permitted to play.")
-                aperms.update(send_messages=True)
-                bperms.update(send_messages=False)
-
-            if "Fall" in new_board.turn.get_phase():
-                await send_message_and_file(channel=ctx.channel, message="Game B is permitted to play.")
-                aperms.update(send_messages=False)
-                bperms.update(send_messages=True)
-            if "Winter" in new_board.turn.get_phase():
-                if random.choice([0,1]) == 0:
-                    await send_message_and_file(channel=ctx.channel, message="Game A is permitted to play.")
-                    aperms.update(send_messages=True)
-                    bperms.update(send_messages=False)
-                else:
-                    await send_message_and_file(channel=ctx.channel, message="Game B is permitted to play.")
-                    aperms.update(send_messages=False)
-                    bperms.update(send_messages=True)
+            a_allowed = ("Spring" in new_board.turn.get_phase()
+                        or ("Winter" in new_board.turn.get_phase()
+                            and random.choice([0, 1]) == 0))
+            await send_message_and_file(channel=ctx.channel, message=f"Game {'A' if a_allowed else 'B'} is permitted to play.")
+            aperms.update(send_messages=a_allowed)
+            bperms.update(send_messages=(not a_allowed))
 
             await seva_player.edit(permissions=aperms)
             await sevb_player.edit(permissions=bperms)
 
         # AUTOMATIC SCOREBOARD OUTPUT FOR DATA SPREADSHEET
-        if new_board.turn.is_builds() and (guild.id != config.BOT_DEV_SERVER_ID and guild.name.startswith("Imperial Diplomacy")) and not test_adjudicate:
+        if new_board.turn.is_builds() and (ctx.guild.id != config.BOT_DEV_SERVER_ID and ctx.guild.name.startswith("Imperial Diplomacy")) and not test_adjudicate:
             channel = self.bot.get_channel(config.IMPDIP_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID)
             if not channel:
                 await send_message_and_file(channel=ctx.channel, message="Couldn't automatically send off the Winter Scoreboard data", embed_colour=config.ERROR_COLOUR)
                 return
-            title = f"### {guild.name} Centre Counts (alphabetical order) | {new_board.turn}"
+            title = f"### {ctx.guild.name} Centre Counts (alphabetical order) | {new_board.turn}"
 
             players = sorted(new_board.players, key=lambda p: p.name)
             counts = "\n".join(map(lambda p: str(len(p.centers)), players))
@@ -590,16 +581,18 @@ class GameManagementCog(commands.Cog):
     @commands.command(brief="Rolls back to the previous game state.")
     @perms.gm_only("rollback")
     async def rollback(self, ctx: commands.Context) -> None:
-        message = manager.rollback(ctx.guild.id)
-        log_command(logger, ctx, message=message["message"])
-        await send_message_and_file(channel=ctx.channel, **message)
+        assert ctx.guild is not None
+        message, file, file_name = manager.rollback(ctx.guild.id)
+        log_command(logger, ctx, message=message)
+        await send_message_and_file(channel=ctx.channel, message=message, file=file, file_name=file_name)
 
     @commands.command(brief="Reloads the current board with what is in the DB")
     @perms.gm_only("reload")
     async def reload(self, ctx: commands.Context) -> None:
-        message = manager.reload(ctx.guild.id)
-        log_command(logger, ctx, message=message["message"])
-        await send_message_and_file(channel=ctx.channel, **message)
+        assert ctx.guild is not None
+        message, file, file_name = manager.reload(ctx.guild.id)
+        log_command(logger, ctx, message=message)
+        await send_message_and_file(channel=ctx.channel, message=message, file=file, file_name=file_name)
 
     @commands.command(
         brief="Edits the game state and outputs the results map.",
@@ -633,12 +626,13 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("edit")
     async def edit(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         edit_commands = ctx.message.content.removeprefix(
             f"{ctx.prefix}{ctx.invoked_with}"
         ).strip()
-        message = parse_edit_state(edit_commands, manager.get_board(ctx.guild.id))
-        log_command(logger, ctx, message=message["title"])
-        await send_message_and_file(channel=ctx.channel, **message)
+        title, message, file, file_name, embed_colour = parse_edit_state(edit_commands, manager.get_board(ctx.guild.id))
+        log_command(logger, ctx, message=title)
+        await send_message_and_file(channel=ctx.channel, title=title, message=message, file=file, file_name=file_name, embed_colour=embed_colour)
 
     @commands.command(
         brief="blitz",
@@ -646,6 +640,7 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("create blitz comms channels")
     async def blitz(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
         cs = []
         pla = sorted(board.players, key=lambda p: p.name)
@@ -655,13 +650,8 @@ class GameManagementCog(commands.Cog):
                     c = f"{p1.name}-{p2.name}"
                     cs.append((c, p1, p2))
 
-        cos: list[CategoryChannel] = []
-
-        guild = ctx.guild
-
-        for category in guild.categories:
-            if category.name.lower().startswith("comms"):
-                cos.append(category)
+        cos: list[CategoryChannel] = [category for category in ctx.guild.categories
+                                      if category.name.lower().startswith("comms")]
 
         available = 0
         for cat in cos:
@@ -678,7 +668,7 @@ class GameManagementCog(commands.Cog):
 
         spectator_role = None
 
-        for role in guild.roles:
+        for role in ctx.guild.roles:
             if role.name.lower() == "spectator":
                 spectator_role = role
 
@@ -712,7 +702,7 @@ class GameManagementCog(commands.Cog):
             name, p1, p2 = cs.pop(0)
 
             overwrites = {
-                guild.default_role: PermissionOverwrite(view_channel=False),
+                ctx.guild.default_role: PermissionOverwrite(view_channel=False),
                 spectator_role: PermissionOverwrite(view_channel=True),
                 player_to_role[p1]: PermissionOverwrite(view_channel=True),
                 player_to_role[p2]: PermissionOverwrite(view_channel=True),
@@ -724,12 +714,14 @@ class GameManagementCog(commands.Cog):
 
     @commands.command(brief="publicize void for chaos")
     async def publicize(self, ctx: commands.Context) -> None:
+        assert ctx.guild is not None
         if not is_gm(ctx.message.author):
             raise PermissionError(
                 "You cannot publicize a void because you are not a GM."
             )
 
         channel = ctx.channel
+        assert isinstance(channel, TextChannel)
         board = manager.get_board(ctx.guild.id)
 
         if not board.is_chaos():
@@ -748,10 +740,9 @@ class GameManagementCog(commands.Cog):
         user_permissions: list[tuple[Member, PermissionOverwrite]] = []
         # Find users with access to this channel
         for overwritter, user_permission in channel.overwrites.items():
-            if isinstance(overwritter, Member):
-                if user_permission.view_channel:
-                    users.append(overwritter)
-                    user_permissions.append((overwritter, user_permission))
+            if isinstance(overwritter, Member) and user_permission.view_channel:
+                users.append(overwritter)
+                user_permissions.append((overwritter, user_permission))
 
         # TODO don't hardcode
         staff_role = None
@@ -809,24 +800,26 @@ async def setup(bot):
     await bot.add_cog(cog)
 
 
-def get_maps_channel(guild: Guild) -> GuildChannel | None:
+def get_maps_channel(guild: Guild) -> TextChannel | None:
     for channel in guild.channels:
         if (
             channel.name.lower() == "maps"
             and channel.category is not None
             and channel.category.name.lower() == "gm channels"
+            and isinstance(channel, TextChannel)
         ):
             return channel
     return None
 
 
-def get_orders_log(guild: Guild) -> GuildChannel | None:
+def get_orders_log(guild: Guild) -> TextChannel | None:
     for channel in guild.channels:
         # FIXME move "orders" and "gm channels" to bot.config
         if (
             channel.name.lower() == "orders-log"
             and channel.category is not None
             and channel.category.name.lower() == "gm channels"
+            and isinstance(channel, TextChannel)
         ):
             return channel
     return None

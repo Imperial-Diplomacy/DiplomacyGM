@@ -183,6 +183,10 @@ class Board:
         coast: str | None,
         retreat_options: set[tuple[Province, str | None]] | None,
     ) -> Unit:
+        if province.get_multiple_coasts() and coast not in province.get_multiple_coasts():
+            raise RuntimeError(f"Cannot create unit. Province '{province.name}' requires a valid coast.")
+        if not province.get_multiple_coasts():
+            coast = None
         unit = Unit(unit_type, player, province, coast, retreat_options)
         if retreat_options is not None:
             if province.dislodged_unit:
@@ -271,7 +275,7 @@ class Board:
 
     def get_player_by_channel(
             self,
-            channel: commands.Context.channel,
+            channel: discord.abc.Messageable,
             ignore_category=False,
     ) -> Player | None:
         from DiploGM.utils import simple_player_name
@@ -280,7 +284,7 @@ class Board:
             channel = channel.parent
 
         name = channel.name
-        if (not ignore_category) and not is_player_category(channel.category.name):
+        if (not ignore_category) and not is_player_category(channel.category):
             return None
 
         if self.is_chaos() and name.endswith("-void"):

@@ -1,7 +1,7 @@
 
 import re
 
-from DiploGM.models.turn import Turn
+from DiploGM.models.turn import PhaseName, Turn
 from DiploGM.models.unit import UnitType
 
 
@@ -82,33 +82,26 @@ def parse_season(
             year = int(s)
 
         if s.lower() in ["spring", "s", "sm", "sr"]:
-            season = "Spring"
+            season = PhaseName.SPRING_MOVES
         elif s.lower() in ["fall", "f", "fm", "fr"]:
-            season = "Fall"
+            season = PhaseName.FALL_MOVES
         elif s.lower() in ["winter", "w", "wa"]:
-            season = "Winter"
-
-        if s.lower() in ["retreat", "retreats", "r", "sr", "fr"]:
-            retreat = True
+            season = PhaseName.WINTER_BUILDS
+            
+        retreat = retreat != s.lower() in ["retreat", "retreats", "r", "sr", "fr"]
 
     if year is None:
         if season is None:
             return default_turn
         year = default_turn.year
-    if season is None:
-        season = "Spring"
+    season = season or PhaseName.SPRING_MOVES
 
-    if season == "Winter":
-        season = "Winter Builds"
-    else:
-        season = season + (" Retreats" if retreat else " Moves")
+    if retreat and season != PhaseName.WINTER_BUILDS:
+        season = PhaseName(season.value + 1)
 
     new_turn = Turn(year, season, default_turn.start_year)
-    if new_turn.year > default_turn.year:
-        new_turn.year = default_turn.year
-    if new_turn.year < default_turn.start_year:
-        new_turn.year = default_turn.start_year
-    if new_turn.year == default_turn.year and new_turn.phase > default_turn.phase:
+    new_turn.year = min(new_turn.year, default_turn.year)
+    if new_turn.year == default_turn.year and new_turn.phase.value > default_turn.phase.value:
         if new_turn.year == default_turn.start_year:
             new_turn = default_turn
         else:

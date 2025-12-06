@@ -1,5 +1,6 @@
 import logging
 
+import discord
 from discord.ext import commands
 import random
 
@@ -45,11 +46,9 @@ class DevelopmentCog(commands.Cog):
         for cog in self.bot.cogs.keys():
             cogs_body += f"- {cog}\n"
 
-        bot_wizards = (
-            self.bot.get_guild(IMPDIP_SERVER_ID)
-            .get_role(IMPDIP_BOT_WIZARD_ROLE)
-            .members
-        )
+        guild = self.bot.get_guild(IMPDIP_SERVER_ID)
+        bot_wizard_role = guild.get_role(IMPDIP_BOT_WIZARD_ROLE) if guild else None
+        bot_wizards = bot_wizard_role.members if bot_wizard_role else []
         footer = random.choice(
             [f"Rather upset at {bot_wizard.nick} >:(" for bot_wizard in bot_wizards]
             + [
@@ -72,7 +71,7 @@ class DevelopmentCog(commands.Cog):
             channel=ctx.channel, title=f"Why would you do this to me?", message=f"Shutting down"
         )
         channel = self.bot.get_channel(IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID)
-        if channel:
+        if channel and isinstance(channel, discord.TextChannel):
             await channel.send(f"{ctx.author.mention} stabbed me")
         await self.bot.close()
 

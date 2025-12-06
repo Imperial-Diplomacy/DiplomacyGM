@@ -47,7 +47,7 @@ async def svg_to_png(svg: bytes, file_name: str) -> tuple[bytes, str]:
         return bytes(data), base + ".png"
 
 
-async def png_to_jpg(png: bytes, file_name: str) -> tuple[bytes, str, str]:
+async def png_to_jpg(png: bytes, file_name: str) -> tuple[bytes, str, bytes]:
     async with external_task_limit:
         p = await asyncio.create_subprocess_shell(
             "convert png:- jpg:-", stdout=PIPE, stdin=PIPE, stderr=PIPE

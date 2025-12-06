@@ -1,12 +1,32 @@
 from __future__ import annotations
+from enum import Enum
+
+class PhaseName(Enum):
+    SPRING_MOVES = 0
+    SPRING_RETREATS = 1
+    FALL_MOVES = 2
+    FALL_RETREATS = 3
+    WINTER_BUILDS = 4
 
 class Turn:
-    def __init__(self, year: int = 1642, phase: str = "Spring Moves", start_year: int = 1642):
-        self.phase_names = ["Spring Moves", "Spring Retreats", "Fall Moves", "Fall Retreats", "Winter Builds"]
-        self.short_names = ["sm", "sr", "fm", "fr", "wa"]
-        self.year = year
-        self.phase = self.phase_names.index(phase) if phase in self.phase_names else 0
-        self.start_year = start_year
+    def __init__(self, year: int = 1642, phase: PhaseName = PhaseName.SPRING_MOVES, start_year: int = 1642):
+        self.phase_names: dict[PhaseName, str] = {
+            PhaseName.SPRING_MOVES: "Spring Moves",
+            PhaseName.SPRING_RETREATS: "Spring Retreats",
+            PhaseName.FALL_MOVES: "Fall Moves",
+            PhaseName.FALL_RETREATS: "Fall Retreats",
+            PhaseName.WINTER_BUILDS: "Winter Builds"
+        }
+        self.short_names: dict[PhaseName, str] = {
+            PhaseName.SPRING_MOVES: "sm",
+            PhaseName.SPRING_RETREATS: "sr",
+            PhaseName.FALL_MOVES: "fm",
+            PhaseName.FALL_RETREATS: "fr",
+            PhaseName.WINTER_BUILDS: "wa"
+        }
+        self.year: int = year
+        self.phase: PhaseName = phase if phase in PhaseName else PhaseName.SPRING_MOVES
+        self.start_year: int = start_year
     
     def __str__(self):
         if self.year <= 0:
@@ -31,14 +51,14 @@ class Turn:
         return self.year - self.start_year
     
     def get_next_turn(self) -> Turn:
-        if self.phase == len(self.phase_names) - 1:
-            return Turn(self.year + 1, self.phase_names[0], self.start_year)
-        return Turn(self.year, self.phase_names[self.phase + 1], self.start_year)
+        if self.phase == PhaseName.WINTER_BUILDS:
+            return Turn(self.year + 1, PhaseName.SPRING_MOVES, self.start_year)
+        return Turn(self.year, PhaseName(self.phase.value + 1), self.start_year)
     
     def get_previous_turn(self):
-        if self.phase == 0:
-            return Turn(self.year - 1, self.phase_names[-1], self.start_year)
-        return Turn(self.year, self.phase_names[self.phase - 1], self.start_year)
+        if self.phase == PhaseName.SPRING_MOVES:
+            return Turn(self.year - 1, PhaseName.WINTER_BUILDS, self.start_year)
+        return Turn(self.year, PhaseName(self.phase.value - 1), self.start_year)
 
     def is_moves(self) -> bool:
         return "Moves" in self.phase_names[self.phase]
@@ -51,3 +71,15 @@ class Turn:
         
     def is_fall(self) -> bool:
         return "Fall" in self.phase_names[self.phase]
+    
+    @staticmethod
+    def turn_from_string(turn_str: str) -> Turn | None:
+        split_index = turn_str.index(" ")
+        year = int(turn_str[:split_index])
+        phase_name = turn_str[split_index:].strip()
+        current_turn = Turn(year)
+        while current_turn.get_phase() != phase_name and current_turn.year == year:
+            current_turn = current_turn.get_next_turn()
+        if current_turn.year != year:
+            return None
+        return current_turn

@@ -238,6 +238,7 @@ class DiploGM(commands.Bot):
         await ctx.message.add_reaction("👍")
 
     async def after_any_command(self, ctx: commands.Context):
+        assert ctx.command is not None
         if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) or not ctx.guild:
             return
         self.last_command_time = ctx.message.created_at
@@ -261,6 +262,7 @@ class DiploGM(commands.Bot):
         )
 
     async def on_command_error(self, ctx: commands.Context, error):
+        assert ctx.guild is not None and ctx.command is not None and isinstance(ctx.channel, discord.TextChannel)
         if isinstance(error, commands.CommandNotFound):
             # we shouldn't do anything if the user says something like "..."
             return
@@ -370,7 +372,7 @@ class DiploGM(commands.Bot):
 
         # Out to Bot Dev Server
         bot_error_channel = self.get_channel(BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID)
-        if bot_error_channel:
+        if bot_error_channel and isinstance(bot_error_channel, discord.TextChannel):
             unhandled_out_dev = (
                 f"Type: {type(original)}\n"
                 f"Location: {ctx.guild.name} [{ctx.channel.category or ''}]-[{ctx.channel.name}]\n"

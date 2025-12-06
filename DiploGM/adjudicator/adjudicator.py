@@ -304,10 +304,9 @@ class BuildsAdjudicator(Adjudicator):
                     if player in new_vassals[liege]:
                         new_vassals[liege].remove(player)
             for order in player.vassal_orders:
-                if isinstance(order, Defect):
-                    if player in new_vassals[order.player]:
-                        new_vassals[order.player].remove(player)
-                        new_liege = None
+                if isinstance(order, Defect) and player in new_vassals[order.player]:
+                    new_vassals[order.player].remove(player)
+                    new_liege = None
             new_lieges[player] = new_liege
             
         for player in self._board.players:
@@ -379,9 +378,6 @@ class BuildsAdjudicator(Adjudicator):
 
         if "vassal system" in self._board.data.get("adju flags", []):
             self.vassal_adju()
-
-
-
 
         for player in self._board.players:
             player.build_orders = set()

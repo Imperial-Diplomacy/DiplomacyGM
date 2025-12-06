@@ -171,7 +171,7 @@ class TreeToOrder(Transformer):
         return build_order[0]
 
     def defect_order(self, s):
-        if not self.player_restriction or self.player_restriction.liege:
+        if self.player_restriction is None or self.player_restriction.liege is None:
             raise Exception("No liege to defect from!")
         return self.player_restriction.liege, self.player_restriction, order.Defect(self.player_restriction.liege)
 
@@ -348,7 +348,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
             removed = _parse_remove_order(command, player_restriction, board)
             if isinstance(removed, Unit):
                 updated_units.add(removed)
-            else:
+            elif removed is not None:
                 provinces_with_removed_builds.add(removed)
         except Exception as error:
             invalid.append((command, error))
@@ -376,18 +376,20 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
         return {"message": "Orders removed successfully."}
 
 
-def _parse_remove_order(command: str, player_restriction: Player | None, board: Board) -> Unit | str:
+def _parse_remove_order(command: str, player_restriction: Player | None, board: Board) -> Unit | str | None:
     command = command.lower().strip()
     province, coast = board.get_province_and_coast(command)
     if command.startswith("relationship"):
+        if player_restriction is None:
+            raise RuntimeError("Relationship orders can only be removed in a player's orders channel")
         command = command.split(" ", 1)[1]
         target_player = None
         for player in board.players:
             if player.name.lower() == command.lower().strip():
                 target_player = player
-        if target_player == None:
+        if target_player is None:
             raise RuntimeError(f"No such player: {command}")
-        if not target_player in player_restriction.vassal_orders:
+        if target_player not in player_restriction.vassal_orders:
             raise RuntimeError(f"No relationship order with {target_player}")
         remove_relationship_order(board, player_restriction.vassal_orders[target_player], player_restriction)
 

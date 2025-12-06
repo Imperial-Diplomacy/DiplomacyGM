@@ -2,6 +2,7 @@ import asyncio
 import logging
 from typing import Callable
 
+import discord
 from discord.ext import commands
 
 from DiploGM import config
@@ -45,6 +46,7 @@ class FogOfWarCog(commands.Cog):
         ctx: commands.Context,
         manager: Manager,
     ):
+        assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
 
         if not board.fow:
@@ -70,6 +72,7 @@ class FogOfWarCog(commands.Cog):
     )
     @perms.gm_only("send fow order logs")
     async def publish_fow_order_logs(self, ctx: commands.Context):
+        assert ctx.guild is not None
         player_category = None
 
         guild = ctx.guild
@@ -84,7 +87,7 @@ class FogOfWarCog(commands.Cog):
         )
 
         for category in guild.categories:
-            if config.is_player_category(category.name):
+            if config.is_player_category(category):
                 player_category = category
                 break
 
@@ -96,6 +99,8 @@ class FogOfWarCog(commands.Cog):
             name_to_player[player.name.lower()] = player
 
         for channel in player_category.channels:
+            if not isinstance(channel, discord.TextChannel):
+                continue
             player = board.get_player_by_channel(channel)
 
             if not player or (filter_player and player != filter_player):
@@ -121,6 +126,7 @@ async def publish_map(
     map_caller: Callable[[Manager, int, Player], tuple[str, str]],
     filter_player=None,
 ):
+    assert ctx.guild is not None
     player_category = None
 
     guild = ctx.guild
@@ -128,7 +134,7 @@ async def publish_map(
     board = manager.get_board(guild_id)
 
     for category in guild.categories:
-        if config.is_player_category(category.name):
+        if config.is_player_category(category):
             player_category = category
             break
 
