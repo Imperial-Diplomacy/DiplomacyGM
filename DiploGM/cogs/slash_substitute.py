@@ -72,15 +72,17 @@ class SlashSubstituteCog(commands.Cog):
             or not isinstance(interaction.user, discord.Member)
             or not isinstance(interaction.channel, discord.TextChannel)):
             return
+        
+        bot = interaction.client
 
         # TODO: app_commands permissions check decorators
-        if not self.bot.perms.is_gm(interaction.user):
+        if not bot.perms.is_gm(interaction.user):
             await interaction.response.send_message(
                 "You are not allowed to use `.advertise`!", ephemeral=True
             )
             return
 
-        if not self.bot.perms.is_gm_channel(interaction.channel):
+        if not bot.perms.is_gm_channel(interaction.channel):
             await interaction.response.send_message(
                 "You are not allowed to use `.advertise` here!", ephemeral=True
             )
@@ -95,11 +97,11 @@ class SlashSubstituteCog(commands.Cog):
             return
 
         locations = {
-            "hub_server": self.bot.get_guild(config.IMPDIP_SERVER_ID),
-            "advertise_channel": self.bot.get_channel(
+            "hub_server": bot.get_guild(config.IMPDIP_SERVER_ID),
+            "advertise_channel": bot.get_channel(
                 config.IMPDIP_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID
             ),
-            "tickets_channel": self.bot.get_channel(
+            "tickets_channel": bot.get_channel(
                 config.IMPDIP_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID
             ),
         }
@@ -257,13 +259,13 @@ class SlashSubstituteCog(commands.Cog):
             return
 
         # TODO: app_commands permissions check decorators
-        if not self.bot.perms.is_gm(interaction.user):
+        if not bot.perms.is_gm(interaction.user):
             await interaction.response.send_message(
                 "You are not allowed to use `.substitute`!", ephemeral=True
             )
             return
 
-        if not self.bot.perms.is_gm_channel(interaction.channel):
+        if not bot.perms.is_gm_channel(interaction.channel):
             await interaction.response.send_message(
                 "You are not allowed to use `.substitute` here!", ephemeral=True
             )
@@ -281,8 +283,8 @@ class SlashSubstituteCog(commands.Cog):
 
         # CHECK ALL LOCATIONS ARE AVAILABLE
         locations = {
-            "hub_server": self.bot.get_guild(config.IMPDIP_SERVER_ID),
-            "tracker_channel": self.bot.get_channel(
+            "hub_server": bot.get_guild(config.IMPDIP_SERVER_ID),
+            "tracker_channel": bot.get_channel(
                 config.IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID
             ),
         }

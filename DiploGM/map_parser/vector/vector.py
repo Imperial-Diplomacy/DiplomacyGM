@@ -320,7 +320,6 @@ class Parser:
         return provinces
 
     def _get_province_coordinates(self) -> set[Province]:
-        start = time.time()
         # TODO: (BETA) don't hardcode translation
         land_provinces = self._create_provinces_type(self.layer_data["land_layer"], ProvinceType.LAND)
         island_provinces = self._create_provinces_type(self.layer_data["island_borders"], ProvinceType.ISLAND)
@@ -331,7 +330,6 @@ class Parser:
         impassible_provinces = set()
         if self.layer_data.get("impassibles_layer") is not None:
             impassible_provinces = self._create_provinces_type(self.layer_data["impassibles_layer"], ProvinceType.IMPASSIBLE)
-        print(time.time() - start)
         return land_provinces | island_provinces | sea_provinces | impassible_provinces
 
     # TODO: (BETA) can a library do all of this for us? more safety from needing to support wild SVG legal syntax

@@ -71,7 +71,7 @@ class Turn:
         
     def is_fall(self) -> bool:
         return "Fall" in self.phase_names[self.phase]
-    
+
     @staticmethod
     def turn_from_string(turn_str: str) -> Turn | None:
         split_index = turn_str.index(" ")

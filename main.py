@@ -2,7 +2,6 @@ import logging
 # Importing config for the first time initialises it.
 from DiploGM.config import ConfigException, LOGGING_LEVEL, DISCORD_TOKEN, COMMAND_PREFIX, toml_errors, \
     output_config_logs
-
 match LOGGING_LEVEL:
     case "CRITICAL":
         log_level = logging.CRITICAL
@@ -16,11 +15,12 @@ match LOGGING_LEVEL:
         log_level = logging.DEBUG
     case _:
         raise ConfigException("bot.log_level is set to an invalid value")
+
+
 logging.basicConfig(
     format="%(asctime)-15s | %(levelname)-7s: | %(filename)-16s (line %(lineno)-4d) | %(message)s",
     level=log_level,
 )
-
 import asyncio
 from dotenv.main import load_dotenv
 import os

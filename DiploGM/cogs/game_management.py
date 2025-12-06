@@ -136,7 +136,7 @@ class GameManagementCog(commands.Cog):
             elif current > count:
                 response = f"Hey {user_str}, you have {difference} less disband {order_text} than required. Please get this looked at."
         return response
-    
+
     @commands.command(
         brief="pings players who don't have the expected number of orders.",
         description="""Pings all players in their orders channel that satisfy the following constraints:
@@ -148,8 +148,9 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("ping players")
     async def ping_players(self, ctx: commands.Context) -> None:
-        assert ctx.guild is not None
-        board = manager.get_board(ctx.guild.id)
+        guild = ctx.guild
+        assert guild is not None
+        board = manager.get_board(guild.id)
 
         # extract deadline argument
         timestamp = re.match(
@@ -161,7 +162,7 @@ class GameManagementCog(commands.Cog):
 
         # get abstract player information
         player_roles: set[Role] = set()
-        for r in ctx.guild.roles:
+        for r in guild.roles:
             if config.is_player_role(r.name):
                 player_roles.add(r)
 
@@ -175,7 +176,7 @@ class GameManagementCog(commands.Cog):
             return
 
         player_categories: list[CategoryChannel] = []
-        for c in ctx.guild.categories:
+        for c in guild.categories:
             if config.is_player_category(c):
                 player_categories.append(c)
 
@@ -199,7 +200,7 @@ class GameManagementCog(commands.Cog):
                     await ctx.send(f"No Player for {channel.name}")
                     continue
 
-                role = player.find_discord_role(ctx.guild.roles)
+                role = player.find_discord_role(guild.roles)
                 if role is None:
                     await ctx.send(f"No Role for {player.name}")
                     continue
@@ -312,10 +313,11 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("publish orders")
     async def publish_orders(self, ctx: commands.Context) -> None:
-        assert ctx.guild is not None
+        guild = ctx.guild
+        assert guild is not None
 
         board = manager.get_previous_board(ctx.guild.id)
-        curr_board = manager.get_board(ctx.guild.id)
+        curr_board = manager.get_board(guild.id)
         if not board:
             await send_message_and_file(
                 channel=ctx.channel,
@@ -379,7 +381,7 @@ class GameManagementCog(commands.Cog):
         roles = {}
         sc_changes = {}
         for player in curr_board.players:
-            roles[player.name] = player.find_discord_role(ctx.guild.roles)
+            roles[player.name] = player.find_discord_role(guild.roles)
             sc_changes[player.name] = len(player.centers)
 
         for player in board.players:
@@ -389,7 +391,7 @@ class GameManagementCog(commands.Cog):
         sc_changes = '\n'.join(sc_changes)
 
         player_categories: list[CategoryChannel] = []
-        for c in ctx.guild.categories:
+        for c in guild.categories:
             if config.is_player_category(c):
                 player_categories.append(c)
 
@@ -399,7 +401,7 @@ class GameManagementCog(commands.Cog):
                 if not player or (len(player.units) + len(player.centers) == 0):
                     continue
 
-                role = player.find_discord_role(ctx.guild.roles)
+                role = player.find_discord_role(guild.roles)
                 out = f"Hey **{role.mention if role else player.name}**, the Game has adjudicated!\n"
                 await ch.send(out, silent=True)
                 await send_message_and_file(
@@ -431,7 +433,8 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("adjudicate")
     async def adjudicate(self, ctx: commands.Context) -> None:
-        assert ctx.guild is not None
+        guild = ctx.guild
+        assert guild is not None
 
         board = manager.get_board(ctx.guild.id)
 
@@ -545,7 +548,7 @@ class GameManagementCog(commands.Cog):
             await self.unlock_orders(ctx)
 
         # NOTE: Temporary for Meme's Severence Diplomacy Event
-        if ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
+        if guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
             seva = self.bot.get_guild(SEVERENCE_A_ID)
             sevb = self.bot.get_guild(SEVERENCE_B_ID)
             
@@ -565,12 +568,12 @@ class GameManagementCog(commands.Cog):
             await sevb_player.edit(permissions=bperms)
 
         # AUTOMATIC SCOREBOARD OUTPUT FOR DATA SPREADSHEET
-        if new_board.turn.is_builds() and (ctx.guild.id != config.BOT_DEV_SERVER_ID and ctx.guild.name.startswith("Imperial Diplomacy")) and not test_adjudicate:
+        if new_board.turn.is_builds() and (guild.id != config.BOT_DEV_SERVER_ID and guild.name.startswith("Imperial Diplomacy")) and not test_adjudicate:
             channel = self.bot.get_channel(config.IMPDIP_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID)
             if not channel:
                 await send_message_and_file(channel=ctx.channel, message="Couldn't automatically send off the Winter Scoreboard data", embed_colour=config.ERROR_COLOUR)
                 return
-            title = f"### {ctx.guild.name} Centre Counts (alphabetical order) | {new_board.turn}"
+            title = f"### {guild.name} Centre Counts (alphabetical order) | {new_board.turn}"
 
             players = sorted(new_board.players, key=lambda p: p.name)
             counts = "\n".join(map(lambda p: str(len(p.centers)), players))
@@ -652,6 +655,8 @@ class GameManagementCog(commands.Cog):
 
         cos: list[CategoryChannel] = [category for category in ctx.guild.categories
                                       if category.name.lower().startswith("comms")]
+        
+        guild = ctx.guild
 
         available = 0
         for cat in cos:
@@ -668,7 +673,7 @@ class GameManagementCog(commands.Cog):
 
         spectator_role = None
 
-        for role in ctx.guild.roles:
+        for role in guild.roles:
             if role.name.lower() == "spectator":
                 spectator_role = role
 
@@ -702,7 +707,7 @@ class GameManagementCog(commands.Cog):
             name, p1, p2 = cs.pop(0)
 
             overwrites = {
-                ctx.guild.default_role: PermissionOverwrite(view_channel=False),
+                guild.default_role: PermissionOverwrite(view_channel=False),
                 spectator_role: PermissionOverwrite(view_channel=True),
                 player_to_role[p1]: PermissionOverwrite(view_channel=True),
                 player_to_role[p2]: PermissionOverwrite(view_channel=True),

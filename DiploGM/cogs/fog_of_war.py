@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Callable
 
-import discord
+from discord import TextChannel
 from discord.ext import commands
 
 from DiploGM import config
@@ -99,7 +99,7 @@ class FogOfWarCog(commands.Cog):
             name_to_player[player.name.lower()] = player
 
         for channel in player_category.channels:
-            if not isinstance(channel, discord.TextChannel):
+            if not isinstance(channel, TextChannel):
                 continue
             player = board.get_player_by_channel(channel)
 

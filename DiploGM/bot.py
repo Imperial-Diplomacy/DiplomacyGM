@@ -238,8 +238,7 @@ class DiploGM(commands.Bot):
         await ctx.message.add_reaction("👍")
 
     async def after_any_command(self, ctx: commands.Context):
-        assert ctx.command is not None
-        if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) or not ctx.guild:
+        if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) or not ctx.guild or ctx.command:
             return
         self.last_command_time = ctx.message.created_at
         time_spent = (

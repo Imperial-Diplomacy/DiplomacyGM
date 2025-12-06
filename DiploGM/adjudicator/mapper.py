@@ -44,7 +44,6 @@ NAMESPACE: dict[str, str] = {
     "svg": "http://www.w3.org/2000/svg",
 }
 SVG_CONFIG_KEY = "svg config"
-INKSCAPE_LABEL = "{http://www.inkscape.org/namespaces/inkscape}label"
 
 # OUTPUTLAYER = "layer16"
 # UNITLAYER = "layer17"
@@ -126,7 +125,7 @@ class Mapper:
         for unit in units:
             if not self.is_moveable(unit):
                 continue
-            
+
             # Only show moves that succeed if requested
             if movement_only and not (
                 isinstance(unit.order, (RetreatMove, Move)) and not unit.order.hasFailed):
@@ -144,7 +143,7 @@ class Mapper:
                     e_list = unit.order.destination.all_locs[unit.order.destination_coast]
                 else:
                     e_list = unit.order.destination.all_locs[unit.unit_type]
-                
+
                 # Unspecified coast, so default to army location
                 if isinstance(e_list, dict):
                     e_list = unit.order.destination.all_locs[UnitType.ARMY]
@@ -911,12 +910,12 @@ class Mapper:
             for elem in center_element:
                 if elem.attrib["id"].startswith("Capital_Marker"):
                     continue
-                elif (INKSCAPE_LABEL in elem.attrib
-                      and elem.attrib[INKSCAPE_LABEL] in ["Halfcore Marker", "Core Marker"]):
+                elif (f"{NAMESPACE['inkscape']}label" in elem.attrib
+                      and elem.attrib[f"{NAMESPACE['inkscape']}label"] in ["Halfcore Marker", "Core Marker"]):
                     # Handling capitals is easy bc it's all marked
-                    if elem.attrib[INKSCAPE_LABEL] == "Halfcore Marker":
+                    if elem.attrib[f"{NAMESPACE['inkscape']}label"] == "Halfcore Marker":
                         self.color_element(elem, half_color)
-                    elif elem.attrib[INKSCAPE_LABEL] == "Core Marker":
+                    elif elem.attrib[f"{NAMESPACE['inkscape']}label"] == "Core Marker":
                         self.color_element(elem, core_color)
                 elif half_color != core_color:
                     corename = "None" if not province.core else province.core.name
@@ -926,7 +925,7 @@ class Mapper:
                     self.color_element(elem, core_color)
 
     def _get_province_from_element_by_label(self, element: Element) -> Province:
-        province_name = element.get(INKSCAPE_LABEL)
+        province_name = element.get(f"{NAMESPACE['inkscape']}label")
         if province_name is None:
             raise ValueError(f"Unlabeled element {element}")
         province = self.board.get_province(province_name)
@@ -1141,6 +1140,7 @@ class Mapper:
             assert style is not None
             style = re.sub(key + r":#[0-9a-fA-F]{6}", f"{key}:{color}", style)
             element.set("style", style)
+
     def create_element(self, tag: str, attributes: dict[str, Any]) -> etree.Element:
         attributes_str = {key: str(val) for key, val in attributes.items()}
         return etree.Element(tag, attributes_str)

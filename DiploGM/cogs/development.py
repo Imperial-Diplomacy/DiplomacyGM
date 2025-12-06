@@ -1,6 +1,6 @@
 import logging
 
-import discord
+from discord import TextChannel
 from discord.ext import commands
 import random
 
@@ -71,7 +71,7 @@ class DevelopmentCog(commands.Cog):
             channel=ctx.channel, title=f"Why would you do this to me?", message=f"Shutting down"
         )
         channel = self.bot.get_channel(IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID)
-        if channel and isinstance(channel, discord.TextChannel):
+        if channel and isinstance(channel, TextChannel):
             await channel.send(f"{ctx.author.mention} stabbed me")
         await self.bot.close()
 
