@@ -32,7 +32,7 @@ class MovesAdjudicator(Adjudicator):
         # run supports after everything else since illegal cores / moves should be treated as holds
         units = sorted(board.units, key=lambda unit: isinstance(unit.order, Support))
         for unit in units:
-            self.validate_unit(unit)
+            self._validate_unit(unit)
 
         self.orders_by_province = {order.current_province.name: order for order in self.orders}
         self.moves_by_destination: dict[str, set[AdjudicableOrder]] = {}
@@ -52,7 +52,7 @@ class MovesAdjudicator(Adjudicator):
 
         self._find_convoy_kidnappings()
 
-    def validate_unit(self, unit: Unit):
+    def _validate_unit(self, unit: Unit):
         # Replace invalid orders with holds
         # Importantly, this includes supports for which the corresponding unit didn't make the same move
         # Same for convoys
@@ -114,7 +114,7 @@ class MovesAdjudicator(Adjudicator):
         self._update_board()
         return self._board
 
-    def update_order(self, order: AdjudicableOrder):
+    def _update_order(self, order: AdjudicableOrder):
         if order.type == OrderType.CORE and order.resolution == Resolution.SUCCEEDS:
             order.source_province.corer = order.country
         if order.type == OrderType.MOVE and order.resolution == Resolution.SUCCEEDS:
@@ -149,7 +149,7 @@ class MovesAdjudicator(Adjudicator):
             raise RuntimeError("Cannot update board until all orders are resolved!")
 
         for order in self.orders:
-            self.update_order(order)
+            self._update_order(order)
 
         for province in self._board.provinces:
             if province.corer:
@@ -269,7 +269,7 @@ class MovesAdjudicator(Adjudicator):
             return self._adjudicate_move_order(order)
         raise ValueError("Unknown order type for adjudication")
 
-    def count_strength(self, order: AdjudicableOrder, attacked_country: Player | None = None) -> int:
+    def _count_strength(self, order: AdjudicableOrder, attacked_country: Player | None = None) -> int:
         strength = 1
         for support in order.supports:
             if self._resolve_order(support) == Resolution.SUCCEEDS and attacked_country != support.country:
@@ -307,17 +307,17 @@ class MovesAdjudicator(Adjudicator):
             if attacked_country == order.country:
                 return Resolution.FAILS
 
-            attack_strength = self.count_strength(order, attacked_country)
+            attack_strength = self._count_strength(order, attacked_country)
 
             opponent_strength = 1
             # count supports if it wasn't a failed move
             if head_on or (attacked_order.type != OrderType.MOVE and not attacked_order.not_supportable):
-                opponent_strength = self.count_strength(attacked_order)
+                opponent_strength = self._count_strength(attacked_order)
 
             if attack_strength <= opponent_strength:
                 return Resolution.FAILS
         else:
-            attack_strength = self.count_strength(order)
+            attack_strength = self._count_strength(order)
 
             # If A -> B, and B beats C head on then C can't affect A
             if attacked_order is not None and not attacked_order.is_convoy:
@@ -333,7 +333,7 @@ class MovesAdjudicator(Adjudicator):
             # don't need to overcome failed convoys
             if opponent.is_convoy and self._adjudicate_convoys_for_order(opponent) == Resolution.FAILS:
                 continue
-            prevent_strength = self.count_strength(opponent)
+            prevent_strength = self._count_strength(opponent)
             if attack_strength <= prevent_strength:
                 return Resolution.FAILS
 

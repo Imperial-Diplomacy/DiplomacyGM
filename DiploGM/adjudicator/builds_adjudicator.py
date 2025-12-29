@@ -27,7 +27,7 @@ class BuildsAdjudicator(Adjudicator):
     def __init__(self, board: Board):
         super().__init__(board)
 
-    def vassal_adju(self):
+    def _vassal_adju(self):
         new_vassals: dict[Player, list[Player]] = {}
         new_lieges: dict[Player, Player | None] = {}
         for player in self._board.players:
@@ -100,7 +100,7 @@ class BuildsAdjudicator(Adjudicator):
             if player.liege:
                 player.points += len(player.liege.centers) // 2
 
-    def adjudicate_order(self, order: Order, available_builds: int, player: Player) -> int:
+    def _adjudicate_order(self, order: Order, available_builds: int, player: Player) -> int:
         if available_builds > 0 and isinstance(order, Build):
             # ignore coast specifications for army
             if (order.unit_type == UnitType.FLEET and not order.province.fleet_adjacent):
@@ -137,12 +137,12 @@ class BuildsAdjudicator(Adjudicator):
             if available_builds == 0:
                 continue
             for order in player.build_orders:
-                available_builds += self.adjudicate_order(order, available_builds, player)
+                available_builds += self._adjudicate_order(order, available_builds, player)
             if available_builds < 0:
                 logger.warning(f"Player {player.get_name()} disbanded less orders than they should have")
 
         if self.has_vassals:
-            self.vassal_adju()
+            self._vassal_adju()
 
         for player in self._board.players:
             player.build_orders = set()

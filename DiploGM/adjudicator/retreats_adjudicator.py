@@ -17,7 +17,7 @@ class RetreatsAdjudicator(Adjudicator):
     def __init__(self, board: Board):
         super().__init__(board)
 
-    def validate_orders(self) -> tuple[dict[str, set[Unit]], set[Unit]]:
+    def _validate_orders(self) -> tuple[dict[str, set[Unit]], set[Unit]]:
         retreats_by_destination: dict[str, set[Unit]] = {}
         units_to_delete: set[Unit] = set()
         for unit in self._board.units:
@@ -43,7 +43,7 @@ class RetreatsAdjudicator(Adjudicator):
 
         return retreats_by_destination, units_to_delete
 
-    def handle_vassals(self):
+    def _handle_vassals(self):
         for player in self._board.players:
             if player.liege in player.vassals:
                 other = player.liege
@@ -61,7 +61,7 @@ class RetreatsAdjudicator(Adjudicator):
                     player.build_orders.add(RebellionMarker(liege))
 
     def run(self) -> Board:
-        retreats_by_destination, units_to_delete = self.validate_orders()
+        retreats_by_destination, units_to_delete = self._validate_orders()
 
         for retreating_units in retreats_by_destination.values():
             if len(retreating_units) != 1:
@@ -92,6 +92,6 @@ class RetreatsAdjudicator(Adjudicator):
             unit.retreat_options = None
 
         if self._board.turn.is_fall() and self.has_vassals:
-            self.handle_vassals()
+            self._handle_vassals()
 
         return self._board

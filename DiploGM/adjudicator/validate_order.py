@@ -63,7 +63,7 @@ def _validate_move_fleet(province: Province, order: Move | RetreatMove, unit: Un
             order.destination_coast = reachable_coasts.pop()
     return True, None
 
-def validate_move_order(province: Province, order: Move | RetreatMove, strict_coast_movement: bool) -> tuple[bool, str | None]:
+def _validate_move_order(province: Province, order: Move | RetreatMove, strict_coast_movement: bool) -> tuple[bool, str | None]:
     unit = province.unit
     assert unit is not None
     destination_province = order.destination
@@ -82,7 +82,7 @@ def validate_move_order(province: Province, order: Move | RetreatMove, strict_co
         return False, "Cannot retreat to occupied provinces"
     return True, None
 
-def validate_convoymove_order(province: Province, order: Move) -> tuple[bool, str | None]:
+def _validate_convoymove_order(province: Province, order: Move) -> tuple[bool, str | None]:
     unit = province.unit
     assert unit is not None
     if unit.unit_type != UnitType.ARMY:
@@ -96,7 +96,7 @@ def validate_convoymove_order(province: Province, order: Move) -> tuple[bool, st
         return False, f"No valid convoy path from {province} to {order.destination}"
     return True, "convoy"
 
-def validate_convoy_order(province: Province, order: ConvoyTransport) -> tuple[bool, str | None]:
+def _validate_convoy_order(province: Province, order: ConvoyTransport) -> tuple[bool, str | None]:
     unit = province.unit
     assert unit is not None
     if unit.unit_type != UnitType.FLEET:
@@ -117,7 +117,7 @@ def validate_convoy_order(province: Province, order: ConvoyTransport) -> tuple[b
         return False, f"No valid convoy path from {order.source} to {province}"
     return True, None
 
-def validate_support_order(province: Province, order: Support) -> tuple[bool, str | None]:
+def _validate_support_order(province: Province, order: Support) -> tuple[bool, str | None]:
     source_unit = order.source.unit
     if not isinstance(source_unit, Unit):
         return False, "There is no unit to support"
@@ -158,13 +158,12 @@ def order_is_valid(province: Province, order: Order, potential_convoy=False, str
 
     :param province: Province the order originates from
     :param order: Order to check
-    :param strict_convoys_supports: Defaults False. Validates only if supported order was also ordered,
-                                    or convoyed unit was convoyed correctly
+    :param potential_convoy: Defaults False. When True, will try a Move as a convoy if necessary
     :param strict_coast_movement: Defaults True. Checks movement regarding coasts, should be false when checking 
                                     for support holds.
     :return: tuple(result, reason)
         - bool result is True if the order is valid, False otherwise
-        - str reason is arbitrary if the order is valid, provides reasoning if invalid
+        - str reason is "convoy" if order is valid but requires a convoy, provides reasoning if invalid
     """
     if order is None:
         return False, "Order is missing"
@@ -185,14 +184,14 @@ def order_is_valid(province: Province, order: Order, potential_convoy=False, str
             return False, "Units can only core in owned supply centers"
         return True, None
     elif isinstance(order, Move) or isinstance(order, RetreatMove):
-        valid, reason = validate_move_order(province, order, strict_coast_movement)
+        valid, reason = _validate_move_order(province, order, strict_coast_movement)
         if not valid and potential_convoy and isinstance(order, Move) and province.unit.unit_type == UnitType.ARMY:
             # Try convoy validation if move is invalid
-            return validate_convoymove_order(province, order)
+            return _validate_convoymove_order(province, order)
         return valid, reason
     elif isinstance(order, ConvoyTransport):
-        return validate_convoy_order(province, order)
+        return _validate_convoy_order(province, order)
     elif isinstance(order, Support):
-        return validate_support_order(province, order)
+        return _validate_support_order(province, order)
 
     return False, f"Unknown move type: {order.__class__.__name__}"
