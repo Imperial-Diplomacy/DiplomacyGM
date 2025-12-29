@@ -1,6 +1,6 @@
 from enum import Enum
 
-from DiploGM.models.order import NMR, Hold, Core, Move, ConvoyMove, Support, ConvoyTransport, UnitOrder
+from DiploGM.models.order import NMR, Hold, Core, Move, Support, ConvoyTransport, UnitOrder
 from DiploGM.models.province import Province
 from DiploGM.models.unit import Unit, UnitType
 
@@ -52,11 +52,9 @@ class AdjudicableOrder:
             self.type = OrderType.HOLD
         elif isinstance(unit.order, Core):
             self.type = OrderType.CORE
-        elif isinstance(unit.order, Move) or isinstance(unit.order, ConvoyMove):
+        elif isinstance(unit.order, Move):
             self.type = OrderType.MOVE
             (self.destination_province, self.destination_coast) = unit.order.get_destination_and_coast()
-            if isinstance(unit.order, ConvoyMove):
-                self.is_convoy = True
         elif isinstance(unit.order, Support):
             self.type = OrderType.SUPPORT
             self.source_province = unit.order.source
