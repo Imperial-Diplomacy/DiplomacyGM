@@ -306,7 +306,7 @@ class CommandCog(commands.Cog):
         # FOW permissions
         if board.fow:
             player = perms.require_player_by_context(ctx, "get province info")
-            if player and province.name not in board.get_visible_provinces(player):
+            if player and not province in board.get_visible_provinces(player):
                 log_command(
                     logger,
                     ctx,
@@ -328,20 +328,16 @@ class CommandCog(commands.Cog):
                 adjacent_coasts += f"Adjacent Coastal Provinces ({c}):\n- "
                 adjacent_list = []
                 for adj in province.get_coastal_adjacent(c):
-                    adjacent_list.append(f"{adj[0].get_name(adj[1])}")
+                    adjacent_list.append(f"{adj[0] if isinstance(adj, tuple) else adj}")
                 adjacent_coasts += "\n- ".join(sorted(adjacent_list))
                 adjacent_coasts += "\n"
         elif province.type == ProvinceType.LAND and province.get_coastal_adjacent():
             adjacent_coasts = "Adjacent Coastal Provinces:\n- "
             adjacent_list = []
             for adj in province.get_coastal_adjacent():
-                adjacent_list.append(f"{adj[0].get_name(adj[1])}")
+                adjacent_list.append(f"{adj[0] if isinstance(adj, tuple) else adj}")
             adjacent_coasts += "\n- ".join(sorted(adjacent_list))
             adjacent_coasts += "\n"
-        if province.type == ProvinceType.SEA or province.type == ProvinceType.ISLAND:
-            adjacent_provinces = [adjacent.get_name(coast) for (adjacent, coast) in province.get_coastal_adjacent()]
-        else:
-            adjacent_provinces = [adjacent.name for adjacent in province.adjacent | province.impassible_adjacent]
         out = f"Type: {province.type.name}\n" + \
             f"{coast_info}" + \
             f"Owner: {province.owner.name if province.owner else 'None'}\n" + \
@@ -349,7 +345,7 @@ class CommandCog(commands.Cog):
             f"Center: {province.has_supply_center}\n" + \
             f"Core: {province.core.name if province.core else 'None'}\n" + \
             f"Half-Core: {province.half_core.name if province.half_core else 'None'}\n" + \
-            f"Adjacent Provinces:\n- " + "\n- ".join(sorted(adjacent_provinces)) + "\n" + \
+            f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent | province.impassible_adjacent])) + "\n" + \
             f"{adjacent_coasts}"
         # fmt: on
         log_command(logger, ctx, message=f"Got info for {province_name}")

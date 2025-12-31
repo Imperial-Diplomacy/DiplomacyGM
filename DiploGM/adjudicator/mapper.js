@@ -21,6 +21,7 @@ const arrow_layer = document.getElementById(svg_config["arrow_output"]);
 
 const order_colour = "white";
 const dasharray_size = 3.5 * svg_config["order_stroke_width"];
+const stroke_opacity = 0.85
 
 unit_elements = {};
 
@@ -167,7 +168,7 @@ function draw_hold(order) {
             fill: "none",
             stroke: order_colour,
             "stroke-dasharray": `${dasharray_size} ${dasharray_size}`,
-	    "stroke-opacity": "0.65",
+	    "stroke-opacity": stroke_opacity,
             "stroke-width": svg_config["order_stroke_width"],
             "shape-rendering": "geometricPrecision"
         }
@@ -192,7 +193,7 @@ function draw_core(order) {
             fill: "none",
             stroke: order_colour,
             "stroke-dasharray": `${dasharray_size} ${dasharray_size}`,
-	    "stroke-opacity": "0.65",
+	    "stroke-opacity": stroke_opacity,
             "stroke-width": svg_config["order_stroke_width"],
             transform: `rotate(45 ${coord[0]} ${coord[1]})`,
             "shape-rendering": "geometricPrecision"
@@ -214,7 +215,7 @@ function draw_move(order) {
             stroke: order_colour,
             "stroke-width": svg_config["order_stroke_width"],
             "stroke-dasharray": `${dasharray_size} ${dasharray_size}`,
-	    "stroke-opacity": "0.65",
+	    "stroke-opacity": stroke_opacity,
             "stroke-linecap": "round",
             "marker-end": `url(#arrow)`,
             "shape-rendering": "geometricPrecision"
@@ -232,7 +233,7 @@ function draw_convoy(order) {
             fill: "none",
             stroke: order_colour,
             "stroke-dasharray": `${dasharray_size} ${dasharray_size}`,
-	    "stroke-opacity": "0.65",
+	    "stroke-opacity": stroke_opacity,
             "stroke-width": svg_config["order_stroke_width"] * 2 / 3,
             "shape-rendering": "geometricPrecision"
         }
@@ -281,7 +282,7 @@ function draw_support(order) {
             "fill": "none",
             "stroke": order_colour,
             "stroke-dasharray": `${dasharray_size} ${dasharray_size}`,
-	    "stroke-opacity": "0.65",
+	    "stroke-opacity": stroke_opacity,
             "stroke-width": svg_config["order_stroke_width"],
             "stroke-linecap": "round",
             "marker-start": `url(#${marker_start})`,

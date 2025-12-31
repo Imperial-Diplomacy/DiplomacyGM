@@ -1,6 +1,6 @@
-
 assets/schedule.json
 assets/*_adjacencies.txt
+assets/community/
 *.pyc
 *.iml
 *.xml

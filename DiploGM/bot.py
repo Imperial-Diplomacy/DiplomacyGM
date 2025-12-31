@@ -14,13 +14,14 @@ from discord.ext import commands
 
 from DiploGM.config import (
     BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID,
+    EMBED_STANDARD_COLOUR,
     ERROR_COLOUR,
     IMPDIP_SERVER_ID,
     IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID,
     EXTENSIONS_TO_LOAD_ON_STARTUP,
 )
 from DiploGM.events.eventbus import EventBus
-from DiploGM.perms import CommandPermissionError
+from DiploGM.errors import CommandPermissionError
 from DiploGM.utils import send_message_and_file
 from DiploGM.manager import Manager
 
@@ -193,7 +194,7 @@ class DiploGM(commands.Bot):
             )
         else:
             message = random.choice(WELCOME_MESSAGES)
-            await channel.send(message)
+            await send_message_and_file(channel=channel, message=message, embed_colour=EMBED_STANDARD_COLOUR)
 
         # Set bot's presence (optional)
         await self.change_presence(activity=discord.Game(name="Impdip 🔪"))
@@ -250,7 +251,7 @@ class DiploGM(commands.Bot):
 
         if time_spent.total_seconds() < 1:
             level = logging.DEBUG
-        elif time_spent.total_seconds() < 10 and ctx.command.name != "order":
+        elif time_spent.total_seconds() < 10 and ctx.command.name not in ["o", "order", "orders"]:
             level = logging.INFO
         else:
             level = logging.WARN
@@ -274,6 +275,10 @@ class DiploGM(commands.Bot):
         except Exception:
             # if reactions fail, ignore and continue handling existing exception
             pass
+
+        if getattr(ctx, "handled", False):
+            logger.info(f"global on_command_error skipped a {type(error)} that was previously handled...")
+            return
 
         time_spent = (
             datetime.datetime.now(datetime.timezone.utc) - ctx.message.created_at
@@ -301,12 +306,12 @@ class DiploGM(commands.Bot):
         if isinstance(original, discord.Forbidden):
             await send_message_and_file(
                 channel=ctx.channel,
-                message=f"I do not have the correct permissions to do this.\n"
-                f"I might not be setup correctly.\n"
-                f"If this is unexpected please contact a GM or reach out in: "
-                f"https://discord.com/channels/1201167737163104376/1286027175048253573"
-                f" or "
-                f"https://discord.com/channels/1201167737163104376/1280587781638459528",
+                message="I do not have the correct permissions to do this.\n"
+                "I might not be setup correctly.\n"
+                "If this is unexpected please contact a GM or reach out in: "
+                "https://discord.com/channels/1201167737163104376/1286027175048253573"
+                " or "
+                "https://discord.com/channels/1201167737163104376/1280587781638459528",
                 embed_colour=ERROR_COLOUR,
             )
             return
@@ -352,7 +357,7 @@ class DiploGM(commands.Bot):
             ),
         ):
             out = (
-                f"Please wait a few (10 to 30) seconds and try again.\n"
+                "Please wait a few (10 to 30) seconds and try again.\n"
                 "Sorry for the inconvenience. :D\n\n"
                 "-# If after repeated attempts it still breaks, please report this to a bot dev using a feedback channel"
             )
@@ -365,9 +370,9 @@ class DiploGM(commands.Bot):
 
         # Final Case: Not handled cleanly
         unhandled_out = (
-            f"```python\n"
+            "```python\n"
             + "\n".join(traceback.format_exception(original, limit=3))
-            + f"```"
+            + "```"
         )
 
         # Out to Bot Dev Server
@@ -376,6 +381,7 @@ class DiploGM(commands.Bot):
             unhandled_out_dev = (
                 f"Type: {type(original)}\n"
                 f"Location: {ctx.guild.name} [{ctx.channel.category or ''}]-[{ctx.channel.name}]\n"
+                f"Link: {ctx.message.jump_url}\n"
                 f"Time: {str(datetime.datetime.now(datetime.timezone.utc))[:-13]} UTC\n"
                 f"Invoking User: {ctx.author.mention}[{ctx.author.name}]\n"
                 f"Invoked Command: {ctx.command.name}\n"
@@ -383,21 +389,21 @@ class DiploGM(commands.Bot):
             ) + unhandled_out
             await send_message_and_file(
                 channel=bot_error_channel,
-                title=f"UNHANDLED ERROR",
+                title="UNHANDLED ERROR",
                 message=unhandled_out_dev,
             )
 
         # Out to Invoking Channel
         unhandled_out = (
-            f"Please report this to a bot dev in using a feedback channel: "
-            f"https://discord.com/channels/1201167737163104376/1286027175048253573"
-            f" or "
-            f"https://discord.com/channels/1201167737163104376/1280587781638459528"
-            f"\n"
+            "Please report this to a bot dev in using a feedback channel: "
+            "https://discord.com/channels/1201167737163104376/1286027175048253573"
+            " or "
+            "https://discord.com/channels/1201167737163104376/1280587781638459528"
+            "\n"
         ) + unhandled_out
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"ERROR: >.< How did we get here...",
+            title="ERROR: >.< How did we get here...",
             message=unhandled_out,
             embed_colour=ERROR_COLOUR,
         )

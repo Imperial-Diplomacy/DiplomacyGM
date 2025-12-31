@@ -33,7 +33,7 @@ ping_text_choices = [
 # Intended use: to extend the possibilities within .advice
 WOC_ADVICE = ["Maybe the real friends were the dots we claimed along the way."]
 try:
-    with open("DiploGM/assets/advice.txt", "r") as f:
+    with open("assets/advice.txt", "r") as f:
         WOC_ADVICE.extend(f.readlines())
 except FileNotFoundError:
     pass
@@ -44,6 +44,15 @@ def fish_pop_model(Fish, t, growth_rate, carrying_capacity):
 
 
 class PartyCog(commands.Cog):
+    """A Cog for fun, non-consequential commands
+    
+    Args:
+        bot (DiploGM): A reference to the running discord bot instance
+
+    Attributes:
+        bot (DiploGM): A reference to the running discord bot instance
+        eolhc_ed_members (Dict[int, List[int]]): A set describing which members have used eolhc in different guilds
+    """
     def __init__(self, bot):
         self.bot: Bot = bot
         self.eolhc_ed_members: Dict[int, List[int]] = dict()
@@ -51,6 +60,26 @@ class PartyCog(commands.Cog):
     @commands.command(hidden=True)
     @perms.gm_only("botsay")
     async def botsay(self, ctx: commands.Context) -> None:
+        """Have the bot output a specific message within a channel
+
+        Usage: 
+            Used as `.botsay #channel message`
+
+        Note: 
+            Limited to the server of command invocation
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+                No channel given
+                No message given
+        """
         # noinspection PyTypeChecker
         if len(ctx.message.channel_mentions) == 0:
             await send_message_and_file(
@@ -90,6 +119,27 @@ class PartyCog(commands.Cog):
 
     @commands.command(help="Checks bot listens and responds.")
     async def ping(self, ctx: commands.Context):
+        """A method to check bot activity
+
+        Usage: 
+            Used as `.ping`
+
+        Notes:
+            1 in 10 chance for joke behaviour
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None:
+            Messages:
+                Beep Boop
+                Joke Behaviour
+
+        Raises:
+            None:
+            Messages:
+        """
         response = "Beep Boop"
         if random.random() < 0.1:
             author = ctx.message.author
@@ -105,6 +155,28 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def bumble(self, ctx: commands.Context) -> None:
+        """Output a scrambled form of our saviour, Bumble
+
+        Usage: 
+            Used as `.bumble`
+
+        Note: 
+            User bumble always is "bumble"
+            If scrambled output is "bumble", temporarily flag user as a bumble
+            If scrambled output is "elbmub", output reverse message
+            Decrements `fish` count for the current game board
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+        """
+
         assert ctx.guild is not None
         list_of_bumble = list("bumble")
         random.shuffle(list_of_bumble)
@@ -128,6 +200,25 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def pelican(self, ctx: commands.Context) -> None:
+        """A pelican is chasing you! Output a fun message
+
+        Usage: 
+            Used as `.pelican`
+
+        Note: 
+            Places a pelican can chase are weighted priority
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+        """
+
         assert ctx.guild is not None
         pelican_places = {
             "your home": 15,
@@ -154,6 +245,26 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def cheat(self, ctx: commands.Context) -> None:
+        """Are you cheating? Output a fun message
+
+        Usage: 
+            Used as `.cheat`
+
+        Note:
+            Default: "Cheating is disabled for this user."
+            If a user is bumbled: Replace with a silly cheating message
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+        """
+
         assert ctx.guild is not None
         message = "Cheating is disabled for this user."
         author = ctx.message.author.name
@@ -178,6 +289,26 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def phish(self, ctx: commands.Context) -> None:
+        """Not that kind of fishing, Output a fun message
+
+        Usage: 
+            Used as `.phish`
+
+        Note:
+            Default: "No! Phishing is bad!"
+            If a user is bumbled: "Please provide your firstborn pet"
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+        """
+
         await ctx.message.add_reaction("🐟")
 
         message = "No! Phishing is bad!"
@@ -187,6 +318,28 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def advice(self, ctx: commands.Context) -> None:
+        """Output some advice to the user
+
+        Usage: 
+            Used as `.advice`
+
+        Note: 
+            Default: "You are not worthy of advice"
+            If user is bumbled: 
+            If random == 0: Pre-written joke advice
+            If random == 1: World of Chaos, Hobbit's 115 statements
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+        """
+
         message = "You are not worthy of advice."
         chance = random.randrange(0, 5)
 
@@ -203,6 +356,13 @@ class PartyCog(commands.Cog):
                     "Ash Lael deems you a sufficiently apt liar, go use those skills!",
                     "Kwiksand suggests winning.",
                     "Ambrosius advises taking the opportunity you've been considering, for more will ensue.",
+                    "Elle recommends flirting with everyone, including the bot.\n-# especially the bot ;)",
+                    "Flare recommends to change the map to your benefit in the next wave.",
+                    "notnot suggests drawing some arrows on a map and seeing if that helps",
+                    "Aeolus wonders if you shouldn't delay your orders until the last minute.",
+                    "Tot suggests arguing with your duo partner.",
+                    "June wants to know if you've tried being nice <3",
+                    "Firebender wants you to know you were just unlucky with the start of this game, you'll do better next time.",
                     "The GMs suggest you input your orders so they don't need to hound you for them at the deadline.",
                 ]
             )
@@ -214,6 +374,26 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def fish(self, ctx: commands.Context) -> None:
+        """Get a list of the best fishing servers, also the position of the current
+
+        Usage: 
+            Used as `.global_leaderboard`
+
+        Note:
+            Can potentially debumblify bumbled users
+            Should save to db in 1 out of every 5 fishes (rng)
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+        """
+
         assert ctx.guild is not None
         await ctx.message.add_reaction("🐟")
 
@@ -318,6 +498,25 @@ class PartyCog(commands.Cog):
 
     @commands.command(brief="Show global fishing leaderboard")
     async def global_leaderboard(self, ctx: commands.Context) -> None:
+        """Get a list of the best fishing servers, also the position of the current
+
+        Usage: 
+            Used as `.global_leaderboard`
+
+        Note:
+            Displays 10 boards total (top 9 and current)
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+        """
+
         assert ctx.guild is not None
         sorted_boards = sorted(
             manager._boards.items(), key=lambda board: board[1].fish, reverse=True
@@ -352,6 +551,26 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def shutdown(self, ctx: commands.Context):
+        """Please don't shut me down :? , Output a fun message
+
+        Usage: 
+            Used as `.shutdown`
+
+        Note: 
+            Default: "You are not worthy of advice"
+            If user is superuser: 
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+        """
+
         if is_superuser(ctx.author):
             await send_message_and_file(
                 channel=ctx.channel, title="Please don't shut me down", message=""
@@ -371,6 +590,26 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True)
     async def eolhc(self, ctx: commands.Context,):
+        """Did my name always look like that? Reverses the nickname
+
+        Usage: 
+            Used as `.eolhc`
+
+        Note: 
+            Not for Chaos games
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+                Pesky Admin, no permissions to modify nickname
+        """
+
         assert ctx.guild is not None
         if ctx.author.id == 1352388421003251833:
             if ctx.guild.id != IMPDIP_SERVER_ID and is_gm(ctx.author) and (ctx.guild.id not in self.eolhc_ed_members or ctx.me.id not in self.eolhc_ed_members[ctx.guild.id]):
@@ -396,6 +635,24 @@ class PartyCog(commands.Cog):
 
     @commands.command(hidden=True, aliases=eolhc_permutations)
     async def eohlc(self, ctx: commands.Context):
+        """How could you do that?
+
+        Usage: 
+            *Used as `.eohlc`
+            All incorrect permutations of eolhc
+
+        Note: 
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+        """
+
         if ctx.author.id == 285108244714881024: # aahoughton
             try:
                 await ctx.reply("*eolhc")

@@ -66,7 +66,7 @@ class SpecView(discord.ui.View):
             )
         except:
             logger.warning(
-                f"Unable to send a message to direct message. The user might have DMs blocked."
+                "Unable to send a message to direct message. The user might have DMs blocked."
             )
         await self.member.add_roles(self.power_role, self.spec_role)
 
@@ -96,7 +96,7 @@ class SpecView(discord.ui.View):
             )
         except:
             logger.warning(
-                f"Unable to send a message to direct message. The user might have DMs blocked."
+                "Unable to send a message to direct message. The user might have DMs blocked."
             )
 
         out = f"[SPECTATOR LOG] {self.member.mention} rejected for power {self.power_role.mention}"
@@ -217,7 +217,7 @@ class SpectatorCog(commands.Cog):
 
         # CHECK IF USER HAS BEEN ACCEPTED IN THIS SERVER BEFORE
         prev_request = manager.get_spec_request(guild.id, interaction.user.id)
-        if prev_request:
+        if prev_request and prev_request.role_id != power_role.id:
             prev_role = guild.get_role(prev_request.role_id)
             if prev_role:
                 await admin_channel.send(

@@ -23,7 +23,6 @@ class Board:
     def __init__(
         self, players: set[Player], provinces: set[Province], units: set[Unit], turn: Turn, data, datafile: str, fow: bool, year_offset: int = 1642
     ):
-        # TODO: Make imports better
         from DiploGM.utils.sanitise import sanitise_name
         from DiploGM.utils import simple_player_name
 
@@ -92,7 +91,6 @@ class Board:
         return self.name_to_player.get(name.lower())
 
     def get_cleaned_player(self, name: str) -> Optional[Player]:
-        from DiploGM.utils.sanitise import sanitise_name
         if name.lower() == "none":
             return None
         if name.lower() not in self.cleaned_name_to_player:
@@ -100,7 +98,6 @@ class Board:
         return self.cleaned_name_to_player.get(sanitise_name(name.lower()))
 
     def get_player_sanitised(self, name:str) -> Optional[Player]:
-        from DiploGM.utils import simple_player_name
         name = simple_player_name(name)
         if name == "none":
             return None
@@ -186,24 +183,24 @@ class Board:
         else:
             return potential_locations[0]
 
-    def get_visible_provinces(self, player: Player) -> set[str]:
-        visible: set[str] = set()
+    def get_visible_provinces(self, player: Player) -> set[Province]:
+        visible: set[Province] = set()
         for province in self.provinces:
             for unit in player.units:
                 if unit.unit_type == UnitType.ARMY:
                     if province in unit.province.adjacent and province.type != ProvinceType.SEA:
-                        visible.add(province.name)
+                        visible.add(province)
                 if unit.unit_type == UnitType.FLEET:
                     if unit.province.is_coastally_adjacent((province, None), unit.coast):
-                        visible.add(province.name)
+                        visible.add(province)
 
         for unit in player.units:
-            visible.add(unit.province.name)
+            visible.add(unit.province)
 
         for province in player.centers:
             if province.core == player:
-                visible.update({p.name for p in province.adjacent})
-            visible.add(province.name)
+                visible.update(province.adjacent)
+            visible.add(province)
 
         return visible
 
@@ -336,7 +333,6 @@ class Board:
             channel: Messageable,
             ignore_category=False,
     ) -> Player | None:
-        from DiploGM.utils import simple_player_name
         # thread -> main channel
         if isinstance(channel, Thread):
             assert isinstance(channel.parent, TextChannel)
