@@ -13,8 +13,10 @@ from DiploGM.models.order import (
 from DiploGM.models.province import Province, ProvinceType
 from DiploGM.models.unit import UnitType, Unit
 from DiploGM.models.player import Player
-from DiploGM.models.turn import Turn
-from DiploGM.adjudicator.adjudicator import MovesAdjudicator, RetreatsAdjudicator, BuildsAdjudicator, ResolutionState, Resolution
+from DiploGM.adjudicator.defs import ResolutionState, Resolution
+from DiploGM.adjudicator.builds_adjudicator import BuildsAdjudicator
+from DiploGM.adjudicator.moves_adjudicator import MovesAdjudicator
+from DiploGM.adjudicator.retreats_adjudicator import RetreatsAdjudicator
 
 import unittest
 

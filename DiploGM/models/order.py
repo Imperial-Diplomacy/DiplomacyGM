@@ -89,24 +89,6 @@ class Move(UnitOrder):
     def get_destination_str(self) -> str:
         return f"{self.destination}" + (f" {self.destination_coast}" if self.destination_coast else "")
 
-class ConvoyMove(UnitOrder):
-    display_priority: int = 30
-    
-    def __init__(self, destination: Province, destination_coast: str | None = None):
-        super().__init__()
-        self.destination: Province = destination
-        self.destination_coast: None = None
-
-    def __str__(self):
-        return f"Convoys - {self.destination}"
-    
-    def get_destination_and_coast(self) -> tuple[Province, None]:
-        return (self.destination, None)
-    
-    def get_destination_str(self) -> str:
-        return f"{self.destination}"
-
-
 class ConvoyTransport(ComplexOrder):
     def __init__(self, source: Province, destination: Province, destination_coast: str | None = None):
         super().__init__(source)

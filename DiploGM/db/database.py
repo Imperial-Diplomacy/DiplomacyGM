@@ -12,7 +12,6 @@ from DiploGM.models.order import (
     Core,
     NMR,
     Hold,
-    ConvoyMove,
     Move,
     Support,
     ConvoyTransport,
@@ -377,7 +376,6 @@ class _DatabaseConnection:
                         Hold,
                         Core,
                         Move,
-                        ConvoyMove,
                         ConvoyTransport,
                         Support,
                         RetreatMove,
@@ -399,7 +397,7 @@ class _DatabaseConnection:
                         continue
                     elif order_class in [Hold, Core, RetreatDisband]:
                         order = order_class()
-                    elif order_class in [Move, ConvoyMove, RetreatMove]:
+                    elif order_class in [Move, RetreatMove]:
                         order = order_class(destination=destination_province, destination_coast=destination_coast)
                     elif order_class in [ConvoyTransport, Support]:
                         order = order_class(

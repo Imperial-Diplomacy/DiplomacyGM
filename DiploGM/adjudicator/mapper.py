@@ -26,7 +26,6 @@ from DiploGM.models.order import (
     Build,
     Disband,
     Move,
-    ConvoyMove,
     PlayerOrder,
 )
 from DiploGM.models.player import Player
@@ -521,9 +520,6 @@ class Mapper:
         elif isinstance(order, Move):
             # moves are just convoyed moves that have no convoys
             return self._draw_convoyed_move(unit, coordinate, order.hasFailed)
-        elif isinstance(order, ConvoyMove):
-            logger.warning("Convoy move is deprecated; use move instead")
-            return self._draw_convoyed_move(unit, coordinate, order.hasFailed)
         elif isinstance(order, Support):
             return self._draw_support(unit, coordinate, order.hasFailed)
         elif isinstance(order, ConvoyTransport):
@@ -720,7 +716,7 @@ class Mapper:
         y1 = coordinate[1]
         v2 = self.loc_to_point(order.source, unit.unit_type, order.source.unit.coast, coordinate)
         x2, y2 = v2
-        if (isinstance(order.source.unit.order, (Move, ConvoyMove))
+        if (isinstance(order.source.unit.order, Move)
             and order.source.unit.order.destination == order.destination
             and (not order.destination_coast 
                  or order.source.unit.order.destination_coast == order.destination_coast)):

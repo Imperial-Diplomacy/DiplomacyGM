@@ -238,7 +238,7 @@ class Board:
         coast: str | None,
         retreat_options: set[tuple[Province, str | None]] | None,
     ) -> Unit:
-        if province.get_multiple_coasts() and coast not in province.get_multiple_coasts():
+        if unit_type == UnitType.FLEET and province.get_multiple_coasts() and coast not in province.get_multiple_coasts():
             raise RuntimeError(f"Cannot create unit. Province '{province.name}' requires a valid coast.")
         if not province.get_multiple_coasts():
             coast = None
