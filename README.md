@@ -42,8 +42,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 #Copies 
-cp .env.template .env
-# Now edit .env and add the right inputs
+cp config_defaults.toml config.toml
+# Now edit config.toml and add the right inputs
 ```
 
 ### Running the bot
