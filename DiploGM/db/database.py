@@ -6,6 +6,7 @@ from typing import Optional
 # TODO: Find a better way to do this
 # maybe use a copy from manager?
 from DiploGM.map_parser.vector.vector import get_parser
+from DiploGM.models.province import Province
 from DiploGM.models.turn import Turn
 from DiploGM.models.board import Board
 from DiploGM.models.order import (
@@ -143,6 +144,100 @@ class _DatabaseConnection:
         cursor.close()
         return board
 
+    def _load_builds(self, cursor, board_id: int, board: Board):
+        builds_data = cursor.execute(
+            "SELECT player, location, is_build, is_army FROM builds WHERE board_id=? and phase=?",
+            (board_id, board.turn.get_indexed_name()),
+        ).fetchall()
+
+        def get_player_by_name(player_name) -> Player | None:
+            player_by_name = {player.name: player for player in board.players}
+
+            if player_name not in player_by_name:
+                logger.warning(f"Unknown player: {player_name}")
+                return None
+
+            return player_by_name[player_name]
+
+        for player_name, location, is_build, is_army in builds_data:
+            player = get_player_by_name(player_name)
+
+            if player is None:
+                continue
+
+            if is_build:
+                player_order = Build(
+                    board.get_province_and_coast(location)[0],
+                    UnitType.ARMY if is_army else UnitType.FLEET,
+                    board.get_province_and_coast(location)[1],
+                )
+            else:
+                player_order = Disband(board.get_province(location))
+
+            player.build_orders.add(player_order)
+
+        vassals_data = cursor.execute(
+            "SELECT player, target_player, order_type FROM vassal_orders WHERE board_id=? and phase=?",
+            (board_id, board.turn.get_indexed_name()),
+        ).fetchall()
+
+        order_classes = [
+            Vassal,
+            Liege,
+            DualMonarchy,
+            Disown,
+            Defect,
+            RebellionMarker,
+        ]
+
+        for player_name, target_player_name, order_type in vassals_data:
+            player = get_player_by_name(player_name)
+            target_player = get_player_by_name(target_player_name)
+            assert isinstance(player, Player)
+            assert isinstance(target_player, Player)
+            order_class = next(
+                order_class
+                for order_class in order_classes
+                if order_class.__name__ == order_type
+            )
+
+            order = order_class(target_player)
+
+            player.vassal_orders[target_player] = order
+
+    def _load_province(self, board: Board, province: Province, province_info_by_name: dict):
+        if province.name not in province_info_by_name:
+            logger.warning(f"Couldn't find province {province.name} in DB")
+            return
+
+        owner, core, half_core = province_info_by_name[province.name]
+
+        if owner is not None:
+            owner_player = board.get_player(owner)
+            if owner_player is None:
+                logger.warning(
+                    f"Couldn't find corresponding player for {owner} in DB"
+                )
+            else:
+                province.owner = owner_player
+
+                if province.has_supply_center:
+                    owner_player.centers.add(province)
+        else:
+            province.owner = None
+
+        core_player = None
+        if core is not None:
+            core_player = board.get_player(core)
+        province.core = core_player
+
+        half_core_player = None
+        if half_core is not None:
+            half_core_player = board.get_player(half_core)
+        province.half_core = half_core_player
+        province.unit = None
+        province.dislodged_unit = None
+
     def _get_board(
         self,
         board_id: int,
@@ -207,65 +302,7 @@ class _DatabaseConnection:
             player.centers = set()
             # TODO - player build orders
         if board.turn.is_builds():
-            builds_data = cursor.execute(
-                "SELECT player, location, is_build, is_army FROM builds WHERE board_id=? and phase=?",
-                (board_id, board.turn.get_indexed_name()),
-            ).fetchall()
-
-            def get_player_by_name(player_name) -> Player | None:
-                player_by_name = {player.name: player for player in board.players}
-
-                if player_name not in player_by_name:
-                    logger.warning(f"Unknown player: {player_name}")
-                    return None
-
-                return player_by_name[player_name]
-
-            for player_name, location, is_build, is_army in builds_data:
-                player = get_player_by_name(player_name)
-
-                if player is None:
-                    continue
-
-                if is_build:
-                    player_order = Build(
-                        board.get_province_and_coast(location)[0],
-                        UnitType.ARMY if is_army else UnitType.FLEET,
-                        board.get_province_and_coast(location)[1],
-                    )
-                else:
-                    player_order = Disband(board.get_province(location))
-
-                player.build_orders.add(player_order)
-
-            vassals_data = cursor.execute(
-                "SELECT player, target_player, order_type FROM vassal_orders WHERE board_id=? and phase=?",
-                (board_id, board.turn.get_indexed_name()),
-            ).fetchall()
-
-            order_classes = [
-                Vassal,
-                Liege,
-                DualMonarchy,
-                Disown,
-                Defect,
-                RebellionMarker,
-            ]
-
-            for player_name, target_player_name, order_type in vassals_data:
-                player = get_player_by_name(player_name)
-                target_player = get_player_by_name(target_player_name)
-                assert isinstance(player, Player)
-                assert isinstance(target_player, Player)
-                order_class = next(
-                    order_class
-                    for order_class in order_classes
-                    if order_class.__name__ == order_type
-                )
-
-                order = order_class(target_player)
-
-                player.vassal_orders[target_player] = order
+            self._load_builds(cursor, board_id, board)
 
         province_data = cursor.execute(
             "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
@@ -285,37 +322,8 @@ class _DatabaseConnection:
             (board_id, board.turn.get_indexed_name()),
         ).fetchall()
         for province in board.provinces:
-            if province.name not in province_info_by_name:
-                logger.warning(f"Couldn't find province {province.name} in DB")
-                continue
+            self._load_province(board, province, province_info_by_name)
 
-            owner, core, half_core = province_info_by_name[province.name]
-
-            if owner is not None:
-                owner_player = board.get_player(owner)
-                if owner_player is None:
-                    logger.warning(
-                        f"Couldn't find corresponding player for {owner} in DB"
-                    )
-                else:
-                    province.owner = owner_player
-
-                    if province.has_supply_center:
-                        owner_player.centers.add(province)
-            else:
-                province.owner = None
-
-            core_player = None
-            if core is not None:
-                core_player = board.get_player(core)
-            province.core = core_player
-
-            half_core_player = None
-            if half_core is not None:
-                half_core_player = board.get_player(half_core)
-            province.half_core = half_core_player
-            province.unit = None
-            province.dislodged_unit = None
         board.units.clear()
         for unit_info in unit_data:
             (

@@ -11,7 +11,7 @@ from DiploGM.adjudicator.defs import (
     AdjudicableOrder,
     OrderType,
 )
-from DiploGM.adjudicator.validate_order import order_is_valid
+from DiploGM.adjudicator.validate_order import OrderValidity, is_valid_result, order_is_valid
 from DiploGM.db import database
 from DiploGM.models.order import NMR, Move, Core, Support
 
@@ -65,17 +65,18 @@ class MovesAdjudicator(Adjudicator):
         not_supportable: bool = False
 
         # TODO clean up mapper info
-        valid, reason = order_is_valid(unit.province, unit.order, potential_convoy=True)
-        if not valid:
+        valid, reason = order_is_valid(unit.province, unit.order)
+        if not is_valid_result(valid):
             logger.debug(f"Order for {unit} is invalid because {reason}")
             # Invalid moves are considered unsupportable. This deviates from standard adjudication rules
+            # To follow standard rules, not_supportable should be false for Invalid moves but true for Mismatched moves
             if isinstance(unit.order, (Core, Move)):
                 not_supportable = True
             failed = True
 
         order = AdjudicableOrder(unit)
         # Kinda hacky
-        order.is_convoy = (reason == "convoy")
+        order.is_convoy = (valid == OrderValidity.VALID_WITH_CONVOY)
         if failed:
             self.failed_or_invalid_units.add(MapperInformation(unit))
             order.is_valid = False

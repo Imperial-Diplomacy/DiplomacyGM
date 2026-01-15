@@ -933,14 +933,8 @@ class Mapper:
                 core_color = self.board.data[SVG_CONFIG_KEY]["unknown"]
                 half_color = core_color
             else:
-                if province.core:
-                    core_color = self.player_colors[province.core.name]
-                else:
-                    core_color = "#ffffff"
-                if province.half_core:
-                    half_color = self.player_colors[province.half_core.name]
-                else:
-                    half_color = core_color
+                core_color = self.player_colors[province.core.name] if province.core else "#ffffff"
+                half_color = self.player_colors[province.half_core.name] if province.half_core else core_color
             # color = "#ffffff"
             # if province.core:
             #     color = province.core.color
@@ -1041,13 +1035,33 @@ class Mapper:
         root = svg.getroot()
         if not unit.retreat_options:
             self._draw_force_disband(unit.province.get_retreat_unit_coordinates(unit.unit_type, unit.coast), svg)
+            return
 
-        for retreat_province, retreat_coast in unit.retreat_options or []:
-            root.append(
-                self._draw_retreat_move(
-                    RetreatMove(retreat_province, retreat_coast), unit.unit_type, unit.province.get_retreat_unit_coordinates(unit.unit_type, unit.coast), use_moves_svg=False
+        # TODO: Move into helper function along with logic in draw_moves_and_retreats
+        unit_locs = unit.province.all_rets
+        unit_locs = unit_locs[unit.coast] if unit.coast else unit_locs[unit.unit_type]
+
+        for retreat_province, retreat_coast in unit.retreat_options:
+            new_locs = []
+            if unit.unit_type not in retreat_province.all_locs:
+                e_list = next(iter(retreat_province.all_locs.values()))
+            elif retreat_coast:
+                e_list = retreat_province.all_locs[retreat_coast]
+            else:
+                e_list = retreat_province.all_locs[unit.unit_type]
+
+            # Unspecified coast, so default to army location
+            if isinstance(e_list, dict):
+                e_list = retreat_province.all_locs[UnitType.ARMY]
+            for endpoint in e_list:
+                new_locs += [self.normalize(self.get_closest_loc(unit_locs, endpoint))]
+
+            for loc in new_locs:
+                root.append(
+                    self._draw_retreat_move(
+                        RetreatMove(retreat_province, retreat_coast), unit.unit_type, loc, use_moves_svg=False
+                    )
                 )
-            )
 
     def _initialize_scoreboard_locations(self) -> None:
         if not self.board.data[SVG_CONFIG_KEY]["power_banners"]:
