@@ -80,7 +80,7 @@ class MovesAdjudicator(Adjudicator):
         if failed:
             self.failed_or_invalid_units.add(MapperInformation(unit))
             order.is_valid = False
-            unit.order.hasFailed = True
+            unit.order.has_failed = True
         if not_supportable:
             order.not_supportable = True
 
@@ -109,7 +109,7 @@ class MovesAdjudicator(Adjudicator):
             order.state = ResolutionState.UNRESOLVED
         for order in self.orders:
             self._resolve_order(order)
-            order.get_original_order().hasFailed = (order.resolution == Resolution.FAILS)
+            order.get_original_order().has_failed = (order.resolution == Resolution.FAILS)
         if self.save_orders:
             database.get_connection().save_order_for_units(self._board, set(o.base_unit for o in self.orders))
         self._update_board()

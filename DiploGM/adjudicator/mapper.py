@@ -127,7 +127,7 @@ class Mapper:
 
             # Only show moves that succeed if requested
             if movement_only and not (
-                isinstance(unit.order, (RetreatMove, Move)) and not unit.order.hasFailed):
+                isinstance(unit.order, (RetreatMove, Move)) and not unit.order.has_failed):
                 continue
 
             unit_locs = unit.province.all_rets if current_turn.is_retreats() else unit.province.all_locs
@@ -318,13 +318,9 @@ class Mapper:
         #TODO: draw dual monarchies as stripes
         if color_mode == "empires":
             for player in self.board.players:
-                if not player.vassals:
-                    continue
-                for vassal in player.vassals:
+                for vassal in player.vassals or []:
                     self.player_colors[vassal.name] = self.player_colors[player.name]
-                    if not vassal.vassals:
-                        continue
-                    for subvassal in vassal.vassals:
+                    for subvassal in vassal.vassals or []:
                         self.player_colors[subvassal.name] = self.player_colors[player.name]
         elif color_mode == "kingdoms":
             for player in self.board.players:
@@ -423,60 +419,24 @@ class Mapper:
         iscc_index = self.board.data[SVG_CONFIG_KEY].get("power_iscc_index", 6)
         vscc_index = self.board.data[SVG_CONFIG_KEY].get("power_vscc_index", 7)
 
-        if self.board.data.get("vassals") != "enabled" and len(self.board.players) <= len(self.scoreboard_power_locations):
+        high_player_count = (len(self.board.players) > len(self.scoreboard_power_locations)
+                             or self.board.data.get("vassals") == "enabled")
+        for i, player in enumerate(self.board.get_players_sorted_by_score()):
+            if i >= len(self.scoreboard_power_locations):
+                break
             for power_element in all_power_banners_element:
-                for i, player in enumerate(players):
-                    if i >= len(self.scoreboard_power_locations):
-                        break
-
-                    # match the correct svg element based on the color of the rectangle
-                    if not len(power_element) or get_element_color(power_element[0]) != player.default_color:
-                        continue
-                    player_data = self.board.data["players"][player.name]
-                    if player_data.get("hidden") == "true":
-                        power_element.clear()
-                        break
-
-                    self.color_element(power_element[0], self.player_colors[player.name])
-                    power_element.set("transform", self.scoreboard_power_locations[i])
-
-                    if (nickname := player_data.get("nickname")):
-                        power_element[name_index][0].text = nickname
-                        # Fix for Poland-Lithuanian Commonwealth
-                        if len(power_element[name_index]) > 1:
-                            power_element[name_index][1].text = ""
-                            power_element[name_index].set("y", "237.67107")
-                            power_element[name_index][0].set("y", "237.67107")
-                            style = power_element[name_index].get("style")
-                            assert style is not None
-                            style = re.sub(r"font-size:[0-9.]+px", "font-size:42.6667px", style)
-                            power_element[name_index].set("style", style)
-                    if player == self.restriction or self.restriction == None:
-                        power_element[sc_index][0].text = str(len(player.centers))
-                    else:
-                        power_element[sc_index][0].text = "???"
-                    if iscc_index > -1:
-                        power_element[iscc_index][0].text = str(player_data["iscc"])
-                    if self.board.data["victory_conditions"] == "classic" and vscc_index > -1:
-                        power_element[vscc_index][0].text = str(self.board.data["victory_count"])
-                    elif vscc_index > -1:
-                        power_element[vscc_index][0].text = str(player_data["vscc"])
+                if high_player_count and power_element.get("transform") != self.scoreboard_power_locations[i]:
+                    continue
+                if not high_player_count and get_element_color(power_element[0]) != player.default_color:
+                    continue
+                player_data = self.board.data["players"][player.name]
+                if player_data.get("hidden") == "true":
+                    power_element.clear()
                     break
-        else:
-            #FIXME only sorts by score right now
-            for i, player in enumerate(self.board.get_players_sorted_by_score()):
-                if i >= len(self.scoreboard_power_locations):
-                    break
-                for power_element in all_power_banners_element:
-                    # match the correct svg element based on the color of the rectangle
-                    if power_element.get("transform") != self.scoreboard_power_locations[i]:
-                        continue
-                    self.color_element(power_element[0], player.render_color)
-                    power_element.set("transform", self.scoreboard_power_locations[i])
-                    player_data = self.board.data["players"][player.name]
-                    if player_data.get("hidden") == "true":
-                        power_element.clear()
-                        break
+
+                self.color_element(power_element[0], self.player_colors[player.name])
+                power_element.set("transform", self.scoreboard_power_locations[i])
+                if high_player_count or player_data.get("nickname"):
                     power_element[name_index][0].text = player.get_name()
                     # Fix for Poland-Lithuanian Commonwealth
                     if len(power_element[name_index]) > 1:
@@ -487,17 +447,17 @@ class Mapper:
                         assert style is not None
                         style = re.sub(r"font-size:[0-9.]+px", "font-size:42.6667px", style)
                         power_element[name_index].set("style", style)
-                    if player == self.restriction or self.restriction == None:
-                        power_element[sc_index][0].text = str(len(player.centers))
-                    else:
-                        power_element[sc_index][0].text = "???"
-                    if iscc_index > -1:
-                        power_element[iscc_index][0].text = str(player_data["iscc"])
-                    if self.board.data["victory_conditions"] == "classic" and vscc_index > -1:
-                        power_element[vscc_index][0].text = str(self.board.data["victory_count"])
-                    elif vscc_index > -1:
-                        power_element[vscc_index][0].text = str(player_data["vscc"])
-                    break
+                if player == self.restriction or self.restriction == None:
+                    power_element[sc_index][0].text = str(len(player.centers))
+                else:
+                    power_element[sc_index][0].text = "???"
+                if iscc_index > -1:
+                    power_element[iscc_index][0].text = str(player_data["iscc"])
+                if self.board.data["victory_conditions"] == "classic" and vscc_index > -1:
+                    power_element[vscc_index][0].text = str(self.board.data["victory_count"])
+                elif vscc_index > -1:
+                    power_element[vscc_index][0].text = str(player_data["vscc"])
+                break
 
     def _draw_side_panel_date(self, svg: ElementTree) -> None:
         date = get_svg_element(svg, self.board.data[SVG_CONFIG_KEY]["season"])
@@ -514,16 +474,16 @@ class Mapper:
     def _draw_order(self, unit: Unit, coordinate: tuple[float, float], current_turn: turn.Turn) -> None:
         order = unit.order
         if isinstance(order, Hold):
-            self._draw_hold(coordinate, order.hasFailed)
+            self._draw_hold(coordinate, order.has_failed)
         elif isinstance(order, Core):
-            self._draw_core(coordinate, order.hasFailed)
+            self._draw_core(coordinate, order.has_failed)
         elif isinstance(order, Move):
             # moves are just convoyed moves that have no convoys
-            return self._draw_convoyed_move(unit, coordinate, order.hasFailed)
+            return self._draw_convoyed_move(unit, coordinate, order.has_failed)
         elif isinstance(order, Support):
-            return self._draw_support(unit, coordinate, order.hasFailed)
+            return self._draw_support(unit, coordinate, order.has_failed)
         elif isinstance(order, ConvoyTransport):
-            self._draw_convoy(order, coordinate, order.hasFailed)
+            self._draw_convoy(order, coordinate, order.has_failed)
         elif isinstance(order, RetreatMove):
             return self._draw_retreat_move(order, unit.unit_type, coordinate)
         elif isinstance(order, RetreatDisband):
@@ -550,7 +510,7 @@ class Mapper:
         else:
             logger.error(f"Could not draw player order {order}")
 
-    def _draw_hold(self, coordinate: tuple[float, float], hasFailed: bool) -> None:
+    def _draw_hold(self, coordinate: tuple[float, float], has_failed: bool) -> None:
         element = self._moves_svg.getroot()
         assert element is not None
         drawn_order = self.create_element(
@@ -560,13 +520,13 @@ class Mapper:
                 "cy": coordinate[1],
                 "r": self.board.data[SVG_CONFIG_KEY]["unit_radius"],
                 "fill": "none",
-                "stroke": "red" if hasFailed else "black",
+                "stroke": "red" if has_failed else "black",
                 "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"],
             },
         )
         element.append(drawn_order)
 
-    def _draw_core(self, coordinate: tuple[float, float], hasFailed: bool) -> None:
+    def _draw_core(self, coordinate: tuple[float, float], has_failed: bool) -> None:
         element = self._moves_svg.getroot()
         assert element is not None
         drawn_order = self.create_element(
@@ -577,7 +537,7 @@ class Mapper:
                 "width": self.board.data[SVG_CONFIG_KEY]["unit_radius"] * 2,
                 "height": self.board.data[SVG_CONFIG_KEY]["unit_radius"] * 2,
                 "fill": "none",
-                "stroke": "red" if hasFailed else "black",
+                "stroke": "red" if has_failed else "black",
                 "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"],
                 "transform": f"rotate(45 {coordinate[0]} {coordinate[1]})",
             },
@@ -662,7 +622,7 @@ class Mapper:
 
         return min_subsets
 
-    def _draw_convoyed_move(self, unit: Unit, coordinate: tuple[float, float], hasFailed: bool):
+    def _draw_convoyed_move(self, unit: Unit, coordinate: tuple[float, float], has_failed: bool):
         valid_convoys = self._get_all_paths(unit)
         # TODO: make this a setting
         if False:
@@ -702,11 +662,11 @@ class Mapper:
                 s += f"{f(g(p[x-1:x+2]))}, {f(p[x])} S "
 
             s += f"{f(p[-2])}, {f(p[-1])}"
-            stroke_color = "red" if hasFailed else "black"
-            marker_color = "redarrow" if hasFailed else "arrow"
+            stroke_color = "red" if has_failed else "black"
+            marker_color = "redarrow" if has_failed else "arrow"
             return self._draw_path(s, marker_end = marker_color, stroke_color = stroke_color)
 
-    def _draw_support(self, unit: Unit, coordinate: tuple[float, float], hasFailed: bool) -> None:
+    def _draw_support(self, unit: Unit, coordinate: tuple[float, float], has_failed: bool) -> None:
         if not isinstance(unit.order, Support):
             raise ValueError("Trying to draw a non-support order as a support")
         order: Support = unit.order
@@ -726,8 +686,8 @@ class Mapper:
         v3 = self.loc_to_point(order.destination, order.source.unit.unit_type, dest_coast, v2)
         x3, y3 = v3
         marker_start = ""
-        ball_type = "redball" if hasFailed else "ball"
-        arrow_type = "redarrow" if hasFailed else "arrow"
+        ball_type = "redball" if has_failed else "ball"
+        arrow_type = "redarrow" if has_failed else "arrow"
         if order.destination.unit:
             if order.source == order.destination:
                 (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data[SVG_CONFIG_KEY]["unit_radius"])
@@ -770,7 +730,7 @@ class Mapper:
             {
                 "d": f"M {x1},{y1} Q {x2},{y2} {x3},{y3}",
                 "fill": "none",
-                "stroke": "red" if hasFailed else "black",
+                "stroke": "red" if has_failed else "black",
                 "stroke-dasharray": f"{dasharray_size} {dasharray_size}",
                 "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"],
                 "stroke-linecap": "round",
@@ -780,7 +740,7 @@ class Mapper:
         )
         return drawn_order
 
-    def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float], hasFailed: bool) -> None:
+    def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float], has_failed: bool) -> None:
         element = self._moves_svg.getroot()
         assert element is not None
         drawn_order = self.create_element(
@@ -790,7 +750,7 @@ class Mapper:
                 "cy": coordinate[1],
                 "r": self.board.data[SVG_CONFIG_KEY]["unit_radius"] / 2,
                 "fill": "none",
-                "stroke": "red" if hasFailed else "black",
+                "stroke": "red" if has_failed else "black",
                 "stroke-width": self.board.data[SVG_CONFIG_KEY]["order_stroke_width"] * 2 / 3,
             },
         )

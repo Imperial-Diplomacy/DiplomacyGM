@@ -397,7 +397,7 @@ class Parser:
         return provinces
 
     def _initialize_province_owners(self, provinces_layer: Element) -> None:
-        for province_data in list(provinces_layer):
+        for province_data in provinces_layer:
             name = self._get_province_name(province_data)
             self.name_to_province[name].owner = self.get_element_player(province_data, province_name=name)
 
@@ -418,7 +418,7 @@ class Parser:
         initialize_province_resident_data(provinces, list(self.layer_data["names_layer"]), get_coordinates, set_province_name)
 
     def _initialize_supply_centers_assisted(self) -> None:
-        for center_data in list(self.layer_data["supply_center_icons"]):
+        for center_data in self.layer_data["supply_center_icons"]:
             name = self._get_province_name(center_data)
             province = self.name_to_province[name]
 

@@ -238,6 +238,96 @@ class _DatabaseConnection:
         province.unit = None
         province.dislodged_unit = None
 
+    def _load_unit(self, board: Board, board_id: int, unit_info: tuple, cursor):
+        (
+            location,
+            is_dislodged,
+            owner,
+            is_army,
+            order_type,
+            order_destination,
+            order_source,
+            has_failed,
+        ) = unit_info
+        province, coast = board.get_province_and_coast(location)
+        owner_player = board.get_player(owner)
+        if owner_player is None:
+            logger.warning(f"Couldn't find corresponding player for {owner} in DB")
+            return
+        if is_dislodged:
+            retreat_ops = cursor.execute(
+                "SELECT retreat_loc FROM retreat_options WHERE board_id=? and phase=? and origin=?",
+                (board_id, board.turn.get_indexed_name(), location),
+            )
+            retreat_options = set(
+                map(board.get_province_and_coast, set().union(*retreat_ops))
+            )
+        else:
+            retreat_options = None
+        unit = Unit(
+            UnitType.ARMY if is_army else UnitType.FLEET,
+            owner_player,
+            province,
+            coast,
+            retreat_options,
+        )
+        if is_dislodged:
+            province.dislodged_unit = unit
+        else:
+            province.unit = unit
+        owner_player.units.add(unit)
+        board.units.add(unit)
+
+        if order_type is None:
+            return
+        order_classes = [
+            NMR,
+            Hold,
+            Core,
+            Move,
+            ConvoyTransport,
+            Support,
+            RetreatMove,
+            RetreatDisband,
+            ]
+        try:
+            order_class = next(
+                _class
+                for _class in order_classes
+                if _class.__name__ == order_type
+            )
+            source_province, destination_province, destination_coast = None, None, None
+            if order_destination is not None:
+                destination_province, destination_coast = (
+                    board.get_province_and_coast(order_destination)
+                )
+            if order_source is not None:
+                source_province = board.get_province(order_source)
+            if order_class == NMR:
+                return
+            elif order_class in [Hold, Core, RetreatDisband]:
+                order = order_class()
+            elif order_class in [Move, RetreatMove]:
+                order = order_class(destination=destination_province, destination_coast=destination_coast)
+            elif order_class in [ConvoyTransport, Support]:
+                order = order_class(
+                    destination=destination_province, source=source_province, destination_coast=destination_coast
+                )
+            else:
+                raise ValueError(f"Could not parse {order_class}")
+            
+            order.has_failed = has_failed
+
+            province, coast = board.get_province_and_coast(location)
+            if is_dislodged:
+                assert province.dislodged_unit is not None
+                province.dislodged_unit.order = order
+            else:
+                assert province.unit is not None
+                province.unit.order = order
+        except:
+            logger.warning("BAD UNIT INFO: replacing with hold")
+
     def _get_board(
         self,
         board_id: int,
@@ -326,106 +416,7 @@ class _DatabaseConnection:
 
         board.units.clear()
         for unit_info in unit_data:
-            (
-                location,
-                is_dislodged,
-                owner,
-                is_army,
-                order_type,
-                order_destination,
-                order_source,
-                hasFailed,
-            ) = unit_info
-            province, coast = board.get_province_and_coast(location)
-            owner_player = board.get_player(owner)
-            if owner_player is None:
-                logger.warning(f"Couldn't find corresponding player for {owner} in DB")
-                continue
-            if is_dislodged:
-                retreat_ops = cursor.execute(
-                    "SELECT retreat_loc FROM retreat_options WHERE board_id=? and phase=? and origin=?",
-                    (board_id, board.turn.get_indexed_name(), location),
-                )
-                retreat_options = set(
-                    map(board.get_province_and_coast, set().union(*retreat_ops))
-                )
-            else:
-                retreat_options = None
-            unit = Unit(
-                UnitType.ARMY if is_army else UnitType.FLEET,
-                owner_player,
-                province,
-                coast,
-                retreat_options,
-            )
-            if is_dislodged:
-                province.dislodged_unit = unit
-            else:
-                province.unit = unit
-            owner_player.units.add(unit)
-            board.units.add(unit)
-        # AAAAA We shouldn't be having to loop twice; why is ComplexOrder.source a Unit? Turn it into a province or something
-        # Currently we have to loop twice because it's a unit and we need to have all the units set up before parsing orders because of it
-        for unit_info in unit_data:
-            try:
-                (
-                    location,
-                    is_dislodged,
-                    owner,
-                    is_army,
-                    order_type,
-                    order_destination,
-                    order_source,
-                    hasFailed,
-                ) = unit_info
-                if order_type is not None:
-                    order_classes = [
-                        NMR,
-                        Hold,
-                        Core,
-                        Move,
-                        ConvoyTransport,
-                        Support,
-                        RetreatMove,
-                        RetreatDisband,
-                    ]
-                    order_class = next(
-                        _class
-                        for _class in order_classes
-                        if _class.__name__ == order_type
-                    )
-                    source_province, destination_province, destination_coast = None, None, None
-                    if order_destination is not None:
-                        destination_province, destination_coast = (
-                            board.get_province_and_coast(order_destination)
-                        )
-                    if order_source is not None:
-                        source_province = board.get_province(order_source)
-                    if order_class == NMR:
-                        continue
-                    elif order_class in [Hold, Core, RetreatDisband]:
-                        order = order_class()
-                    elif order_class in [Move, RetreatMove]:
-                        order = order_class(destination=destination_province, destination_coast=destination_coast)
-                    elif order_class in [ConvoyTransport, Support]:
-                        order = order_class(
-                            destination=destination_province, source=source_province, destination_coast=destination_coast
-                        )
-                    else:
-                        raise ValueError(f"Could not parse {order_class}")
-                    
-                    order.hasFailed = hasFailed
-
-                    province, coast = board.get_province_and_coast(location)
-                    if is_dislodged:
-                        assert province.dislodged_unit is not None
-                        province.dislodged_unit.order = order
-                    else:
-                        assert province.unit is not None
-                        province.unit.order = order
-            except:
-                logger.warning("BAD UNIT INFO: replacing with hold")
-                continue
+            self._load_unit(board, board_id, unit_info, cursor)
         return board
 
     def save_board(self, board_id: int, board: Board):
@@ -519,7 +510,7 @@ class _DatabaseConnection:
                     unit.order.__class__.__name__ if unit.order is not None else None,
                     unit.order.get_destination_str() if unit.order is not None else None,
                     unit.order.get_source_str() if unit.order is not None else None,
-                    unit.order.hasFailed if unit.order is not None else False
+                    unit.order.has_failed if unit.order is not None else False
                 )
                 for unit in board.units
             ],
@@ -551,7 +542,7 @@ class _DatabaseConnection:
                     unit.order.__class__.__name__ if unit.order is not None else None,
                     unit.order.get_destination_str() if unit.order is not None else None,
                     unit.order.get_source_str() if unit.order is not None else None,
-                    unit.order.hasFailed if unit.order is not None else False,
+                    unit.order.has_failed if unit.order is not None else False,
                     board.board_id,
                     board.turn.get_indexed_name(),
                     unit.province.get_name(unit.coast),
