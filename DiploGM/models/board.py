@@ -9,6 +9,8 @@ from discord.ext import commands
 
 from DiploGM.config import player_channel_suffix, is_player_category
 from DiploGM.models.unit import Unit, UnitType
+from DiploGM.utils.sanitise import sanitise_name
+from DiploGM.utils import simple_player_name
 
 if TYPE_CHECKING:
     from discord.abc import Messageable
@@ -23,9 +25,6 @@ class Board:
     def __init__(
         self, players: set[Player], provinces: set[Province], units: set[Unit], turn: Turn, data, datafile: str, fow: bool, year_offset: int = 1642
     ):
-        from DiploGM.utils.sanitise import sanitise_name
-        from DiploGM.utils import simple_player_name
-
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
         self.units: set[Unit] = units
@@ -60,8 +59,6 @@ class Board:
 
     def add_new_player(self, name: str, color: str):
         from DiploGM.models.player import Player
-        from DiploGM.utils.sanitise import sanitise_name
-        from DiploGM.utils import simple_player_name
         new_player = Player(name, color, set(), set())
         new_player.board = self
         self.players.add(new_player)
@@ -106,8 +103,6 @@ class Board:
         return self.simple_player_name_to_player.get(simple_player_name(name))
 
     def add_nickname(self, player: Player, nickname: str):
-        from DiploGM.utils.sanitise import sanitise_name
-        from DiploGM.utils import simple_player_name
         cleaned_name = sanitise_name(nickname.lower())
         simple_name = simple_player_name(nickname)
         if (nickname.lower() in self.name_to_player
@@ -135,7 +130,6 @@ class Board:
                 return (centers / iscc) - 1
         raise ValueError("Unknown scoring system found")
 
-    # TODO: break ties in a fixed manner
     def get_players_sorted_by_score(self) -> list[Player]:
         return sorted(self.players, 
             key=lambda sort_player: (self.data["players"][sort_player.name].get("hidden", "false"),
@@ -145,7 +139,6 @@ class Board:
     def get_players_sorted_by_points(self) -> list[Player]:
         return sorted(self.players, key=lambda sort_player: (-sort_player.points, -len(sort_player.centers), sort_player.get_name().lower()))
 
-    # TODO: this can be made faster if necessary
     def get_province(self, name: str) -> Province:
         province, _ = self.get_province_and_coast(name)
         return province
@@ -173,13 +166,13 @@ class Board:
         # failed to match, try to get possible locations
         potential_locations = self.get_possible_locations(name)
         if len(potential_locations) > 5:
-            raise Exception(f"The location {name} is ambiguous. Please type out the full name.")
+            raise ValueError(f"The location {name} is ambiguous. Please type out the full name.")
         elif len(potential_locations) > 1:
-            raise Exception(
+            raise ValueError(
                 f'The location {name} is ambiguous. Possible matches: {", ".join([loc[0].name for loc in potential_locations])}.'
             )
         elif len(potential_locations) == 0:
-            raise Exception(f"The location {name} does not match any known provinces.")
+            raise ValueError(f"The location {name} does not match any known provinces.")
         else:
             return potential_locations[0]
 
@@ -187,12 +180,14 @@ class Board:
         visible: set[Province] = set()
         for province in self.provinces:
             for unit in player.units:
-                if unit.unit_type == UnitType.ARMY:
-                    if province in unit.province.adjacent and province.type != ProvinceType.SEA:
-                        visible.add(province)
-                if unit.unit_type == UnitType.FLEET:
-                    if unit.province.is_coastally_adjacent((province, None), unit.coast):
-                        visible.add(province)
+                if (unit.unit_type == UnitType.ARMY
+                    and province in unit.province.adjacent
+                    and province.type != ProvinceType.SEA):
+                    visible.add(province)
+
+                if (unit.unit_type == UnitType.FLEET
+                    and unit.province.is_coastally_adjacent((province, None), unit.coast)):
+                    visible.add(province)
 
         for unit in player.units:
             visible.add(unit.province)

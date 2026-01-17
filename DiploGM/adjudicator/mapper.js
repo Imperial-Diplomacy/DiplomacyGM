@@ -144,6 +144,23 @@ function pull_coordinate(anchor, coordinate, pull=undefined, limit=0.25) {
     return [cx + dx * scale, cy + dy * scale];
 }
 
+function draw_selected(unit) {
+    const coord = location_data[unit];
+    draw_order({origin: unit}, [make_elem("rect", 
+        {
+            x: coord[0] - svg_config["unit_radius"],
+            y: coord[1] - svg_config["unit_radius"],
+            width: svg_config["unit_radius"] * 2,
+            height: svg_config["unit_radius"] * 2,
+            fill: "none",
+            stroke: order_colour,
+            "stroke-opacity": "0.65",
+            "stroke-width": svg_config["order_stroke_width"],
+            "shape-rendering": "geometricPrecision"
+        }
+    )])
+}
+
 function draw_order(order, elems) {
     if (order["origin"] in unit_elements) {
         for (obj of unit_elements[order["origin"]]) {
@@ -311,6 +328,7 @@ function draw_support(order) {
 }
 
 function leftclick(porigin) {
+	draw_selected(porigin)
     // Move
     left_callback_type = "province";
     // Support
@@ -370,6 +388,7 @@ function rightclick(porigin) {
         }
     }
     if (province_to_province_type[porigin] == "sea") {
+        draw_selected(porigin)
         // convoy
         function convoy_callback1(psupport) {
             function convoy_callback2(pdestination) {

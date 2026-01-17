@@ -9,7 +9,6 @@ from .sanitise import (
     _manage_coast_signature,
     get_unit_type,
     parse_season,
-    get_value_from_timestamp,
-    get_full_command_name
+    get_value_from_timestamp
 )
 from .singleton import SingletonMeta

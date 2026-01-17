@@ -394,7 +394,7 @@ class PlayerCog(commands.Cog):
             logger, ctx, message=f"There are {len(visible_provinces)} visible provinces"
         )
         await send_message_and_file(
-            channel=ctx.channel, message=", ".join(visible_provinces)
+            channel=ctx.channel, message=", ".join([p.name for p in visible_provinces])
         )
 
 
