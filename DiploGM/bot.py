@@ -395,7 +395,7 @@ class DiploGM(commands.Bot):
 
         # Out to Invoking Channel
         unhandled_out = (
-            "Please report this to a bot dev in using a feedback channel: "
+            "Please report this to a bot dev in a feedback channel: "
             "https://discord.com/channels/1201167737163104376/1286027175048253573"
             " or "
             "https://discord.com/channels/1201167737163104376/1280587781638459528"
