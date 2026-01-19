@@ -50,7 +50,7 @@ class TreeToOrder(Transformer):
         # ignore the fleet/army signifier, if exists
         unit = s[-1][0].dislodged_unit
         if unit is None:
-            raise ValueError(f"No dislodged unit in {s[-1]}")
+            raise ValueError(f"No dislodged unit in {s[-1][0]}")
 
         return unit
 
