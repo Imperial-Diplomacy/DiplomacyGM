@@ -165,7 +165,7 @@ class CommandCog(commands.Cog):
             perms.assert_gm_only(ctx, "get scoreboard")
 
         if csv and not board.is_chaos():
-            players = sorted(board.players, key=lambda p: p.get_name())
+            players = sorted(board.players, key=lambda p: p.name)
             counts = map(lambda p: str(len(p.centers)), players)
             counts = "\n".join(counts)
             await ctx.send(counts)

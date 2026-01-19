@@ -23,7 +23,7 @@ class UnitOrder(Order):
     
     def __init__(self):
         super().__init__()
-        self.hasFailed = False
+        self.has_failed = False
         self.destination = None
         self.destination_coast = None
         self.source = None
@@ -151,7 +151,7 @@ class RetreatDisband(UnitOrder):
         super().__init__()
 
     def __str__(self):
-        return f"Disbands"
+        return "Disbands"
 
 
 class PlayerOrder(Order):
