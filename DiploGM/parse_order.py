@@ -212,7 +212,10 @@ class TreeToOrder(Transformer):
         return s[0], order.RetreatMove(s[-1][0], s[-1][1])
 
     def disband_order(self, s) -> tuple[Unit, order.RetreatDisband]:
-        return s[0], order.RetreatDisband()
+        if isinstance(s[0],Unit):
+            return s[0], order.RetreatDisband()
+        else:
+            return s[2], order.RetreatDisband()
 
     def non_retreat_order(self, s):
         raise Exception("This type of order cannot be issued during retreat phases")
