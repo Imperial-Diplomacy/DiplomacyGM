@@ -93,6 +93,9 @@ class _DatabaseConnection:
         logger.info("Successfully loaded")
         return boards
 
+    def get_old_board(self, board: Board, turn: Turn) -> Board | None:
+        return self.get_board(board.board_id, turn, board.fish, board.name, board.datafile)
+
     def get_board(
         self,
         board_id: int,

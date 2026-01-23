@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 import re
@@ -19,6 +20,7 @@ from discord.ext import commands
 
 from DiploGM import config
 from DiploGM.config import ERROR_COLOUR, MAP_ARCHIVE_SAS_TOKEN
+from DiploGM.models.board import Board
 from DiploGM.parse_edit_state import parse_edit_state
 from DiploGM.parse_board_params import parse_board_params
 from DiploGM import perms
@@ -680,38 +682,8 @@ class GameManagementCog(commands.Cog):
         log_command(logger, ctx, message="Removed all Orders")
         await send_message_and_file(channel=ctx.channel, title="Removed all Orders")
 
-    @commands.command(
-        brief="Sends all previous orders",
-        description="For GM: Sends orders from previous phase to #orders-log",
-    )
-    @perms.gm_only("publish orders")
-    async def publish_orders(self, ctx: commands.Context) -> None:
-        guild = ctx.guild
-        assert guild is not None
-
-        arguments = (
-            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
-            .strip()
-            .lower()
-            .split()
-        )
-
-        board = manager.get_previous_board(guild.id)
-        curr_board = manager.get_board(guild.id)
-        if not board:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Failed to get previous phase",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-        elif not curr_board:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Failed to get current phase",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
+    async def _post_orders(self, ctx: commands.Context, board: Board) -> str:
+        assert ctx.guild is not None
 
         try:
             order_text = get_orders(board, None, ctx, fields=True)
@@ -729,7 +701,7 @@ class GameManagementCog(commands.Cog):
                 embed_colour=config.ERROR_COLOUR,
             )
             return
-        orders_log_channel = get_orders_log(guild)
+        orders_log_channel = get_orders_log(ctx.guild)
         if not orders_log_channel or not isinstance(orders_log_channel, TextChannel):
             log_command(
                 logger,
@@ -755,51 +727,85 @@ class GameManagementCog(commands.Cog):
             channel=ctx.channel,
             title=f"Sent Orders to {log.jump_url}",
         )
+        return log.jump_url
+
+    async def _ping_phase_change(self, guild: Guild, board: Board, log_url: str) -> None:
+        curr_board = manager.get_board(guild.id)
+
+        extra_info = {}
+        if curr_board.turn.is_retreats():
+            for player in curr_board.players:
+                units_to_retreat = sorted([str(u) for u in player.units if len(u.retreat_options or []) > 0])
+                if len(units_to_retreat) > 0:
+                    extra_info[player.name] = "**Units to retreat**:\n" + '\n'.join(units_to_retreat)
+        elif (curr_board.turn.is_builds()
+              and (old_board := manager._database.get_old_board(board, board.turn.get_previous_turn())) is not None):
+            for player in curr_board.players:
+                old_player = old_board.get_player(player.name)
+                if not old_player:
+                    continue
+                extra_info[player.name] = ""
+                current_centers = {str(c) for c in player.centers}
+                old_centers = {str(c) for c in old_player.centers}
+                centers_gained = current_centers - old_centers
+                if len(centers_gained) > 0:
+                    centers_gained = sorted([str(c) for c in centers_gained])
+                    extra_info[player.name] = "**Centers gained**:\n" + '\n'.join(centers_gained)
+                centers_lost = old_centers - current_centers
+                if len(centers_lost) > 0:
+                    centers_lost = sorted([str(c) for c in centers_lost])
+                    extra_info[player.name] += "\n**Centers lost**:\n" + '\n'.join(centers_lost)
+
+        player_categories = [c for c in guild.categories if config.is_player_category(c)]
+
+        for c in player_categories:
+            for ch in c.text_channels:
+                player = board.get_player_by_channel(ch)
+                if not player or (len(player.units) + len(player.centers) == 0):
+                    continue
+
+                additional_info = extra_info.get(player.name, "")
+                out = "The game has adjudicated!\n"
+                await ch.send(out, silent=True)
+                await send_message_and_file(
+                    channel=ch,
+                    title="Adjudication Information",
+                    message=(
+                        f"**Order Log:** {log_url}\n"
+                        f"**From:** {board.turn}\n"
+                        f"**To:** {curr_board.turn}\n"
+                        f"{additional_info}"
+                    ),
+                )
+
+    @commands.command(
+        brief="Sends all previous orders",
+        description="For GM: Sends orders from previous phase to #orders-log",
+    )
+    @perms.gm_only("publish orders")
+    async def publish_orders(self, ctx: commands.Context, *args) -> None:
+        guild = ctx.guild
+        assert guild is not None
+        arguments = [arg.lower() for arg in args]
+
+        board = manager.get_previous_board(guild.id)
+        if not board:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="Failed to get previous phase",
+                embed_colour=config.ERROR_COLOUR,
+            )
+            return
+        log_url = await self._post_orders(ctx, board)
 
         # HACK: Lifted from .ping_players
         # Should really work its way into a util function
         if "silent" not in arguments:
-            roles = {}
-            sc_changes = {}
-            for player in curr_board.players:
-                roles[player.name] = player.find_discord_role(guild.roles)
-                sc_changes[player.name] = len(player.centers)
-
-            for player in board.players:
-                sc_changes[player.name] -= len(player.centers)
-
-
-            sc_changes = [f"  **{role.mention if (role := roles[k]) else k}**: ({'+' if v > 0 else ''}{sc_changes[k]})" for k, v in sorted(sc_changes.items()) if v != 0]
-            sc_changes = '\n'.join(sc_changes)
-
-            player_categories: list[CategoryChannel] = []
-            for c in guild.categories:
-                if config.is_player_category(c.name):
-                    player_categories.append(c)
-
-            for c in player_categories:
-                for ch in c.text_channels:
-                    player = board.get_player_by_channel(ch)
-                    if not player or (len(player.units) + len(player.centers) == 0):
-                        continue
-
-                    role = player.find_discord_role(guild.roles)
-                    out = f"Hey **{role.mention if role else player.name}**, the Game has adjudicated!\n"
-                    await ch.send(out, silent=True)
-                    await send_message_and_file(
-                        channel=ch,
-                        title="Adjudication Information",
-                        message=(
-                            f"**Order Log:** {log.jump_url}\n"
-                            f"**From:** {board.turn}\n"
-                            f"**To:** {curr_board.turn}\n"
-                            f"**SC Changes:**\n{sc_changes}\n"
-                        ),
-                    )
+            _ = asyncio.create_task(self._ping_phase_change(guild, board, log_url))
 
         if MAP_ARCHIVE_SAS_TOKEN:
             file, _ = manager.draw_map_for_board(board, draw_moves=True)
-            await upload_map_to_archive(ctx, guild.id, board, file)
+            _ = asyncio.create_task(upload_map_to_archive(ctx, guild.id, board, file))
 
     @commands.command(
         brief="Adjudicates the game and outputs the moves and results maps.",

@@ -219,6 +219,8 @@ class Board:
 
     def change_owner(self, province: Province, player: Player | None):
         if province.has_supply_center:
+            if province.name == "Nantes":
+                print("Changing owner of", province.name, "to", player)
             if province.owner:
                 province.owner.centers.remove(province)
             if player:
