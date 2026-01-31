@@ -46,7 +46,7 @@ def parse_board_params(message: str, board: Board) -> tuple[str, str, bytes | No
 def _set_build_options(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     key_name = "build_options"
     valid_options = "classic", "cores", "anywhere"
-    new_value = keywords[0]
+    new_value = keywords[0].lower()
     if new_value not in valid_options:
         raise ValueError(f"{new_value} is not a valid build option")
     board.data[key_name] = new_value
@@ -55,7 +55,7 @@ def _set_build_options(keywords: list[str], board: Board) -> tuple[str | None, s
 def _set_victory_conditions(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     key_name = "victory_conditions"
     valid_options = "classic", "vscc"
-    new_value = keywords[0]
+    new_value = keywords[0].lower()
     if new_value not in valid_options:
         raise ValueError(f"{new_value} is not a valid victory condition option")
     board.data[key_name] = new_value
@@ -63,14 +63,14 @@ def _set_victory_conditions(keywords: list[str], board: Board) -> tuple[str | No
 
 def _set_victory_count(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     key_name = "victory_count"
-    new_value = keywords[0]
+    new_value = keywords[0].lower()
     if not new_value.isdigit():
         raise ValueError(f"{new_value} is not a whole number of victory SCs")
     board.data[key_name] = new_value
     return key_name, new_value
 
 def _set_iscc(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
-    player_name, new_iscc = (keywords[0], keywords[1])
+    player_name, new_iscc = (keywords[0].lower(), keywords[1])
     if not (player := board.get_player(player_name)):
         raise ValueError(f"{player_name} was not found in the board")
     key_name = f"players/{player.name}/iscc"
@@ -80,7 +80,7 @@ def _set_iscc(keywords: list[str], board: Board) -> tuple[str | None, str | None
     return key_name, new_iscc
 
 def _set_vscc(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
-    player_name, new_vscc = (keywords[0], keywords[1])
+    player_name, new_vscc = (keywords[0].lower(), keywords[1])
     if not (player := board.get_player(player_name)):
         raise ValueError(f"{player_name} was not found in the board")
     key_name = f"players/{player.name}/vscc"
@@ -90,7 +90,7 @@ def _set_vscc(keywords: list[str], board: Board) -> tuple[str | None, str | None
     return key_name, new_vscc
 
 def _set_player_name(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
-    player_name, new_name = (keywords[0], ' '.join(keywords[1:]).title())
+    player_name, new_name = (keywords[0].lower(), ' '.join(keywords[1:]))
     if not (player := board.get_player(player_name)):
         raise ValueError(f"{player_name} was not found in the board")
     key_name = f"players/{player.name}/nickname"
@@ -98,7 +98,7 @@ def _set_player_name(keywords: list[str], board: Board) -> tuple[str | None, str
     return key_name, new_name
 
 def _hide_player(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
-    player_name, is_hidden = (keywords[0], keywords[1])
+    player_name, is_hidden = (keywords[0].lower(), keywords[1].lower())
     if not (player := board.get_player(player_name)):
         raise ValueError(f"{player_name} was not found in the board")
     key_name = f"players/{player.name}/hidden"
@@ -108,7 +108,7 @@ def _hide_player(keywords: list[str], board: Board) -> tuple[str | None, str | N
     return key_name, is_hidden
 
 def _add_player(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
-    player_name, player_color = (' '.join(keywords[:-1]).title(), keywords[-1])
+    player_name, player_color = (' '.join(keywords[:-1]), keywords[-1].lower())
     if player_name in board.name_to_player:
         raise ValueError(f"{player_name} is already a player")
     key_name = f"players/{player_name}/color"
@@ -138,7 +138,7 @@ function_list = {
 def _parse_command(command: str, board: Board) -> None:
     command_list: list[str] = get_keywords(command)
     command_type = command_list[0].lower()
-    keywords = [s.lower() for s in command_list[1:]]
+    keywords = command_list[1:]
 
     if command_type not in function_list:
         raise RuntimeError("No command key phrases found")

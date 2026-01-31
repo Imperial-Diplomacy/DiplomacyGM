@@ -340,7 +340,7 @@ class GameManagementCog(commands.Cog):
                 if board.turn.is_builds():
                     response = self.ping_player_builds(player, users, board.data.get("build_options") == "anywhere")
                 else:
-                    in_moves = lambda u: u == u.province.dislodged_unit or board.turn.is_moves()
+                    in_moves = lambda u: (u == u.province.dislodged_unit and len(u.retreat_options) > 0) or board.turn.is_moves()
 
                     missing = [
                         unit

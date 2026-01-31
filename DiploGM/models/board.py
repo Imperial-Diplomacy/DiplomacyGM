@@ -45,8 +45,9 @@ class Board:
         # store as lower case for user input purposes
         self.name_to_player: Dict[str, Player] = {player.name.lower(): player for player in self.players}
         # remove periods and apostrophes
-        self.cleaned_name_to_player: Dict[str, Player] = {sanitise_name(player.name.lower()): player for player in self.players}
-        self.simple_player_name_to_player: Dict[str, Player] = {simple_player_name(player.name): player for player in self.players}
+        cleaned_name_to_player: Dict[str, Player] = {sanitise_name(player.name.lower()): player for player in self.players}
+        simple_player_name_to_player: Dict[str, Player] = {simple_player_name(player.name): player for player in self.players}
+        self.name_to_player = self.name_to_player | cleaned_name_to_player | simple_player_name_to_player
         self.name_to_province: Dict[str, Province] = {}
         self.name_to_coast: Dict[str, tuple[Province, str | None]] = {}
         for location in self.provinces:
@@ -63,8 +64,8 @@ class Board:
         new_player.board = self
         self.players.add(new_player)
         self.name_to_player[name.lower()] = new_player
-        self.cleaned_name_to_player[sanitise_name(name.lower())] = new_player
-        self.simple_player_name_to_player[simple_player_name(name)] = new_player
+        self.name_to_player[sanitise_name(name.lower())] = new_player
+        self.name_to_player[simple_player_name(name)] = new_player
         if name not in self.data["players"]:
             self.data["players"][name] = {"color": color}
         if "iscc" not in self.data["players"][name]:
@@ -87,38 +88,23 @@ class Board:
             raise ValueError(f"Player {name} not found")
         return self.name_to_player.get(name.lower())
 
-    def get_cleaned_player(self, name: str) -> Optional[Player]:
-        if name.lower() == "none":
-            return None
-        if name.lower() not in self.cleaned_name_to_player:
-            raise ValueError(f"Player {name} not found")
-        return self.cleaned_name_to_player.get(sanitise_name(name.lower()))
-
-    def get_player_sanitised(self, name:str) -> Optional[Player]:
-        name = simple_player_name(name)
-        if name == "none":
-            return None
-        if name not in self.simple_player_name_to_player:
-            raise ValueError(f"Player {name} not found")
-        return self.simple_player_name_to_player.get(simple_player_name(name))
-
     def add_nickname(self, player: Player, nickname: str):
         cleaned_name = sanitise_name(nickname.lower())
         simple_name = simple_player_name(nickname)
         if (nickname.lower() in self.name_to_player
-            or cleaned_name in self.cleaned_name_to_player
-            or simple_name in self.simple_player_name_to_player):
+            or cleaned_name in self.name_to_player
+            or simple_name in self.name_to_player):
             raise ValueError(f"A player with {nickname} already exists")
 
         if (old_nick := self.data["players"][player.name].get("nickname")):
             self.name_to_player.pop(old_nick.lower(), None)
-            self.cleaned_name_to_player.pop(sanitise_name(old_nick.lower()), None)
-            self.simple_player_name_to_player.pop(simple_player_name(old_nick), None)
+            self.name_to_player.pop(sanitise_name(old_nick.lower()), None)
+            self.name_to_player.pop(simple_player_name(old_nick), None)
 
         self.data["players"][player.name]["nickname"] = nickname
         self.name_to_player[nickname.lower()] = player
-        self.cleaned_name_to_player[cleaned_name] = player
-        self.simple_player_name_to_player[simple_name] = player
+        self.name_to_player[cleaned_name] = player
+        self.name_to_player[simple_name] = player
 
     def get_score(self, player: Player) -> float:
         if self.data["victory_conditions"] == "classic":
@@ -347,10 +333,6 @@ class Board:
             name = name[: -(len(player_channel_suffix))]
 
         try:
-            return self.get_cleaned_player(name)
-        except ValueError:
-            pass
-        try:
-            return self.get_cleaned_player(simple_player_name(name))
+            return self.get_player(name)
         except ValueError:
             return None
