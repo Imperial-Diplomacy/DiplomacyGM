@@ -3,6 +3,7 @@
 
 Contributors
 - aahoughton
+- hdwhite
 
 # New Features
 - Grace/Extension tracking system
@@ -20,9 +21,19 @@ Contributors
   - Returns community memberships
   - Returns server memberships
 
+- Added .list_variants to show what maps have been loaded into the bot
+
 # Quality of Life
 - Added .adju / .adjudication as aliases to .adjudicate
 - Added .pp as alias to .ping_players
+- SVG parser now works if a path uses absolute coordinates
+- Messages sent to orders channel after adjudication now show appropriate messages depending on phase
+- .ping_players will no longer ping if there is a forced disband during retreat phases
+
+# Bugfixes
+- Fixed issue with the bot not finding a player's channel if they were using a nickname
+- Retreat arrows now properly work for units in provinces that wrap around the board
+- `.scoreboard` csv now sorts by original power name, not by nickname
 
 # Developer Changes
 - Added `Repository` class for handling save/load of individual data types, supporting abstraction for different storage methods
@@ -32,6 +43,10 @@ Contributors
   - Network of relationships between a subject ID and an object ID
   - Currently only used for the Community system (SERVER_MEMBER, COMMUNITY_MEMBER, COMMUNITY_OWNER)
   - TODO: Can be extended to hold other things, such as permissions based tags e.g. Moderator / Community Creator
+
+- Split off Adjudicator into separate files for readability
+- Removed the deprecated ConvoyMove
+- Updated order_is_valid to return an Enum with level of validity
 
 ## Documentation
 - Added documentation for many prefix command methods
