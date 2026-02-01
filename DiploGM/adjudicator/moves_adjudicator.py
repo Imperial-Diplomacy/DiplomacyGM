@@ -141,7 +141,7 @@ class MovesAdjudicator(Adjudicator):
                 self._board.change_owner(order.destination_province, order.country)
         if (order.type == OrderType.HOLD
             and order.resolution == Resolution.SUCCEEDS
-            and order.source_province.dislodged_unit != order.base_unit):
+            and order.source_province.dislodged_unit is None):
             if not order.destination_province.has_supply_center or self._board.turn.is_fall():
                 self._board.change_owner(order.destination_province, order.country)
 
@@ -171,7 +171,7 @@ class MovesAdjudicator(Adjudicator):
                 unit.remove_many_retreat_options(contested)
 
             # Update provinces again to capture SCs in fall where units held
-            if (self._board.turn.is_fall()
+            elif (self._board.turn.is_fall()
                 and unit.province.owner != unit.player):
                 self._board.change_owner(unit.province, unit.player)
 
