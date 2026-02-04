@@ -50,7 +50,7 @@ class TreeToOrder(Transformer):
         # ignore the fleet/army signifier, if exists
         unit = s[-1][0].dislodged_unit
         if unit is None:
-            raise ValueError(f"No dislodged unit in {s[-1]}")
+            raise ValueError(f"No dislodged unit in {s[-1][0]}")
 
         return unit
 
@@ -95,7 +95,7 @@ class TreeToOrder(Transformer):
     
     def waive_order(self, s) -> tuple[None, Player, order.Waive]:
         if self.player_restriction is None:
-            raise ValueError(f"Please order waives in the appropriate player's orders channel.")
+            raise ValueError("Please order waives in the appropriate player's orders channel.")
         return None, self.player_restriction, order.Waive(int(s[2]))
         
     def vassal_order(self, s) -> tuple[Player, Player, order.Vassal]:
@@ -110,7 +110,7 @@ class TreeToOrder(Transformer):
         if referenced_player is None:
             raise ValueError(f"{l.name} doesn't match the name of any player")
         if self.player_restriction is None:
-            raise ValueError(f"A vassal_order currently must be made in a orders channel due to ambiguity")
+            raise ValueError("A vassal_order currently must be made in a orders channel due to ambiguity")
         return referenced_player, self.player_restriction, order.Vassal(referenced_player)
 
     def liege_order(self, s) -> tuple[Player, Player, order.Liege]:
@@ -125,7 +125,7 @@ class TreeToOrder(Transformer):
         if referenced_player is None:
             raise ValueError(f"{l.name} doesn't match the name of any player")
         if self.player_restriction is None:
-            raise ValueError(f"A vassal_order currently must be made in a orders channel due to ambiguity")
+            raise ValueError("A vassal_order currently must be made in a orders channel due to ambiguity")
         return referenced_player, self.player_restriction, order.Liege(referenced_player)
 
     def monarchy_order(self, s) -> tuple[Player, Player, order.DualMonarchy]:
@@ -140,7 +140,7 @@ class TreeToOrder(Transformer):
         if referenced_player is None:
             raise ValueError(f"{l.name} doesn't match the name of any player")
         if self.player_restriction is None:
-            raise ValueError(f"A vassal_order currently must be made in a orders channel due to ambiguity")
+            raise ValueError("A vassal_order currently must be made in a orders channel due to ambiguity")
         return referenced_player, self.player_restriction, order.DualMonarchy(referenced_player)
 
     def disown_order(self, s) -> tuple[Player, Player, order.Disown]:
@@ -155,7 +155,7 @@ class TreeToOrder(Transformer):
         if referenced_player is None:
             raise ValueError(f"{l.name} doesn't match the name of any player")
         if self.player_restriction is None:
-            raise ValueError(f"A vassal_order currently must be made in a orders channel due to ambiguity")
+            raise ValueError("A vassal_order currently must be made in a orders channel due to ambiguity")
         return referenced_player, self.player_restriction, order.Disown(referenced_player)
 
     def build(self, s):
@@ -261,53 +261,12 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
     movement = []
     orderoutput = []
     errors = []
-    if board.turn.is_builds():
-        generator.set_state(board, player_restriction)
-        for order in orderlist:
-            if not order.strip():
-                continue
-            try:
-                cmd = builds_parser.parse(order.strip().lower() + " ")
-                generator.transform(cmd)
-                orderoutput.append(f"\u001b[0;32m{order}")
-            except VisitError as e:
-                orderoutput.append(f"\u001b[0;31m{order}")
-                errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
-            except UnexpectedEOF as e:
-                orderoutput.append(f"\u001b[0;31m{order}")
-                errors.append(f"`{order}`: Please fix this order and try again")
-            except UnexpectedCharacters as e:
-                orderoutput.append(f"\u001b[0;31m{order}")
-                errors.append(f"`{order}`: Please fix this order and try again")
-        database = get_connection()
-        database.save_build_orders_for_players(board, player_restriction)
-    elif board.turn.is_moves() or board.turn.is_retreats():
-        if board.turn.is_moves():
-            parser = movement_parser
-        else:
-            parser = retreats_parser
-
-        generator.set_state(board, player_restriction)
-        for order in orderlist:
-            if not order.strip():
-                continue
-            try:
-                logger.debug(order)
-                cmd = parser.parse(order.strip().lower() + " ")
-                ordered_unit = generator.transform(cmd)
-                movement.append(ordered_unit)
-                orderoutput.append(f"\u001b[0;32m{ordered_unit} {ordered_unit.order}")
-            except VisitError as e:
-                orderoutput.append(f"\u001b[0;31m{order}")
-                errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
-            except UnexpectedEOF as e:
-                orderoutput.append(f"\u001b[0;31m{order}")
-                errors.append(f"`{order}`: Please fix this order and try again")
-            except UnexpectedCharacters as e:
-                orderoutput.append(f"\u001b[0;31m{order}")
-                errors.append(f"`{order}`: Please fix this order and try again")
-        database = get_connection()
-        database.save_order_for_units(board, movement)
+    if board.turn.is_moves():
+        parser = movement_parser
+    elif board.turn.is_retreats():
+        parser = retreats_parser
+    elif board.turn.is_builds():
+        parser = builds_parser
     else:
         return {
             "message": "The game is in an unknown phase. "
@@ -315,7 +274,33 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                        "Please report this to a gm",
             "embed_colour": ERROR_COLOUR,
         }
-        
+    
+    generator.set_state(board, player_restriction)
+    for order in orderlist:
+        if not order.strip():
+            continue
+        try:
+            logger.debug(order)
+            cmd = parser.parse(order.strip().lower() + " ")
+            ordered_unit = generator.transform(cmd)
+            if board.turn.is_builds():
+                orderoutput.append(f"\u001b[0;32m{order}")
+            else:
+                movement.append(ordered_unit)
+                orderoutput.append(f"\u001b[0;32m{ordered_unit} {ordered_unit.order}")
+        except VisitError as e:
+            orderoutput.append(f"\u001b[0;31m{order}")
+            errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
+            errors.append(f"`{order}`: {str(e)}")
+        except (UnexpectedEOF, UnexpectedCharacters) as e:
+            orderoutput.append(f"\u001b[0;31m{order}")
+            errors.append(f"`{order}`: Please fix this order and try again")
+
+    database = get_connection()
+    if board.turn.is_builds():
+        database.save_build_orders_for_players(board, player_restriction)
+    else:
+        database.save_order_for_units(board, movement)
 
     paginator = Paginator(prefix="```ansi\n", suffix="```", max_size=4096)
     for line in orderoutput:
@@ -324,10 +309,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
     output = paginator.pages
     if errors:
         output[-1] += "\n" + "\n".join(errors)
-        if len(movement) > 0:
-            embed_colour = PARTIAL_ERROR_COLOUR
-        else:
-            embed_colour = ERROR_COLOUR
+        embed_colour = PARTIAL_ERROR_COLOUR if len(movement) > 0 else ERROR_COLOUR
         return {
             "messages": output,
             "embed_colour": embed_colour,
@@ -391,7 +373,7 @@ def _parse_remove_order(command: str, player_restriction: Player | None, board: 
                 target_player = player
         if target_player == None:
             raise RuntimeError(f"No such player: {command}")
-        if not target_player in player_restriction.vassal_orders:
+        if target_player not in player_restriction.vassal_orders:
             raise RuntimeError(f"No relationship order with {target_player}")
         remove_relationship_order(board, player_restriction.vassal_orders[target_player], player_restriction)
         return target_player
@@ -413,18 +395,16 @@ def _parse_remove_order(command: str, player_restriction: Player | None, board: 
         # remove unit's order
         # assert that the command user is authorized to order this unit
         unit = province.unit
-        if unit is not None:
-            player = unit.player
-            if player_restriction is None or player == player_restriction:
-                unit.order = None
-                return unit
+        if (unit is not None
+            and (player_restriction is None or unit.player == player_restriction)):
+            unit.order = None
+            return unit
         unit = province.dislodged_unit
-        if unit is not None:
-            player = unit.player
-            if player_restriction is None or player == player_restriction:
-                unit.order = None
-                return unit
-        raise Exception(f"You control neither a unit nor a dislodged unit in {province.name}")
+        if (unit is not None
+            and (player_restriction is None or unit.player == player_restriction)):
+            unit.order = None
+            return unit
+        raise ValueError(f"You control neither a unit nor a dislodged unit in {province.name}")
 
 
 def remove_player_order_for_province(board: Board, player: Player, province: Province) -> bool:

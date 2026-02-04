@@ -162,23 +162,12 @@ class Province():
 
         if self.type == ProvinceType.SEA or self.type == ProvinceType.ISLAND:
             for province in self.adjacent:
-                if province.get_multiple_coasts():
-                    (self.fleet_adjacent.update(
-                        (province, coast) for coast in province.get_multiple_coasts()
-                        if province.is_coastally_adjacent(self, coast)))
-                else:
-                    self.fleet_adjacent.add((province, None))
+                self.fleet_adjacent.add((province, None))
             return
         
         self.fleet_adjacent = set()
         for province in self.adjacent:
-            if province.type == ProvinceType.LAND:
-                continue
-            if province.get_multiple_coasts():
-                (self.fleet_adjacent.update(
-                    (province, coast) for coast in province.get_multiple_coasts()
-                    if province.is_coastally_adjacent(self, coast)))
-            else:
+            if province.type == ProvinceType.SEA or province.type == ProvinceType.ISLAND:
                 self.fleet_adjacent.add((province, None))
 
         if not self.fleet_adjacent:

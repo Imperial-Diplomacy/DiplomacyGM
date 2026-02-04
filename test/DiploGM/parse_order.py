@@ -23,7 +23,7 @@ class TestParseOrder(unittest.TestCase):
             "a Moscow h"
         
         
-        parsed_orders = parse_order(order, b.russia, b.board)
+        parse_order(order, b.russia, b.board)
 
         self.assertIsInstance(a_sevastopol.order, Move, "Sevastopol army order not parsed correctly")
         assert isinstance(a_sevastopol.order, Move)
@@ -50,6 +50,6 @@ class TestParseOrder(unittest.TestCase):
         b = BoardBuilder()
         a_berlin = b.move(b.germany, UnitType.ARMY, "Berlin", "Kiel")
 
-        order = ".remove order Berlin"
+        order = "Berlin"
         parse_remove_order(order, b.germany, b.board)
         self.assertIsNone(a_berlin.order, "Order removal failed for Berlin army")

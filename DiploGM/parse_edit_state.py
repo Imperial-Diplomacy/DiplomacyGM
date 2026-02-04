@@ -108,7 +108,7 @@ def _set_player_color(keywords: list[str], board: Board) -> None:
     if not player:
         raise ValueError(f"Unknown player: {keywords[0]}")
     color = keywords[1].lower()
-    if not len(color) == 6 or not all(c in string.hexdigits for c in color):
+    if len(color) != 6 or not all(c in string.hexdigits for c in color):
         raise ValueError(f"Unknown hexadecimal color: {color}")
 
     player.render_color = color
@@ -195,12 +195,10 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
             raise ValueError(f"Province '{province.name}' requires a valid coast.")
         if not province.get_multiple_coasts():
             coast = None
-        retreat_options = set(
-            [board.get_province_and_coast(province_name) for province_name in keywords[3:]]
-        )
+        retreat_options = {board.get_province_and_coast(province_name) for province_name in keywords[3:]}
         if not all(retreat_options):
             raise ValueError(
-                f"Could not find at least one province in retreat options."
+                "Could not find at least one province in retreat options."
             )
         unit = board.create_unit(unit_type, player, province, coast, retreat_options)
         get_connection().execute_arbitrary_sql(
@@ -301,17 +299,15 @@ def _dislodge_unit(keywords: list[str], board: Board) -> None:
         unit = province.unit
         if unit == None:
             raise RuntimeError("No unit to dislodge in province")
-        retreat_options = set(
-            [board.get_province_and_coast(province_name) for province_name in keywords[1:]]
-        )
+        retreat_options = {board.get_province_and_coast(province_name) for province_name in keywords[1:]}
         if not all(retreat_options):
             raise ValueError(
-                f"Could not find at least one province in retreat options."
+                "Could not find at least one province in retreat options."
             )
-        dislodged_unit = board.create_unit(
+        board.create_unit(
             unit.unit_type, unit.player, unit.province, unit.coast, retreat_options
         )
-        unit = board.delete_unit(province)
+        board.delete_unit(province)
         get_connection().execute_arbitrary_sql(
             "UPDATE units SET is_dislodged = True where board_id=? and phase=? and location=?",
             (board.board_id, board.turn.get_indexed_name(), province.name),
@@ -510,67 +506,6 @@ def _bulk_create_units(keywords: list[str], board: Board) -> None:
     for i in keywords[2:]:
         _create_unit([unit_type, player, i], board)
 
-
-# FIXME: Works but inconsistent with DB Storage NOT PERSISTENT
-def _create_player(keywords: list[str], board: Board) -> None:
-    raise NotImplementedError(
-        "This feature is planned, but not currently implemented due to technical limitations."
-    )
-
-    name = keywords[0]
-    color = keywords[1].replace("#", "")
-
-    try:
-        if len(color) != 6 or not color.isalnum():
-            raise ValueError
-        elif int(color, 16) and not color.startswith("0x"):
-            pass
-    except ValueError:
-        raise ValueError("Invalid Hex color code provided.")
-
-    SUPPORTED_WIN_TYPES = ["classic", "vscc"]
-    win_type = keywords[2].lower()
-    if win_type not in SUPPORTED_WIN_TYPES:
-        raise ValueError(
-            f"Invalid win type provided: {win_type} not in {SUPPORTED_WIN_TYPES}"
-        )
-
-    vscc = keywords[3]
-    iscc = keywords[4]
-    if not vscc.isnumeric() or int(vscc) <= 0:
-        raise ValueError(
-            f"Invalid VSCC value given {vscc}: Please provide a number greater than 0"
-        )
-    if not iscc.isnumeric() or int(iscc) <= 0:
-        raise ValueError(
-            f"Invalid ISCC value given {iscc}: Please provide a number greater than 0"
-        )
-
-    new_player = Player(
-        name=name,
-        color=color,
-        win_type=win_type,
-        vscc=int(vscc),
-        iscc=int(iscc),
-        centers=set(),
-        units=set(),
-    )
-    board.players.add(new_player)
-    board.name_to_player[name.lower()] = new_player
-
-    get_connection().execute_arbitrary_sql(
-        "INSERT INTO players VALUES (?, ?, ?, ?, ?, ?)",
-        (
-            board.board_id,
-            name,
-            new_player.default_color,
-            None,
-            None,
-            None,
-        ),
-    )
-
-
 def _delete_player(keywords: list[str], board: Board) -> None:
     name = keywords[0]
     player = board.get_player(name)
@@ -632,7 +567,6 @@ function_list = {
     "set vassal": _set_player_vassal,
     "remove relationship": _remove_player_vassal,
     "set game name": _set_game_name,
-    "create player": _create_player,
     "delete player": _delete_player,
     "load state": _load_state,
     "bulk create units": _bulk_create_units,

@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 manager = Manager()
 
 LOOP_FREQUENCY_SECONDS = 30
-SAVE_FREQUENCY_SECONDS = 300
 MAX_DELAY = datetime.timedelta(minutes=5)
 IMPOSSIBLE_COMMANDS = ["schedule", "create_game", "delete_game"]
 
@@ -30,7 +29,7 @@ class ScheduleCog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.scheduled_storage = "bot/assets/schedule.json"
+        self.scheduled_storage = "assets/schedule.json"
         self.scheduled_tasks = {}
 
         try:
@@ -86,6 +85,34 @@ class ScheduleCog(commands.Cog):
         *,
         content: str = "",
     ):
+        f"""Schedule a command for execution at a time in the future
+
+        Usage: 
+            Used as `.schedule <timestamp> <command_name> <content>`
+
+        Note:
+            List of commands that can't be scheduled {IMPOSSIBLE_COMMANDS}
+            Scheduling saved to json file for persistent storage in case of bot restart
+            Schedulings identified by the unique message ID of the invoking message
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+            timestamp (str): Discord formatted timestamp UNIXEPOCH code
+            command_name (str): Name of command to schedule execution
+            content (str): Arguments of the regular command that is being scheduled
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+                Did not give a timestamp
+                Don't schedule a command in the past
+                Command could not be understood (not found)
+                Command can't be scheduled (in IMPOSSIBLE_COMMANDS)
+        """
+
         guild = ctx.guild
         channel = ctx.channel
         if not guild or not channel:
@@ -97,7 +124,7 @@ class ScheduleCog(commands.Cog):
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Error",
-                message="Did not mention a nation.",
+                message="Did not give a proper timestamp.",
                 embed_colour=ERROR_COLOUR,
             )
             return
@@ -176,6 +203,26 @@ class ScheduleCog(commands.Cog):
     )
     @perms.gm_only("unschedule a command")
     async def unschedule(self, ctx: commands.Context, task_id: str):
+        """Unschedule a currently scheduled command execution
+
+        Usage: 
+            Used as `.schedule <task_id>`
+
+        Note:
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+            task_id (str): "all" or unique message ID for task
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+                No task correlates to the given ID
+        """
+
         assert ctx.guild is not None
         task_id = task_id.strip()
 
@@ -218,6 +265,25 @@ class ScheduleCog(commands.Cog):
     )
     @perms.gm_only("view command schedule")
     async def view_schedule(self, ctx: commands.Context):
+        """View all currently scheduled commands for the server
+
+        Usage: 
+            Used as `.view_schedule`
+
+        Note:
+            Limited to the current server
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+        """
+
         guild = ctx.guild
         if not guild:
             return
@@ -248,6 +314,27 @@ class ScheduleCog(commands.Cog):
 
     @tasks.loop(seconds=LOOP_FREQUENCY_SECONDS)
     async def process_scheduled_tasks(self):
+        """Recurring loop to process scheduled tasks on time (within a margin of error)
+
+        Usage: 
+
+        Note:
+            Can potentially debumblify bumbled users
+            Should save to db in 1 out of every 5 fishes (rng)
+
+        Args:
+
+        Returns:
+            None
+
+        Raises:
+            None:
+            Messages:
+                Skipping stale task : could not handle on time
+                Could not find invoking user
+                Failed to invoke scheduled command
+        """
+
         # TODO: Clean up reporting and add logging for deserialisation errors
         now = datetime.datetime.now(datetime.timezone.utc)
         due = {

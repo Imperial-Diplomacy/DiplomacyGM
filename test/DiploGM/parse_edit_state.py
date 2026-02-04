@@ -81,13 +81,14 @@ class TestParseEditState(unittest.TestCase):
         self.assertEqual(a_serbia.unit_type, UnitType.ARMY, "Created dislodged unit in Serbia is not an Army")
         self.assertEqual(a_serbia.player, b.germany, "Created dislodged unit in Serbia does not belong to Germany")
         self.assertIsNotNone(a_serbia.retreat_options, "Dislodged unit in Serbia has no retreat options initialized")
-        self.assertIn((p_trieste, None), a_serbia.retreat_options or [], "Dislodged unit in Serbia missing retreat option to Bulgaria")
-        self.assertIn((p_budapest, None), a_serbia.retreat_options or [], "Dislodged unit in Serbia missing retreat option to Budapest")
+        assert a_serbia.retreat_options is not None
+        self.assertIn((p_trieste, None), a_serbia.retreat_options, "Dislodged unit in Serbia missing retreat option to Bulgaria")
+        self.assertIn((p_budapest, None), a_serbia.retreat_options, "Dislodged unit in Serbia missing retreat option to Budapest")
 
         _parse_command("create_dislodged_unit F Austria Bulgaria_ec", b.board)
         f_bulgaria = p_bulgaria.dislodged_unit
-        assert f_bulgaria is not None
         self.assertIsNotNone(f_bulgaria, "Failed to create dislodged Fleet unit in Bulgaria_ec")
+        assert f_bulgaria is not None
         self.assertEqual(f_bulgaria.coast, "ec", "Created dislodged Fleet in Bulgaria does not have correct coast 'ec'")
         self.assertEqual(f_bulgaria.unit_type, UnitType.FLEET, "Created dislodged unit in Bulgaria_ec is not a Fleet")
         self.assertEqual(f_bulgaria.player, b.austria, "Created dislodged unit in Bulgaria_ec does not belong to Austria")

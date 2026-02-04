@@ -84,8 +84,8 @@ class Player:
     def info(self, board: Board) -> str:
         bullet = "\n- "
 
-        units = list(sorted(self.units, key=lambda u: (u.unit_type.value, u.province.get_name(u.coast))))
-        centers = list(sorted(self.centers, key=lambda c: c.name))
+        units = sorted(self.units, key=lambda u: (u.unit_type.value, u.province.get_name(u.coast)))
+        centers = sorted(self.centers, key=lambda c: c.name)
         
         if board.data["players"] == "chaos":
             out = (

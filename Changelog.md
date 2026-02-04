@@ -1,3 +1,42 @@
+1.5.0
+=====
+
+Contributors
+- aahoughton
+
+# New Features
+- Grace/Extension tracking system
+  - Can be filitered by GMs for instances per user or per server
+- Simple up/down Reputation Delta system
+  - Requires more work to include the complexities of how subbing affects gains/losses
+- Community system
+  - Allows the definition of meta groups that users can join or leave
+  - Allows registering of servers to communities
+  - Automatic tracking of user membership to servers
+  - On joining a server, DiploGM will automatically populate the relationships table with SERVER_MEMBER tags
+
+- .me
+  - Returns some information about yourself (ID, username, mention for server)
+  - Returns community memberships
+  - Returns server memberships
+
+# Quality of Life
+- Added .adju / .adjudication as aliases to .adjudicate
+- Added .pp as alias to .ping_players
+
+# Developer Changes
+- Added `Repository` class for handling save/load of individual data types, supporting abstraction for different storage methods
+
+- Relationships table
+  - Valid relationships defined in the RelationshipType `StrEnum`
+  - Network of relationships between a subject ID and an object ID
+  - Currently only used for the Community system (SERVER_MEMBER, COMMUNITY_MEMBER, COMMUNITY_OWNER)
+  - TODO: Can be extended to hold other things, such as permissions based tags e.g. Moderator / Community Creator
+
+## Documentation
+- Added documentation for many prefix command methods
+- TODO: Write docstrings and comments for the more *core* systems e.g. Adjudicators and Mapping
+
 1.4.5
 =====
 Contributors
@@ -57,6 +96,7 @@ Contributors
 - hdwhite
 
 Fixed some bugs with adjacencies of multiple coasts
+
 
 1.4.0
 =====

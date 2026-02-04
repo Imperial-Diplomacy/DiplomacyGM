@@ -9,6 +9,8 @@ from discord.ext import commands
 
 from DiploGM.config import player_channel_suffix, is_player_category
 from DiploGM.models.unit import Unit, UnitType
+from DiploGM.utils.sanitise import sanitise_name
+from DiploGM.utils import simple_player_name
 
 if TYPE_CHECKING:
     from discord.abc import Messageable
@@ -23,10 +25,6 @@ class Board:
     def __init__(
         self, players: set[Player], provinces: set[Province], units: set[Unit], turn: Turn, data, datafile: str, fow: bool, year_offset: int = 1642
     ):
-        # TODO: Make imports better
-        from DiploGM.utils.sanitise import sanitise_name
-        from DiploGM.utils import simple_player_name
-
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
         self.units: set[Unit] = units
@@ -47,8 +45,9 @@ class Board:
         # store as lower case for user input purposes
         self.name_to_player: Dict[str, Player] = {player.name.lower(): player for player in self.players}
         # remove periods and apostrophes
-        self.cleaned_name_to_player: Dict[str, Player] = {sanitise_name(player.name.lower()): player for player in self.players}
-        self.simple_player_name_to_player: Dict[str, Player] = {simple_player_name(player.name): player for player in self.players}
+        cleaned_name_to_player: Dict[str, Player] = {sanitise_name(player.name.lower()): player for player in self.players}
+        simple_player_name_to_player: Dict[str, Player] = {simple_player_name(player.name): player for player in self.players}
+        self.name_to_player = self.name_to_player | cleaned_name_to_player | simple_player_name_to_player
         self.name_to_province: Dict[str, Province] = {}
         self.name_to_coast: Dict[str, tuple[Province, str | None]] = {}
         for location in self.provinces:
@@ -61,14 +60,12 @@ class Board:
 
     def add_new_player(self, name: str, color: str):
         from DiploGM.models.player import Player
-        from DiploGM.utils.sanitise import sanitise_name
-        from DiploGM.utils import simple_player_name
         new_player = Player(name, color, set(), set())
         new_player.board = self
         self.players.add(new_player)
         self.name_to_player[name.lower()] = new_player
-        self.cleaned_name_to_player[sanitise_name(name.lower())] = new_player
-        self.simple_player_name_to_player[simple_player_name(name)] = new_player
+        self.name_to_player[sanitise_name(name.lower())] = new_player
+        self.name_to_player[simple_player_name(name)] = new_player
         if name not in self.data["players"]:
             self.data["players"][name] = {"color": color}
         if "iscc" not in self.data["players"][name]:
@@ -91,42 +88,23 @@ class Board:
             raise ValueError(f"Player {name} not found")
         return self.name_to_player.get(name.lower())
 
-    def get_cleaned_player(self, name: str) -> Optional[Player]:
-        from DiploGM.utils.sanitise import sanitise_name
-        if name.lower() == "none":
-            return None
-        if name.lower() not in self.cleaned_name_to_player:
-            raise ValueError(f"Player {name} not found")
-        return self.cleaned_name_to_player.get(sanitise_name(name.lower()))
-
-    def get_player_sanitised(self, name:str) -> Optional[Player]:
-        from DiploGM.utils import simple_player_name
-        name = simple_player_name(name)
-        if name == "none":
-            return None
-        if name not in self.simple_player_name_to_player:
-            raise ValueError(f"Player {name} not found")
-        return self.simple_player_name_to_player.get(simple_player_name(name))
-
     def add_nickname(self, player: Player, nickname: str):
-        from DiploGM.utils.sanitise import sanitise_name
-        from DiploGM.utils import simple_player_name
         cleaned_name = sanitise_name(nickname.lower())
         simple_name = simple_player_name(nickname)
         if (nickname.lower() in self.name_to_player
-            or cleaned_name in self.cleaned_name_to_player
-            or simple_name in self.simple_player_name_to_player):
+            or cleaned_name in self.name_to_player
+            or simple_name in self.name_to_player):
             raise ValueError(f"A player with {nickname} already exists")
 
         if (old_nick := self.data["players"][player.name].get("nickname")):
             self.name_to_player.pop(old_nick.lower(), None)
-            self.cleaned_name_to_player.pop(sanitise_name(old_nick.lower()), None)
-            self.simple_player_name_to_player.pop(simple_player_name(old_nick), None)
+            self.name_to_player.pop(sanitise_name(old_nick.lower()), None)
+            self.name_to_player.pop(simple_player_name(old_nick), None)
 
         self.data["players"][player.name]["nickname"] = nickname
         self.name_to_player[nickname.lower()] = player
-        self.cleaned_name_to_player[cleaned_name] = player
-        self.simple_player_name_to_player[simple_name] = player
+        self.name_to_player[cleaned_name] = player
+        self.name_to_player[simple_name] = player
 
     def get_score(self, player: Player) -> float:
         if self.data["victory_conditions"] == "classic":
@@ -138,7 +116,6 @@ class Board:
                 return (centers / iscc) - 1
         raise ValueError("Unknown scoring system found")
 
-    # TODO: break ties in a fixed manner
     def get_players_sorted_by_score(self) -> list[Player]:
         return sorted(self.players, 
             key=lambda sort_player: (self.data["players"][sort_player.name].get("hidden", "false"),
@@ -148,7 +125,6 @@ class Board:
     def get_players_sorted_by_points(self) -> list[Player]:
         return sorted(self.players, key=lambda sort_player: (-sort_player.points, -len(sort_player.centers), sort_player.get_name().lower()))
 
-    # TODO: this can be made faster if necessary
     def get_province(self, name: str) -> Province:
         province, _ = self.get_province_and_coast(name)
         return province
@@ -176,34 +152,36 @@ class Board:
         # failed to match, try to get possible locations
         potential_locations = self.get_possible_locations(name)
         if len(potential_locations) > 5:
-            raise Exception(f"The location {name} is ambiguous. Please type out the full name.")
+            raise ValueError(f"The location {name} is ambiguous. Please type out the full name.")
         elif len(potential_locations) > 1:
-            raise Exception(
+            raise ValueError(
                 f'The location {name} is ambiguous. Possible matches: {", ".join([loc[0].name for loc in potential_locations])}.'
             )
         elif len(potential_locations) == 0:
-            raise Exception(f"The location {name} does not match any known provinces.")
+            raise ValueError(f"The location {name} does not match any known provinces.")
         else:
             return potential_locations[0]
 
-    def get_visible_provinces(self, player: Player) -> set[str]:
-        visible: set[str] = set()
+    def get_visible_provinces(self, player: Player) -> set[Province]:
+        visible: set[Province] = set()
         for province in self.provinces:
             for unit in player.units:
-                if unit.unit_type == UnitType.ARMY:
-                    if province in unit.province.adjacent and province.type != ProvinceType.SEA:
-                        visible.add(province.name)
-                if unit.unit_type == UnitType.FLEET:
-                    if unit.province.is_coastally_adjacent((province, None), unit.coast):
-                        visible.add(province.name)
+                if (unit.unit_type == UnitType.ARMY
+                    and province in unit.province.adjacent
+                    and province.type != ProvinceType.SEA):
+                    visible.add(province)
+
+                if (unit.unit_type == UnitType.FLEET
+                    and unit.province.is_coastally_adjacent((province, None), unit.coast)):
+                    visible.add(province)
 
         for unit in player.units:
-            visible.add(unit.province.name)
+            visible.add(unit.province)
 
         for province in player.centers:
             if province.core == player:
-                visible.update({p.name for p in province.adjacent})
-            visible.add(province.name)
+                visible.update(province.adjacent)
+            visible.add(province)
 
         return visible
 
@@ -241,7 +219,7 @@ class Board:
         coast: str | None,
         retreat_options: set[tuple[Province, str | None]] | None,
     ) -> Unit:
-        if province.get_multiple_coasts() and coast not in province.get_multiple_coasts():
+        if unit_type == UnitType.FLEET and province.get_multiple_coasts() and coast not in province.get_multiple_coasts():
             raise RuntimeError(f"Cannot create unit. Province '{province.name}' requires a valid coast.")
         if not province.get_multiple_coasts():
             coast = None
@@ -336,7 +314,6 @@ class Board:
             channel: Messageable,
             ignore_category=False,
     ) -> Player | None:
-        from DiploGM.utils import simple_player_name
         # thread -> main channel
         if isinstance(channel, Thread):
             assert isinstance(channel.parent, TextChannel)
@@ -356,10 +333,6 @@ class Board:
             name = name[: -(len(player_channel_suffix))]
 
         try:
-            return self.get_cleaned_player(name)
-        except ValueError:
-            pass
-        try:
-            return self.get_cleaned_player(simple_player_name(name))
+            return self.get_player(name)
         except ValueError:
             return None

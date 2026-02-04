@@ -6,7 +6,7 @@ from typing import Optional
 from discord import Member, User
 
 from DiploGM.utils import SingletonMeta
-from DiploGM.adjudicator.adjudicator import make_adjudicator
+from DiploGM.adjudicator.make_adjudicator import make_adjudicator
 from DiploGM.adjudicator.mapper import Mapper
 from DiploGM.map_parser.vector.vector import get_parser
 from DiploGM.models.turn import Turn
@@ -93,6 +93,17 @@ class Manager(metaclass=SingletonMeta):
     def total_delete(self, server_id: int):
         self._database.total_delete(self._boards[server_id])
         del self._boards[server_id]
+
+    def list_variants(self) -> str:
+        variants = os.listdir("variants")
+        loaded_variants = []
+        for v in variants:
+            if not os.path.isdir(os.path.join("variants", v)):
+                continue
+            if os.path.isfile(os.path.join("variants", v, "config.json")):
+                loaded_variants.append(f"* {v}")
+        loaded_variants.sort()
+        return "\n".join(loaded_variants)
 
     def draw_map(
         self,
@@ -330,6 +341,7 @@ class Manager(metaclass=SingletonMeta):
             return None
         for role in member.roles:
             for player in self.get_board(member.guild.id).players:
-                if simple_player_name(player.name) == simple_player_name(role.name):
+                if (simple_player_name(player.name) == simple_player_name(role.name)
+                    or simple_player_name(player.get_name()) == simple_player_name(role.name)):
                     return player
         return None

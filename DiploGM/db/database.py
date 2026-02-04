@@ -6,13 +6,13 @@ from typing import Optional
 # TODO: Find a better way to do this
 # maybe use a copy from manager?
 from DiploGM.map_parser.vector.vector import get_parser
+from DiploGM.models.province import Province
 from DiploGM.models.turn import Turn
 from DiploGM.models.board import Board
 from DiploGM.models.order import (
     Core,
     NMR,
     Hold,
-    ConvoyMove,
     Move,
     Support,
     ConvoyTransport,
@@ -93,6 +93,9 @@ class _DatabaseConnection:
         logger.info("Successfully loaded")
         return boards
 
+    def get_old_board(self, board: Board, turn: Turn) -> Board | None:
+        return self.get_board(board.board_id, turn, board.fish, board.name, board.datafile)
+
     def get_board(
         self,
         board_id: int,
@@ -143,6 +146,190 @@ class _DatabaseConnection:
         board = self._get_board(server_id, phaseobj, init.year+phase_features[0], fish, name, data_file, cursor)
         cursor.close()
         return board
+
+    def _load_builds(self, cursor, board_id: int, board: Board):
+        builds_data = cursor.execute(
+            "SELECT player, location, is_build, is_army FROM builds WHERE board_id=? and phase=?",
+            (board_id, board.turn.get_indexed_name()),
+        ).fetchall()
+
+        def get_player_by_name(player_name) -> Player | None:
+            player_by_name = {player.name: player for player in board.players}
+
+            if player_name not in player_by_name:
+                logger.warning(f"Unknown player: {player_name}")
+                return None
+
+            return player_by_name[player_name]
+
+        for player_name, location, is_build, is_army in builds_data:
+            player = get_player_by_name(player_name)
+
+            if player is None:
+                continue
+
+            if is_build:
+                player_order = Build(
+                    board.get_province_and_coast(location)[0],
+                    UnitType.ARMY if is_army else UnitType.FLEET,
+                    board.get_province_and_coast(location)[1],
+                )
+            else:
+                player_order = Disband(board.get_province(location))
+
+            player.build_orders.add(player_order)
+
+        vassals_data = cursor.execute(
+            "SELECT player, target_player, order_type FROM vassal_orders WHERE board_id=? and phase=?",
+            (board_id, board.turn.get_indexed_name()),
+        ).fetchall()
+
+        order_classes = [
+            Vassal,
+            Liege,
+            DualMonarchy,
+            Disown,
+            Defect,
+            RebellionMarker,
+        ]
+
+        for player_name, target_player_name, order_type in vassals_data:
+            player = get_player_by_name(player_name)
+            target_player = get_player_by_name(target_player_name)
+            assert isinstance(player, Player)
+            assert isinstance(target_player, Player)
+            order_class = next(
+                order_class
+                for order_class in order_classes
+                if order_class.__name__ == order_type
+            )
+
+            order = order_class(target_player)
+
+            player.vassal_orders[target_player] = order
+
+    def _load_province(self, board: Board, province: Province, province_info_by_name: dict):
+        if province.name not in province_info_by_name:
+            logger.warning(f"Couldn't find province {province.name} in DB")
+            return
+
+        owner, core, half_core = province_info_by_name[province.name]
+
+        if owner is not None:
+            owner_player = board.get_player(owner)
+            if owner_player is None:
+                logger.warning(
+                    f"Couldn't find corresponding player for {owner} in DB"
+                )
+            else:
+                province.owner = owner_player
+
+                if province.has_supply_center:
+                    owner_player.centers.add(province)
+        else:
+            province.owner = None
+
+        core_player = None
+        if core is not None:
+            core_player = board.get_player(core)
+        province.core = core_player
+
+        half_core_player = None
+        if half_core is not None:
+            half_core_player = board.get_player(half_core)
+        province.half_core = half_core_player
+        province.unit = None
+        province.dislodged_unit = None
+
+    def _load_unit(self, board: Board, board_id: int, unit_info: tuple, cursor):
+        (
+            location,
+            is_dislodged,
+            owner,
+            is_army,
+            order_type,
+            order_destination,
+            order_source,
+            has_failed,
+        ) = unit_info
+        province, coast = board.get_province_and_coast(location)
+        owner_player = board.get_player(owner)
+        if owner_player is None:
+            logger.warning(f"Couldn't find corresponding player for {owner} in DB")
+            return
+        if is_dislodged:
+            retreat_ops = cursor.execute(
+                "SELECT retreat_loc FROM retreat_options WHERE board_id=? and phase=? and origin=?",
+                (board_id, board.turn.get_indexed_name(), location),
+            )
+            retreat_options = set(
+                map(board.get_province_and_coast, set().union(*retreat_ops))
+            )
+        else:
+            retreat_options = None
+        unit = Unit(
+            UnitType.ARMY if is_army else UnitType.FLEET,
+            owner_player,
+            province,
+            coast,
+            retreat_options,
+        )
+        if is_dislodged:
+            province.dislodged_unit = unit
+        else:
+            province.unit = unit
+        owner_player.units.add(unit)
+        board.units.add(unit)
+
+        if order_type is None:
+            return
+        order_classes = [
+            NMR,
+            Hold,
+            Core,
+            Move,
+            ConvoyTransport,
+            Support,
+            RetreatMove,
+            RetreatDisband,
+            ]
+        try:
+            order_class = next(
+                _class
+                for _class in order_classes
+                if _class.__name__ == order_type
+            )
+            source_province, destination_province, destination_coast = None, None, None
+            if order_destination is not None:
+                destination_province, destination_coast = (
+                    board.get_province_and_coast(order_destination)
+                )
+            if order_source is not None:
+                source_province = board.get_province(order_source)
+            if order_class == NMR:
+                return
+            elif order_class in [Hold, Core, RetreatDisband]:
+                order = order_class()
+            elif order_class in [Move, RetreatMove]:
+                order = order_class(destination=destination_province, destination_coast=destination_coast)
+            elif order_class in [ConvoyTransport, Support]:
+                order = order_class(
+                    destination=destination_province, source=source_province, destination_coast=destination_coast
+                )
+            else:
+                raise ValueError(f"Could not parse {order_class}")
+            
+            order.has_failed = has_failed
+
+            province, coast = board.get_province_and_coast(location)
+            if is_dislodged:
+                assert province.dislodged_unit is not None
+                province.dislodged_unit.order = order
+            else:
+                assert province.unit is not None
+                province.unit.order = order
+        except:
+            logger.warning("BAD UNIT INFO: replacing with hold")
 
     def _get_board(
         self,
@@ -208,65 +395,7 @@ class _DatabaseConnection:
             player.centers = set()
             # TODO - player build orders
         if board.turn.is_builds():
-            builds_data = cursor.execute(
-                "SELECT player, location, is_build, is_army FROM builds WHERE board_id=? and phase=?",
-                (board_id, board.turn.get_indexed_name()),
-            ).fetchall()
-
-            def get_player_by_name(player_name) -> Player | None:
-                player_by_name = {player.name: player for player in board.players}
-
-                if player_name not in player_by_name:
-                    logger.warning(f"Unknown player: {player_name}")
-                    return None
-
-                return player_by_name[player_name]
-
-            for player_name, location, is_build, is_army in builds_data:
-                player = get_player_by_name(player_name)
-
-                if player is None:
-                    continue
-
-                if is_build:
-                    player_order = Build(
-                        board.get_province_and_coast(location)[0],
-                        UnitType.ARMY if is_army else UnitType.FLEET,
-                        board.get_province_and_coast(location)[1],
-                    )
-                else:
-                    player_order = Disband(board.get_province(location))
-
-                player.build_orders.add(player_order)
-
-            vassals_data = cursor.execute(
-                "SELECT player, target_player, order_type FROM vassal_orders WHERE board_id=? and phase=?",
-                (board_id, board.turn.get_indexed_name()),
-            ).fetchall()
-
-            order_classes = [
-                Vassal,
-                Liege,
-                DualMonarchy,
-                Disown,
-                Defect,
-                RebellionMarker,
-            ]
-
-            for player_name, target_player_name, order_type in vassals_data:
-                player = get_player_by_name(player_name)
-                target_player = get_player_by_name(target_player_name)
-                assert isinstance(player, Player)
-                assert isinstance(target_player, Player)
-                order_class = next(
-                    order_class
-                    for order_class in order_classes
-                    if order_class.__name__ == order_type
-                )
-
-                order = order_class(target_player)
-
-                player.vassal_orders[target_player] = order
+            self._load_builds(cursor, board_id, board)
 
         province_data = cursor.execute(
             "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
@@ -286,140 +415,11 @@ class _DatabaseConnection:
             (board_id, board.turn.get_indexed_name()),
         ).fetchall()
         for province in board.provinces:
-            if province.name not in province_info_by_name:
-                logger.warning(f"Couldn't find province {province.name} in DB")
-                continue
+            self._load_province(board, province, province_info_by_name)
 
-            owner, core, half_core = province_info_by_name[province.name]
-
-            if owner is not None:
-                owner_player = board.get_player(owner)
-                if owner_player is None:
-                    logger.warning(
-                        f"Couldn't find corresponding player for {owner} in DB"
-                    )
-                else:
-                    province.owner = owner_player
-
-                    if province.has_supply_center:
-                        owner_player.centers.add(province)
-            else:
-                province.owner = None
-
-            core_player = None
-            if core is not None:
-                core_player = board.get_player(core)
-            province.core = core_player
-
-            half_core_player = None
-            if half_core is not None:
-                half_core_player = board.get_player(half_core)
-            province.half_core = half_core_player
-            province.unit = None
-            province.dislodged_unit = None
         board.units.clear()
         for unit_info in unit_data:
-            (
-                location,
-                is_dislodged,
-                owner,
-                is_army,
-                order_type,
-                order_destination,
-                order_source,
-                hasFailed,
-            ) = unit_info
-            province, coast = board.get_province_and_coast(location)
-            owner_player = board.get_player(owner)
-            if owner_player is None:
-                logger.warning(f"Couldn't find corresponding player for {owner} in DB")
-                continue
-            if is_dislodged:
-                retreat_ops = cursor.execute(
-                    "SELECT retreat_loc FROM retreat_options WHERE board_id=? and phase=? and origin=?",
-                    (board_id, board.turn.get_indexed_name(), location),
-                )
-                retreat_options = set(
-                    map(board.get_province_and_coast, set().union(*retreat_ops))
-                )
-            else:
-                retreat_options = None
-            unit = Unit(
-                UnitType.ARMY if is_army else UnitType.FLEET,
-                owner_player,
-                province,
-                coast,
-                retreat_options,
-            )
-            if is_dislodged:
-                province.dislodged_unit = unit
-            else:
-                province.unit = unit
-            owner_player.units.add(unit)
-            board.units.add(unit)
-        # AAAAA We shouldn't be having to loop twice; why is ComplexOrder.source a Unit? Turn it into a province or something
-        # Currently we have to loop twice because it's a unit and we need to have all the units set up before parsing orders because of it
-        for unit_info in unit_data:
-            try:
-                (
-                    location,
-                    is_dislodged,
-                    owner,
-                    is_army,
-                    order_type,
-                    order_destination,
-                    order_source,
-                    hasFailed,
-                ) = unit_info
-                if order_type is not None:
-                    order_classes = [
-                        NMR,
-                        Hold,
-                        Core,
-                        Move,
-                        ConvoyMove,
-                        ConvoyTransport,
-                        Support,
-                        RetreatMove,
-                        RetreatDisband,
-                    ]
-                    order_class = next(
-                        _class
-                        for _class in order_classes
-                        if _class.__name__ == order_type
-                    )
-                    source_province, destination_province, destination_coast = None, None, None
-                    if order_destination is not None:
-                        destination_province, destination_coast = (
-                            board.get_province_and_coast(order_destination)
-                        )
-                    if order_source is not None:
-                        source_province = board.get_province(order_source)
-                    if order_class == NMR:
-                        continue
-                    elif order_class in [Hold, Core, RetreatDisband]:
-                        order = order_class()
-                    elif order_class in [Move, ConvoyMove, RetreatMove]:
-                        order = order_class(destination=destination_province, destination_coast=destination_coast)
-                    elif order_class in [ConvoyTransport, Support]:
-                        order = order_class(
-                            destination=destination_province, source=source_province, destination_coast=destination_coast
-                        )
-                    else:
-                        raise ValueError(f"Could not parse {order_class}")
-                    
-                    order.hasFailed = hasFailed
-
-                    province, coast = board.get_province_and_coast(location)
-                    if is_dislodged:
-                        assert province.dislodged_unit is not None
-                        province.dislodged_unit.order = order
-                    else:
-                        assert province.unit is not None
-                        province.unit.order = order
-            except:
-                logger.warning("BAD UNIT INFO: replacing with hold")
-                continue
+            self._load_unit(board, board_id, unit_info, cursor)
         return board
 
     def save_board(self, board_id: int, board: Board):
@@ -513,7 +513,7 @@ class _DatabaseConnection:
                     unit.order.__class__.__name__ if unit.order is not None else None,
                     unit.order.get_destination_str() if unit.order is not None else None,
                     unit.order.get_source_str() if unit.order is not None else None,
-                    unit.order.hasFailed if unit.order is not None else False
+                    unit.order.has_failed if unit.order is not None else False
                 )
                 for unit in board.units
             ],
@@ -545,7 +545,7 @@ class _DatabaseConnection:
                     unit.order.__class__.__name__ if unit.order is not None else None,
                     unit.order.get_destination_str() if unit.order is not None else None,
                     unit.order.get_source_str() if unit.order is not None else None,
-                    unit.order.hasFailed if unit.order is not None else False,
+                    unit.order.has_failed if unit.order is not None else False,
                     board.board_id,
                     board.turn.get_indexed_name(),
                     unit.province.get_name(unit.coast),
@@ -598,7 +598,7 @@ class _DatabaseConnection:
                     board.board_id,
                     board.turn.get_indexed_name(),
                     player.name,
-                    build_order.province.get_name(build_order.coast if isinstance(build_order, Build) else None),
+                    build_order.province.get_name(build_order.coast),
                     isinstance(build_order, Build),
                     getattr(build_order, "unit_type", None) == UnitType.ARMY,
                     isinstance(build_order, Build),

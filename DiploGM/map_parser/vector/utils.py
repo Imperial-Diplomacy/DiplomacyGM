@@ -1,3 +1,4 @@
+import re
 import numpy as np
 
 from xml.etree.ElementTree import Element, ElementTree
@@ -76,25 +77,22 @@ def move_coordinate(
 # new former_coordinate (= former_coordinate if not applicable),
 def _parse_path_command(
     command: str,
-    args: list[tuple[float, float]],
+    args: tuple[float, float],
     coordinate: tuple[float, float],
 ) -> tuple[float, float]:
-    reset = command.isupper()
+    is_absolute = command.isupper()
     command = command.lower()
 
     if command in ["m", "c", "l", "t", "s", "q", "a"]:
-        if reset:
-            coordinate = (0, 0)
-        return move_coordinate(coordinate, args[-1])  # Ignore all args except the last
+        if is_absolute:
+            return args
+        return move_coordinate(coordinate, args)  # Ignore all args except the last
     elif command in ["h", "v"]:
         coordlist = list(coordinate)
-        if command == "h":
-            index = 0
-        else:
-            index = 1
-        if reset:
+        index = 0 if command == "h" else 1
+        if is_absolute:
             coordlist[index] = 0
-        coordlist[index] += args[0][0]
+        coordlist[index] += args[0]
         return (coordlist[0], coordlist[1])
     else:
         raise RuntimeError(f"Unknown SVG path command: {command}")
@@ -102,10 +100,10 @@ def _parse_path_command(
 def parse_path(path_string: str, translation: TransGL3):
     province_coordinates = [[]]
     command = None
-    arguments_by_command = {"a": 5, "c": 3, "h": 1, "l": 1, "m": 1, "q": 2, "s": 2, "t": 1, "v": 1}
+    arguments_by_command = {"a": 7, "c": 6, "h": 1, "l": 2, "m": 2, "q": 4, "s": 4, "t": 2, "v": 1}
     expected_arguments = 0
     current_index = 0
-    path: list[str] = path_string.split()
+    path: list[str] = re.split(r"[ ,]+", path_string.strip())
 
     start = None
     coordinate = (0, 0)
@@ -142,13 +140,14 @@ def parse_path(path_string: str, translation: TransGL3):
         if command.lower() == "z":
             raise Exception("Invalid path, 'z' was followed by arguments")
 
-        if len(path) < (current_index + expected_arguments):
+        final_index = current_index + expected_arguments
+        if len(path) < final_index:
             raise RuntimeError(f"Ran out of arguments for {command}")
 
-        args = []
-        for coord_string in path[current_index : current_index + expected_arguments]:
-            split_str = coord_string.split(",")
-            args.append((float(split_str[0]), float(split_str[-1])))
+        if expected_arguments == 1:
+            args = (float(path[current_index]), 0.0)
+        else:
+            args = (float(path[final_index - 2]), float(path[final_index - 1]))
 
         coordinate = _parse_path_command(
             command, args, coordinate
@@ -158,7 +157,7 @@ def parse_path(path_string: str, translation: TransGL3):
             start = coordinate
 
         province_coordinates[-1].append(translation.transform(coordinate))
-        current_index += expected_arguments
+        current_index = final_index
     return province_coordinates
 
 # Initializes relevant province data
