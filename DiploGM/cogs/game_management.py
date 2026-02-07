@@ -798,9 +798,7 @@ class GameManagementCog(commands.Cog):
             return
         log_url = await self._post_orders(ctx, board)
 
-        # HACK: Lifted from .ping_players
-        # Should really work its way into a util function
-        if "silent" not in arguments:
+        if "silent" not in arguments and guild.id not in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
             _ = asyncio.create_task(self._ping_phase_change(guild, board, log_url))
 
         if MAP_ARCHIVE_SAS_TOKEN:
