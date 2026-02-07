@@ -13,7 +13,7 @@ from DiploGM.utils import (
     send_message_and_file,
     log_command,
 )
-from DiploGM.manager import Manager, SEVERANCE_A_ID, SEVERANCE_B_ID
+from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
 from DiploGM.models.player import Player
 from DiploGM.models.province import ProvinceType
 from DiploGM.models.turn import PhaseName
@@ -284,7 +284,7 @@ class CommandCog(commands.Cog):
             return
 
         # NOTE: Temporary for Meme's Severance event
-        if guild.id in [SEVERANCE_A_ID, SEVERANCE_B_ID]:
+        if guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Can't be doing that now, can we?",
@@ -383,7 +383,7 @@ class CommandCog(commands.Cog):
             return
 
         # NOTE: Temporary for Meme's Severance event
-        if guild.id in [SEVERANCE_A_ID, SEVERANCE_B_ID]:
+        if guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Can't be doing that now, can we?",
@@ -452,7 +452,7 @@ class CommandCog(commands.Cog):
             )
             
         # NOTE: Temporary for Meme's Severance event
-        if guild.id in [SEVERANCE_A_ID, SEVERANCE_B_ID]:
+        if guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Can't be doing that now, can we?",
