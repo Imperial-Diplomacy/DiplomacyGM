@@ -29,11 +29,12 @@ class TransGL3:
             y_c = float(match.group(6))
 
         elif transform_string.startswith("translate"):
-            match = re.search(r"translate\((.*),(.*)\)", transform_string)
+            match = re.search(r"translate\((.*)\)", transform_string)
             if not match:
                 raise Exception(f"Malformed translate transformation: {transform_string}")
-            x_c = float(match.group(1))
-            y_c = float(match.group(2))
+            coords = match.group(1).split(",")
+            x_c = float(coords[0])
+            y_c = float(coords[1]) if len(coords) > 1 else 0.0
         elif transform_string.startswith("rotate"):
             match = re.search(r"rotate\((.*),(.*),(.*)\)", transform_string)
             if not match:

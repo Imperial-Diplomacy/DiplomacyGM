@@ -48,7 +48,7 @@ class ModerationCog(commands.Cog):
         problems = []
 
         # FRESH ACCOUNT
-        age = member.created_at.replace(tzinfo=datetime.timezone.utc) - now
+        age = now - member.created_at.replace(tzinfo=datetime.timezone.utc)
         if age < NEW_ACCOUNT_WARNING:
             msg = f"Fresh account: {age.days} days old"
             problems.append(msg)

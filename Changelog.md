@@ -1,3 +1,14 @@
+1.5.1
+=====
+
+Contributors
+- hdwhite
+
+# Bugfixes
+- Fixed everyone's ages being negative
+- Minor fixes for Southern ImpDip
+- Fixes for multi-word players
+
 1.5.0
 =====
 

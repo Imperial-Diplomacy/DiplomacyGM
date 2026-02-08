@@ -263,7 +263,7 @@ class DiploGM(commands.Bot):
         )
 
     async def on_command_error(self, ctx: commands.Context, error):
-        assert ctx.guild is not None and ctx.command is not None and isinstance(ctx.channel, discord.TextChannel)
+        assert ctx.guild is not None and ctx.command is not None
         if isinstance(error, commands.CommandNotFound):
             # we shouldn't do anything if the user says something like "..."
             return

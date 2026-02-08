@@ -291,7 +291,6 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         except VisitError as e:
             orderoutput.append(f"\u001b[0;31m{order}")
             errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
-            errors.append(f"`{order}`: {str(e)}")
         except (UnexpectedEOF, UnexpectedCharacters) as e:
             orderoutput.append(f"\u001b[0;31m{order}")
             errors.append(f"`{order}`: Please fix this order and try again")
