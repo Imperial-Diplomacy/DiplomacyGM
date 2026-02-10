@@ -284,7 +284,7 @@ class CommandCog(commands.Cog):
             return
 
         # NOTE: Temporary for Meme's Severance event
-        if guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
+        if ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Can't be doing that now, can we?",
@@ -452,7 +452,7 @@ class CommandCog(commands.Cog):
             )
             
         # NOTE: Temporary for Meme's Severance event
-        if guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
+        if ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Can't be doing that now, can we?",
