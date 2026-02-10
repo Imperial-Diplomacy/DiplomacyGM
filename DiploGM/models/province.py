@@ -209,6 +209,10 @@ class Province():
             if min(len(possible_tripoint.adjacent), len(p1.adjacent), len(p2.adjacent)) == 2:
                 return True
 
+            # If the two provinces only share one adjacent province (the sea tile), they must be coastally adjacent
+            if len(p1.adjacent & p2.adjacent) == 1:
+                return True
+
             # the algorithm is as follows
             # connect all adjacent to the three provinces as possible
             # if they all connect, they form a ring around forcing connection

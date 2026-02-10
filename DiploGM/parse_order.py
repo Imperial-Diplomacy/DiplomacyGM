@@ -291,7 +291,6 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         except VisitError as e:
             orderoutput.append(f"\u001b[0;31m{order}")
             errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
-            errors.append(f"`{order}`: {str(e)}")
         except (UnexpectedEOF, UnexpectedCharacters) as e:
             orderoutput.append(f"\u001b[0;31m{order}")
             errors.append(f"`{order}`: Please fix this order and try again")
@@ -362,7 +361,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
 
 def _parse_remove_order(command: str, player_restriction: Player | None, board: Board) -> Player | Unit | str:
     command = command.lower().strip()
-    province, coast = board.get_province_and_coast(command)
+    province, _ = board.get_province_and_coast(command)
     if command.startswith("relationship"):
         if player_restriction is None:
             raise RuntimeError("Relationship orders can only be removed in a player's orders channel")
@@ -390,7 +389,7 @@ def _parse_remove_order(command: str, player_restriction: Player | None, board: 
 
         remove_player_order_for_province(board, player, province)
 
-        return province.get_name(coast)
+        return province.get_name()
     else:
         # remove unit's order
         # assert that the command user is authorized to order this unit

@@ -82,6 +82,7 @@ class Board:
                 self.add_nickname(player, nickname)
 
     def get_player(self, name: str) -> Optional[Player]:
+        name = sanitise_name(name)
         if name.lower() == "none":
             return None
         if name.lower() not in self.name_to_player:
