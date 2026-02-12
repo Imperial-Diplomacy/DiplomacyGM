@@ -131,7 +131,7 @@ class Mapper:
                 continue
 
             unit_locs = unit.province.all_rets if current_turn.is_retreats() else unit.province.all_locs
-            unit_locs = unit_locs[unit.coast] if unit.coast else unit_locs[unit.unit_type]
+            unit_locs = self._get_unit_coordinates(unit, unit_locs)
 
             # TODO: Maybe there's a better way to handle convoys?
             if isinstance(unit.order, (RetreatMove, Move, Support)):
@@ -936,6 +936,20 @@ class Mapper:
             if unit.province.name in self.adjacent_provinces:
                 self._draw_unit(unit)
 
+    def _get_unit_coordinates(self, unit: Unit, province_coordinates: dict[UnitType | str, set[tuple[float, float]]]) -> set[tuple[float, float]]:
+        if unit.coast:
+            if unit.coast in province_coordinates:
+                return province_coordinates[unit.coast]
+        else:
+            if unit.unit_type in province_coordinates:
+                return province_coordinates[unit.unit_type]
+
+        logger.warning(f"Could not find coordinates for {unit.unit_type} in province {unit.province.name}. Trying to find another coordinate to use")
+        if len(province_coordinates) > 0:
+            return next(iter(province_coordinates.values()))
+        logger.warning(f"No coordinates found for province {unit.province.name}, using (0, 0) as fallback")
+        return {(0, 0)}
+
     def _draw_unit(self, unit: Unit, use_moves_svg=False):
         unit_element = self._get_element_for_unit_type(unit.unit_type)
 
@@ -945,14 +959,8 @@ class Mapper:
         current_coords = get_unit_coordinates(unit_element)
         current_coords = TransGL3(unit_element).transform(current_coords)
 
-        if unit == unit.province.dislodged_unit:
-            coord_list = unit.province.all_rets
-        else:
-            coord_list = unit.province.all_locs
-        if unit.coast:
-            coord_list = coord_list[unit.coast]
-        else:
-            coord_list = coord_list[unit.unit_type]
+        province_coordinates = unit.province.all_rets if unit == unit.province.dislodged_unit else unit.province.all_locs
+        coord_list = self._get_unit_coordinates(unit, province_coordinates)
 
         for desired_coords in coord_list:
             elem = copy.deepcopy(unit_element)
@@ -996,7 +1004,7 @@ class Mapper:
 
         # TODO: Move into helper function along with logic in draw_moves_and_retreats
         unit_locs = unit.province.all_rets
-        unit_locs = unit_locs[unit.coast] if unit.coast else unit_locs[unit.unit_type]
+        unit_locs = self._get_unit_coordinates(unit, unit_locs)
 
         for retreat_province, retreat_coast in unit.retreat_options:
             new_locs = []
