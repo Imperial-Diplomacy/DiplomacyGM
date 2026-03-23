@@ -520,7 +520,11 @@ class PartyCog(commands.Cog):
 
         assert ctx.guild is not None
         sorted_boards = sorted(
-            manager._boards.items(), key=lambda board: board[1].fish, reverse=True
+            list(filter(
+                lambda x: x.name is not None,
+                manager._database.get_boards().items())),
+            key=lambda board: board[1].fish,
+            reverse=True
         )
         raw_boards = tuple(map(lambda b: b[1], sorted_boards))
         try:
