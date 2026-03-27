@@ -273,14 +273,14 @@ class PartyCog(commands.Cog):
             sample = random.choice(
                 [
                     f"It looks like {author} is getting coalitioned this turn :cry:",
-                    f"{author} is talking about stabbing {random.choice(list(board.players)).name} again",
+                    f"{author} is talking about stabbing {random.choice(list(board.get_players())).name} again",
                     f"looks like he's throwing to {author}... shame",
                     "yeah",
                     "People in this game are not voiding enough",
                     f"I can't believe {author} is moving to {random.choice(list(board.provinces)).name}",
                     f"{author} has a bunch of invalid orders",
                     f"No one noticed that {author} overbuilt?",
-                    f"{random.choice(list(board.players)).name} is in a perfect position to stab {author}",
+                    f"{random.choice(list(board.get_players())).name} is in a perfect position to stab {author}",
                     ".bumble",
                 ]
             )

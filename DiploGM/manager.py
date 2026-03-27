@@ -218,11 +218,6 @@ class Manager(metaclass=SingletonMeta):
 
     def apply_test_adjudication_results(self, server_id: int, board: Board) -> None:
         """Applies stored failed orders and DP orders to a fresh board for test drawing."""
-        failed = self.last_failed_orders.get(server_id, set())
-        for unit in board.units:
-            if unit.order and unit.province.name in failed:
-                unit.order.has_failed = True
-
         dp_orders = self.last_dp_orders.get(server_id, {})
         for province_name, (order_type, dest_str, source_str) in dp_orders.items():
             province = board.get_province(province_name)
@@ -230,6 +225,11 @@ class Manager(metaclass=SingletonMeta):
                 order = self._database._parse_order(board, order_type, dest_str, source_str)
                 if order:
                     province.unit.order = order
+
+        failed = self.last_failed_orders.get(server_id, set())
+        for unit in board.units:
+            if unit.order and unit.province.name in failed:
+                unit.order.has_failed = True
 
     def total_delete(self, server_id: int):
         """Completely wipes all data for a server."""

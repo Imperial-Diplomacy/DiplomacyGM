@@ -562,11 +562,11 @@ class PlayerCog(commands.Cog):
             perms.assert_gm_only(ctx, "use a gm argument for .press_directory")
 
         board = manager.get_board(ctx.guild.id)
-        power_roles = set(map(lambda p: p.find_discord_role(ctx.guild.roles), board.players))
+        power_roles = set(map(lambda p: p.find_discord_role(ctx.guild.roles), board.get_players()))
 
         if player is None:
             if "global" in arguments:
-                for player in board.players:
+                for player in board.get_players():
                     order_channel_name = player.get_name().lower().replace(" ", "-") + "-orders"
 
                     order_channel = discord.utils.find(lambda c: c.name == order_channel_name, ctx.guild.text_channels)

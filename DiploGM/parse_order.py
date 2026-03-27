@@ -93,7 +93,7 @@ class TreeToOrder(Transformer):
         if self.player_restriction is None:
             raise ValueError("DP allocation orders must be made in a player's orders channel.")
         unit, unit_order = dp_order
-        if unit.player is not None:
+        if unit.player is not None and unit.player.is_active:
             raise ValueError(f"{unit.province} has an owner and cannot be assigned DP.")
         if points.endswith(":"):
             points = points[:-1]
@@ -314,7 +314,7 @@ class TreeToOrder(Transformer):
         """Processes orders done in Movement phases, taking in a tuple of what was returned by the above."""
         unit, movement_order = unit_order
         if self.player_restriction is not None and unit.player != self.player_restriction:
-            if unit.player is None and movement_order is None:
+            if (unit.player is None or not unit.player.is_active) and movement_order is None:
                 return unit
             raise PermissionError(
                 f"{self.player_restriction.name} does not control the unit in {unit.province.name}, " +
@@ -406,7 +406,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                     color = "\u001b[0;33m"
                 else:
                     color = "\u001b[0;32m"
-                if ordered_unit.player is None and player_restriction is not None:
+                if (ordered_unit.player is None or not ordered_unit.player.is_active) and player_restriction is not None:
                     if (dp_order := ordered_unit.dp_allocations.get(player_restriction.name)) is not None:
                         orderoutput.append(f"{color}DP {dp_order.points}: {ordered_unit} {dp_order.order}")
                     else:

@@ -95,7 +95,7 @@ class FogOfWarCog(commands.Cog):
             return "No player category found"
 
         name_to_player: dict[str, Player] = {}
-        for player in board.players:
+        for player in board.get_players():
             name_to_player[player.name.lower()] = player
 
         for channel in player_category.channels:
@@ -143,7 +143,7 @@ async def publish_map(
         raise RuntimeError("No player category found")
 
     name_to_player: dict[str, Player] = {}
-    for player in board.players:
+    for player in board.get_players():
         name_to_player[player.name.lower()] = player
 
     tasks = []

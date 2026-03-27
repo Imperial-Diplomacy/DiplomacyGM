@@ -569,7 +569,7 @@ class _DatabaseConnection:
                     dp_order.order.get_source_str() if dp_order.order is not None else None,
                 )
                 for unit in board.units
-                if unit.player is None
+                if unit.player is None or not unit.player.is_active
                 for dp_player, dp_order in unit.dp_allocations.items()
             ],
         )
@@ -605,7 +605,7 @@ class _DatabaseConnection:
                     unit.province.get_name(unit.coast),
                 )
                 for unit in units
-                if unit.player is None
+                if unit.player is None or not unit.player.is_active
             ],
         )
         cursor.executemany(
@@ -623,7 +623,7 @@ class _DatabaseConnection:
                     dp_order.order.get_source_str() if dp_order.order is not None else None,
                 )
                 for unit in units
-                if unit.player is None
+                if unit.player is None or not unit.player.is_active
                 for dp_player, dp_order in unit.dp_allocations.items()
             ],
         )

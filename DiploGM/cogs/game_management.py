@@ -705,13 +705,13 @@ class GameManagementCog(commands.Cog):
 
         extra_info = {}
         if curr_board.turn.is_retreats():
-            for player in curr_board.players:
+            for player in curr_board.get_players():
                 units_to_retreat = sorted([str(u) for u in player.units if len(u.retreat_options or []) > 0])
                 if len(units_to_retreat) > 0:
                     extra_info[player.name] = "**Units to retreat**:\n" + '\n'.join(units_to_retreat)
         elif (curr_board.turn.is_builds()
               and (old_board := manager._database.get_old_board(board, board.turn.get_previous_turn())) is not None):
-            for player in curr_board.players:
+            for player in curr_board.get_players():
                 old_player = old_board.get_player(player.name)
                 if not old_player:
                     continue
@@ -814,7 +814,7 @@ class GameManagementCog(commands.Cog):
                     return True
 
         if board.turn.is_builds():
-            for player in board.players:
+            for player in board.get_players():
                 count = len(player.centers) - len(player.units)
                 current = player.waived_orders
                 for order in player.build_orders:
@@ -1001,7 +1001,7 @@ class GameManagementCog(commands.Cog):
                 return
             title = f"### {guild.name} Centre Counts (alphabetical order) | {new_board.turn}"
 
-            players = sorted(new_board.players, key=lambda p: p.get_name())
+            players = sorted(new_board.get_players(), key=lambda p: p.get_name())
             counts = "\n".join(map(lambda p: str(len(p.centers)), players))
 
             await channel.send(title)
@@ -1098,12 +1098,12 @@ class GameManagementCog(commands.Cog):
             `.blitz`
 
         Note: 
-            Uses the board.players list (which is read from the config)
+            Uses the board.get_players() method (which is read from the config)
         """
         assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
         cs = []
-        pla = sorted(board.players, key=lambda p: p.get_name())
+        pla = sorted(board.get_players(), key=lambda p: p.get_name())
         for p1 in pla:
             for p2 in pla:
                 if p1.name < p2.name:
@@ -1125,7 +1125,7 @@ class GameManagementCog(commands.Cog):
 
         name_to_player: dict[str, Player] = dict()
         player_to_role: dict[Player | None, Role] = dict()
-        for player in board.players:
+        for player in board.get_players():
             name_to_player[player.get_name().lower()] = player
 
         spectator_role = None
@@ -1144,7 +1144,7 @@ class GameManagementCog(commands.Cog):
             )
             return
 
-        for player in board.players:
+        for player in board.get_players():
             if not player_to_role.get(player):
                 await send_message_and_file(
                     channel=ctx.channel,
@@ -1191,8 +1191,8 @@ class GameManagementCog(commands.Cog):
 
         last_message_dict = manager.last_activity.get(ctx.guild.id, {})
         last_message_times: list[tuple[str, float]] = []
-        for player_name in manager.get_board(ctx.guild.id).players:
-            last_message_times.append((player_name.get_name(), last_message_dict.get(player_name.get_name(), 0.0)))
+        for player in manager.get_board(ctx.guild.id).get_players():
+            last_message_times.append((player.get_name(), last_message_dict.get(player.get_name(), 0.0)))
         last_message_times.sort(key=lambda x: x[1], reverse=True)
         message = "\n".join([f"{player}: <t:{int(last)}:R>"
                              if last != 0.0

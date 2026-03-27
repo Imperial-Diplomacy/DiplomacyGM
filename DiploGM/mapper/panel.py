@@ -113,13 +113,13 @@ class PanelDrawer:
 
         if self.board.fow and self.restriction is not None:
             # don't get info
-            players = sorted(self.board.players, key=lambda sort_player: sort_player.name)
+            players = sorted(self.board.get_players(), key=lambda sort_player: sort_player.name)
         else:
             players = self.board.get_players_sorted_by_score()
         players = sorted(players, key=lambda hidden_player:
                                   self.board.data["players"][hidden_player.name].get("hidden", "false") == "true")
 
-        high_player_count = (len(self.board.players) > len(self.scoreboard_power_locations)
+        high_player_count = (len(self.board.get_players()) > len(self.scoreboard_power_locations)
                              or self.board.data.get("vassals") == "enabled")
         for i, player in enumerate(self.board.get_players_sorted_by_score()):
             if i >= len(self.scoreboard_power_locations):

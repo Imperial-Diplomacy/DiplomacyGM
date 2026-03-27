@@ -8,6 +8,7 @@ from typing import Dict, Optional, TYPE_CHECKING
 from discord import Thread, TextChannel
 
 from DiploGM.config import player_channel_suffix, is_player_category
+from DiploGM.models.order import Move
 from DiploGM.models.unit import Unit, UnitType
 from DiploGM.utils.sanitise import sanitise_name
 from DiploGM.utils.sanitise import simple_player_name
@@ -102,6 +103,12 @@ class Board:
             raise ValueError(f"Player {name} not found")
         return self.name_to_player.get(name.lower())
 
+    def get_players(self, active_only: bool = True) -> set[Player]:
+        """Gets all players, potentially including inactive ones."""
+        if active_only:
+            return {player for player in self.players if player.is_active}
+        return self.players
+
     def add_nickname(self, player: Player, nickname: str):
         """Adds or updates a player's nickname."""
         cleaned_name = sanitise_name(nickname.lower())
@@ -133,14 +140,14 @@ class Board:
 
     def get_players_sorted_by_score(self) -> list[Player]:
         """Gets a list of players sorted by their score."""
-        return sorted(self.players,
+        return sorted(self.get_players(),
             key=lambda sort_player: (self.data["players"][sort_player.name].get("hidden", "false"),
                                     -self.get_score(sort_player),
                                     sort_player.get_name().lower()))
 
     def get_players_sorted_by_points(self) -> list[Player]:
         """Gets a list of players sorted by their points."""
-        return sorted(self.players, key=lambda sort_player: (-sort_player.points, -len(sort_player.centers), sort_player.get_name().lower()))
+        return sorted(self.get_players(), key=lambda sort_player: (-sort_player.points, -len(sort_player.centers), sort_player.get_name().lower()))
 
     def get_province(self, name: str) -> Province:
         """Gets a province by its name, ignoring coasts."""
@@ -331,11 +338,12 @@ class Board:
             if unit.province in destinations:
                 continue
 
+            multiplier = 2 if self.has_affiliation(player, unit.player) else 1
             if str(order) in dp_allocations:
-                dp_allocations[str(order)] += allocation.points
+                dp_allocations[str(order)] += allocation.points * multiplier
             else:
                 str_to_order[str(order)] = order
-                dp_allocations[str(order)] = allocation.points
+                dp_allocations[str(order)] = allocation.points * multiplier
         # Now let's see which order got the highest bid
         has_tie = False
         max_points = 0
@@ -347,8 +355,19 @@ class Board:
                 has_tie = False
             elif points == max_points:
                 has_tie = True
-        if not has_tie:
-            return str_to_order[best_order_str]
+        if has_tie:
+            return None
+        winning_order = str_to_order[best_order_str]
+        if isinstance(winning_order, Move):
+            winning_order.is_sortie = True
+        return winning_order
+
+    def has_affiliation(self, player1: Player, player2: Player | None) -> bool:
+        """Checks to see if two powers are affilited, used for determining DP multipliers."""
+        if player2 is None:
+            return False
+        affiliations = self.data["players"][player1.name].get("affiliates", [])
+        return player2.name in affiliations
 
     def get_year_str(self) -> str:
         """Gets the string representation of the current year, accounting for BC/AD."""
