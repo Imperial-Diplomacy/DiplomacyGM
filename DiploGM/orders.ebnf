@@ -5,7 +5,8 @@ order: (move_order
       | support_order
       | convoy_order
       | core_order
-      | transform_order) _WS
+      | transform_order
+      | dp_order) _WS
 
 retreat: (retreat_order
        | disband_order
@@ -37,6 +38,12 @@ convoy_order: unit _WS CONVOY _WS l_move_order
 core_order: unit _WS CORE
 
 transform_order: unit _WS TRANSFORM (_WS COAST)?
+
+dp_order: DP _WS NUMBER _WS (move_order
+                           | hold_order
+                           | support_order
+                           | convoy_order
+                           | transform_order)
 
 retreat_order: retreat_unit _WS RETREAT _WS province
 
@@ -115,6 +122,9 @@ TRANSFORM.2 : "transform"
             | "converts"
             | "t"
 
+DP.2 : "dp"
+     | "diplomany points"
+
 RETREAT.2 : MOVE
           | "r"
           | "retreat"
@@ -137,7 +147,7 @@ BUILD.2 : "b"
 WAIVE.2: "w"
        | "waive"
 
-NUMBER : /[0-9]{1,3}/
+NUMBER : /[0-9]{1,3}(:?)/
 
 unit : (DESCRIPTOR)? province
 

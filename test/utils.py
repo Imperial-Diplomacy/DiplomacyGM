@@ -12,11 +12,12 @@ from DiploGM.models.order import (
     RetreatMove,
     ConvoyTransport,
     Support,
+    UnitOrder,
     Build,
     Disband,
 )
 from DiploGM.models.province import Province, ProvinceType
-from DiploGM.models.unit import UnitType, Unit
+from DiploGM.models.unit import DPAllocation, UnitType, Unit
 from DiploGM.models.player import Player
 from DiploGM.adjudicator.defs import ResolutionState, Resolution
 from DiploGM.adjudicator.builds_adjudicator import BuildsAdjudicator
@@ -62,7 +63,7 @@ class BoardBuilder():
             if self.players[player] is None:
                 raise RuntimeError(f"Player {player} not found on board")
 
-    def army(self, land: str, player: Player) -> Unit:
+    def army(self, land: str, player: Player | None) -> Unit:
         """Place an army on the board.
 
         Args:
@@ -86,12 +87,13 @@ class BoardBuilder():
         unit.player = player
         province.unit = unit
 
-        player.units.add(unit)
+        if player is not None:
+            player.units.add(unit)
         self.board.units.add(unit)
 
         return unit
 
-    def fleet(self, loc: str, player: Player):
+    def fleet(self, loc: str, player: Player | None) -> Unit:
         """Place a fleet on the board.
 
         Args:
@@ -111,7 +113,8 @@ class BoardBuilder():
         )
 
         province.unit = unit
-        player.units.add(unit)
+        if player is not None:
+            player.units.add(unit)
         self.board.units.add(unit)
 
         return unit
@@ -268,6 +271,21 @@ class BoardBuilder():
 
         return unit
 
+    def dp_order(self, player: Player, unit: Unit, points: int, order: UnitOrder) -> Unit:
+        """Create a DP order for a unit.
+
+        Args:
+            player: The player is giving the DP order.
+            unit: The unit to assign the DP order to.
+            points: The number of DP points to assign.
+            order: The DP order to assign.
+
+        Returns:
+            The unit with its DP order set.
+        """
+        unit.dp_allocations[player.name] = DPAllocation(points, order)
+        return unit
+
     def retreat(self, unit: Unit, place: str):
         """Assign a retreat order to an existing unit.
 
@@ -404,8 +422,8 @@ class BoardBuilder():
         for order in adj.orders:
             adj._resolve_order(order)
 
-        # for order in adj.orders:
-        #     print(order)
+        for order in adj.orders:
+            print(order)
 
         illegal_units = []
         succeeded_units = []

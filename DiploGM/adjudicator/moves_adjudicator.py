@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from DiploGM.models.board import Board
     from DiploGM.models.player import Player
     from DiploGM.models.unit import Unit
+    from DiploGM.models.order import UnitOrder
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +30,17 @@ class MovesAdjudicator(Adjudicator):
         super().__init__(board)
 
         self.orders: set[AdjudicableOrder] = set()
+        self.dp_order_strings: dict[str, tuple[str, str | None, str | None]] = {}
 
         # run supports after everything else since illegal cores / moves should be treated as holds
+        for unit in board.units:
+            if unit.order is None and (best_order := board.get_winning_dp_order(unit)) is not None:
+                unit.order = best_order
+                self.dp_order_strings[str(unit.province)] = (
+                    type(unit.order).__name__,
+                    unit.order.get_destination_str(),
+                    unit.order.get_source_str()
+                )
         units = sorted(board.units, key=lambda unit: isinstance(unit.order, Support))
         for unit in units:
             self._validate_unit(unit)
@@ -52,6 +62,48 @@ class MovesAdjudicator(Adjudicator):
         self._dependencies: list[AdjudicableOrder] = []
 
         self._find_convoy_kidnappings()
+
+    def _assign_dp_orders(self, unit: Unit):
+        # We find which orders got the highest bid, and assign that to the unit.
+        # If a player is ordering an attack or support against that unit, they lose their bid.
+        # If there is a tie, then the unit holds.
+        if not unit.dp_allocations:
+            return
+        dp_allocations: dict[str, int] = {}
+        str_to_order: dict[str, UnitOrder] = {}
+        for player_name, allocation in unit.dp_allocations.items():
+            player = self._board.get_player(player_name)
+            if player is None:
+                continue
+            order = allocation.order
+            # First, let's check to see if the player isn't attacking the unit
+            destinations = [u.order.destination for u in player.units if u.order is not None]
+            if unit.province in destinations:
+                continue
+
+            if str(order) in dp_allocations:
+                dp_allocations[str(order)] += allocation.points
+            else:
+                str_to_order[str(order)] = order
+                dp_allocations[str(order)] = allocation.points
+        # Now let's see which order got the highest bid
+        has_tie = False
+        max_points = 0
+        best_order_str = ""
+        for order_str, points in dp_allocations.items():
+            if points > max_points:
+                max_points = points
+                best_order_str = order_str
+                has_tie = False
+            elif points == max_points:
+                has_tie = True
+        if not has_tie:
+            unit.order = str_to_order[best_order_str]
+            self.dp_order_strings[str(unit.province)] = (
+                type(unit.order).__name__,
+                unit.order.get_destination_str(),
+                unit.order.get_source_str()
+            )
 
     def _validate_unit(self, unit: Unit):
         # Replace invalid orders with holds
@@ -125,7 +177,7 @@ class MovesAdjudicator(Adjudicator):
             else:
                 order.base_unit.unit_type = UnitType.ARMY
                 order.base_unit.coast = None
-        if order.type == OrderType.MOVE and order.resolution == Resolution.SUCCEEDS:
+        if order.type == OrderType.MOVE and not order.is_sortie and order.resolution == Resolution.SUCCEEDS:
             logger.debug(f"Moving {order.source_province} to {order.destination_province}")
             if order.source_province.unit == order.base_unit:
                 order.source_province.unit = None
@@ -247,7 +299,7 @@ class MovesAdjudicator(Adjudicator):
         if order.type == OrderType.HOLD:
             # Resolution is arbitrary for holds; they don't do anything
             return Resolution.SUCCEEDS
-        elif order.type in (OrderType.CORE, OrderType.TRANSFORM, OrderType.SUPPORT):
+        if order.type in (OrderType.CORE, OrderType.TRANSFORM, OrderType.SUPPORT):
             # These orders fail if attacked by nation, even if that order isn't successful
             moves_here = self.moves_by_destination.get(order.current_province.name, set()) - {order}
             for move_here in moves_here:
@@ -270,7 +322,7 @@ class MovesAdjudicator(Adjudicator):
                 ):
                     return Resolution.FAILS
             return Resolution.SUCCEEDS
-        elif order.type == OrderType.CONVOY:
+        if order.type == OrderType.CONVOY:
             moves_here = self.moves_by_destination.get(order.current_province.name, set())
             for move_here in moves_here:
                 # see https://webdiplomacy.net/doc/DATC_v3_0.html#5.D
@@ -278,7 +330,7 @@ class MovesAdjudicator(Adjudicator):
                     return Resolution.FAILS
             return Resolution.SUCCEEDS
         # Algorithm from https://diplom.org/Zine/S2009M/Kruijswijk/DipMath_Chp2.htm
-        elif order.type == OrderType.MOVE:
+        if order.type == OrderType.MOVE:
             return self._adjudicate_move_order(order)
         raise ValueError("Unknown order type for adjudication")
 
@@ -286,7 +338,7 @@ class MovesAdjudicator(Adjudicator):
         # Your own unit counts, unless it's a difficult adjacency
         strength = 0 if order.destination_province.name in order.base_unit.province.adjacency_data.difficult_adjacencies else 1
         for support in order.supports:
-            if self._resolve_order(support) == Resolution.SUCCEEDS and attacked_country != support.country:
+            if self._resolve_order(support) == Resolution.SUCCEEDS and (support.country is None or attacked_country != support.country):
                 strength += 1
         return strength
 

@@ -158,8 +158,6 @@ def _create_unit(keywords: list[str], board: Board) -> None:
         raise ValueError(f"Invalid Unit Type received: {unit_type}")
 
     player = board.get_player(keywords[1])
-    if not player:
-        raise ValueError(f"Unknown player: {keywords[1]}")
     province, coast = board.get_province_and_coast(" ".join(keywords[2:]))
     if unit_type == UnitType.FLEET and province.get_multiple_coasts() and coast not in province.get_multiple_coasts():
         raise ValueError(f"Province '{province.name}' requires a valid coast.")
@@ -176,9 +174,9 @@ def _create_unit(keywords: list[str], board: Board) -> None:
             board.turn.get_indexed_name(),
             unit.province.get_name(coast),
             False,
-            player.name,
+            player.name if player is not None else None,
             unit_type == UnitType.ARMY,
-            player.name,
+            player.name if player is not None else None,
             unit_type == UnitType.ARMY,
         ),
     )
@@ -190,8 +188,6 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
         if not unit_type:
             raise ValueError(f"Invalid Unit Type received: {unit_type}")
         player = board.get_player(keywords[1])
-        if not player:
-            raise ValueError(f"Unknown player: {keywords[1]}")
         province, coast = board.get_province_and_coast(keywords[2])
         if province.get_multiple_coasts() and coast not in province.get_multiple_coasts():
             raise ValueError(f"Province '{province.name}' requires a valid coast.")
@@ -212,9 +208,9 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
                 board.turn.get_indexed_name(),
                 unit.province.get_name(coast),
                 True,
-                player.name,
+                player.name if player is not None else None,
                 unit_type == UnitType.ARMY,
-                player.name,
+                player.name if player is not None else None,
                 unit_type == UnitType.ARMY,
             ),
         )

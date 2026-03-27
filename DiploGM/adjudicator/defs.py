@@ -53,6 +53,7 @@ class AdjudicableOrder:
         self.destination_coast: str | None = self.current_coast
         self.source_province: Province = self.current_province
         self.is_convoy: bool = False
+        self.is_sortie: bool = False
         # indicates that a move is also a convoy that failed, so no support holds
         self.not_supportable = False
         self.is_valid = True
@@ -66,6 +67,7 @@ class AdjudicableOrder:
         elif isinstance(unit.order, Move):
             self.type = OrderType.MOVE
             (self.destination_province, self.destination_coast) = unit.order.get_destination_and_coast()
+            self.is_sortie = unit.order.is_sortie
         elif isinstance(unit.order, Support):
             self.type = OrderType.SUPPORT
             self.source_province = unit.order.source

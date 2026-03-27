@@ -33,9 +33,7 @@ class MapperUtils:
         """Checks if a unit is moveable."""
         if unit.province.name not in adjacent_provinces:
             return False
-        if unit.player is None:
-            return False
-        if player_restriction and unit.player.name != player_restriction.name:
+        if player_restriction and unit.player is not None and unit.player.name != player_restriction.name:
             return False
         if is_retreats and unit.province.dislodged_unit != unit:
             return False

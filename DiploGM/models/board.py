@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from DiploGM.models.turn import Turn
     from DiploGM.models.player import Player
     from DiploGM.models.province import Province, ProvinceType
+    from DiploGM.models.order import UnitOrder
 
 
 logger = logging.getLogger(__name__)
@@ -310,6 +311,44 @@ class Board:
             if unit.player is not None:
                 unit.player.units.remove(unit)
             self.units.remove(unit)
+
+
+    def get_winning_dp_order(self, unit: Unit) -> UnitOrder | None:
+        # We find which orders got the highest bid, and assign that to the unit.
+        # If a player is ordering an attack or support against that unit, they lose their bid.
+        # If there is a tie, then the unit holds.
+        if not unit.dp_allocations:
+            return
+        dp_allocations: dict[str, int] = {}
+        str_to_order: dict[str, UnitOrder] = {}
+        for player_name, allocation in unit.dp_allocations.items():
+            player = self.get_player(player_name)
+            if player is None:
+                continue
+            order = allocation.order
+            # First, let's check to see if the player isn't attacking the unit
+            destinations = [u.order.destination for u in player.units if u.order is not None]
+            if unit.province in destinations:
+                continue
+
+            if str(order) in dp_allocations:
+                dp_allocations[str(order)] += allocation.points
+            else:
+                str_to_order[str(order)] = order
+                dp_allocations[str(order)] = allocation.points
+        # Now let's see which order got the highest bid
+        has_tie = False
+        max_points = 0
+        best_order_str = ""
+        for order_str, points in dp_allocations.items():
+            if points > max_points:
+                max_points = points
+                best_order_str = order_str
+                has_tie = False
+            elif points == max_points:
+                has_tie = True
+        if not has_tie:
+            return str_to_order[best_order_str]
 
     def get_year_str(self) -> str:
         """Gets the string representation of the current year, accounting for BC/AD."""

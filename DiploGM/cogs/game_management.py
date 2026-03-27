@@ -991,12 +991,16 @@ class GameManagementCog(commands.Cog):
             ctx,
             message=f"Adjudication Successful for {board.turn}",
         )
-        file, file_name = manager.draw_map(
-            guild.id,
+        if test_adjudicate:
+            # Load a fresh board so we don't mutate the Manager's in-memory board
+            draw_board = manager.get_board_from_db(guild.id, old_turn)
+            manager.apply_test_adjudication_results(guild.id, draw_board)
+        else:
+            draw_board = board
+        file, file_name = manager.draw_map_for_board(
+            draw_board,
             draw_moves=True,
-            player_restriction=None,
             color_mode=color_mode,
-            turn=old_turn,
         )
         title = f"{board.name} — " if board.name else ""
         title += f"{old_turn}"
@@ -1022,12 +1026,10 @@ class GameManagementCog(commands.Cog):
                 pass
 
         if movement_adjudicate:
-            file, file_name = manager.draw_map(
-                guild.id,
+            file, file_name = manager.draw_map_for_board(
+                draw_board,
                 draw_moves=True,
-                player_restriction=None,
                 color_mode=color_mode,
-                turn=old_turn,
                 movement_only=True,
             )
             title = f"{board.name} — " if board.name else ""

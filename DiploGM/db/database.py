@@ -23,6 +23,7 @@ from DiploGM.models.order import (
     Disband,
     Transform,
     TransformBuild,
+    UnitOrder,
     Vassal,
     Liege,
     DualMonarchy,
@@ -32,7 +33,7 @@ from DiploGM.models.order import (
 )
 from DiploGM.models.player import Player
 from DiploGM.models.spec_request import SpecRequest
-from DiploGM.models.unit import UnitType, Unit
+from DiploGM.models.unit import DPAllocation, UnitType, Unit
 
 logger = logging.getLogger(__name__)
 
@@ -226,6 +227,53 @@ class _DatabaseConnection:
         province.unit = None
         province.dislodged_unit = None
 
+    def _parse_order(self, board: Board, order_type: str, destination: Optional[str], source: Optional[str]) -> Optional[UnitOrder]:
+        order_classes = [
+            NMR,
+            Hold,
+            Core,
+            Transform,
+            Move,
+            ConvoyTransport,
+            Support,
+            RetreatMove,
+            RetreatDisband,
+            ]
+        order_class = next(
+            _class
+            for _class in order_classes
+            if _class.__name__ == order_type
+        )
+        source_province, destination_province, destination_coast = None, None, None
+        if destination is not None:
+            if len(destination) == 2 and destination[1] == "c":
+                destination_coast = destination
+            else:
+                destination_province, destination_coast = (
+                    board.get_province_and_coast(destination)
+                )
+        if source is not None:
+            source_province = board.get_province(source)
+        if order_class == NMR:
+            return None
+        if order_class in [Hold, Core, RetreatDisband]:
+            return order_class()
+        if order_class in [Transform]:
+            return order_class(destination_coast=destination_coast)
+        if order_class in [Move, RetreatMove]:
+            return order_class(destination=destination_province, destination_coast=destination_coast)
+        if order_class in [ConvoyTransport]:
+            if destination_province is None or source_province is None:
+                raise ValueError(f"Invalid source or destination for ConvoyTransport order")
+            return order_class(destination=destination_province, source=source_province)
+        if order_class in [Support]:
+            if destination_province is None or source_province is None:
+                raise ValueError(f"Invalid source or destination for Support order")
+            return order_class(
+                destination=destination_province, source=source_province, destination_coast=destination_coast
+            )
+        raise ValueError(f"Could not parse {order_class}")
+
     def _load_unit(self, board: Board, board_id: int, unit_info: tuple, cursor):
         (
             location,
@@ -269,56 +317,29 @@ class _DatabaseConnection:
 
         if order_type is None:
             return
-        order_classes = [
-            NMR,
-            Hold,
-            Core,
-            Transform,
-            Move,
-            ConvoyTransport,
-            Support,
-            RetreatMove,
-            RetreatDisband,
-            ]
         try:
-            order_class = next(
-                _class
-                for _class in order_classes
-                if _class.__name__ == order_type
-            )
-            source_province, destination_province, destination_coast = None, None, None
-            if order_destination is not None:
-                if len(order_destination) == 2 and order_destination[1] == "c":
-                    destination_coast = order_destination
-                else:
-                    destination_province, destination_coast = (
-                        board.get_province_and_coast(order_destination)
-                    )
-            if order_source is not None:
-                source_province = board.get_province(order_source)
-            if order_class == NMR:
-                return
-            if order_class in [Hold, Core, RetreatDisband]:
-                order = order_class()
-            elif order_class in [Transform]:
-                order = order_class(destination_coast=destination_coast)
-            elif order_class in [Move, RetreatMove]:
-                order = order_class(destination=destination_province, destination_coast=destination_coast)
-            elif order_class in [ConvoyTransport]:
-                if destination_province is None or source_province is None:
-                    raise ValueError(f"Invalid source or destination for ConvoyTransport order in {unit.province.name}")
-                order = order_class(destination=destination_province, source=source_province)
-            elif order_class in [Support]:
-                if destination_province is None or source_province is None:
-                    raise ValueError(f"Invalid source or destination for Support order in {unit.province.name}")
-                order = order_class(
-                    destination=destination_province, source=source_province, destination_coast=destination_coast
-                )
-            else:
-                raise ValueError(f"Could not parse {order_class}")
-
-            order.has_failed = has_failed
+            order = self._parse_order(board, order_type, order_destination, order_source)
+            if order is not None:
+                order.has_failed = has_failed
             unit.order = order
+        except:
+            logger.warning("BAD UNIT INFO: replacing with hold")
+
+    def _load_dp_orders(self, board: Board, dp_data: tuple):
+        location, player_name, points, order_type, order_destination, order_source = dp_data
+        province = board.get_province(location)
+        unit = province.unit
+        if unit is None:
+            logger.warning(f"Couldn't find unit for DP order at {location}")
+            return
+        player = board.get_player(player_name)
+        if player is None:
+            logger.warning(f"Couldn't find player {player_name} for DP order at {location}")
+            return
+        try:
+            dp_order = self._parse_order(board, order_type, order_destination, order_source)
+            if dp_order is not None:
+                unit.dp_allocations[player.name] = DPAllocation(int(points), dp_order)
         except:
             logger.warning("BAD UNIT INFO: replacing with hold")
 
@@ -411,6 +432,13 @@ class _DatabaseConnection:
         board.units.clear()
         for unit_info in unit_data:
             self._load_unit(board, board_id, unit_info, cursor)
+
+        dp_data = cursor.execute(
+            "SELECT location, player, points, order_type, order_destination, order_source FROM dp_orders WHERE board_id=? and phase=?",
+            (board_id, board.turn.get_indexed_name()),
+        ).fetchall()
+        for dp_info in dp_data:
+            self._load_dp_orders(board, dp_info)
         return board
 
     def save_board(self, board_id: int, board: Board):
@@ -526,6 +554,25 @@ class _DatabaseConnection:
                 for retreat_option in unit.retreat_options
             ],
         )
+        cursor.executemany(
+            "INSERT INTO dp_orders (board_id, phase, location, player, points, order_type, order_destination, order_source) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                (
+                    board_id,
+                    board.turn.get_indexed_name(),
+                    unit.province.get_name(unit.coast),
+                    dp_player,
+                    dp_order.points,
+                    dp_order.order.__class__.__name__,
+                    dp_order.order.get_destination_str() if dp_order.order is not None else None,
+                    dp_order.order.get_source_str() if dp_order.order is not None else None,
+                )
+                for unit in board.units
+                if unit.player is None
+                for dp_player, dp_order in unit.dp_allocations.items()
+            ],
+        )
         cursor.close()
         self._connection.commit()
 
@@ -547,6 +594,37 @@ class _DatabaseConnection:
                     unit.province.dislodged_unit == unit,
                 )
                 for unit in units
+            ],
+        )
+        cursor.executemany(
+            "DELETE FROM dp_orders WHERE board_id=? and phase=? and location=?",
+            [
+                (
+                    board.board_id,
+                    board.turn.get_indexed_name(),
+                    unit.province.get_name(unit.coast),
+                )
+                for unit in units
+                if unit.player is None
+            ],
+        )
+        cursor.executemany(
+            "INSERT INTO dp_orders (board_id, phase, location, player, points, order_type, order_destination, order_source) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+             [
+                (
+                    board.board_id,
+                    board.turn.get_indexed_name(),
+                    unit.province.get_name(unit.coast),
+                    dp_player,
+                    dp_order.points,
+                    dp_order.order.__class__.__name__,
+                    dp_order.order.get_destination_str() if dp_order.order is not None else None,
+                    dp_order.order.get_source_str() if dp_order.order is not None else None,
+                )
+                for unit in units
+                if unit.player is None
+                for dp_player, dp_order in unit.dp_allocations.items()
             ],
         )
         cursor.executemany(
@@ -665,6 +743,10 @@ class _DatabaseConnection:
             (board.board_id, board.turn.get_indexed_name()),
         )
         cursor.execute(
+            "DELETE FROM dp_orders WHERE board_id=? AND phase=?",
+            (board.board_id, board.turn.get_indexed_name()),
+        )
+        cursor.execute(
             "DELETE FROM builds WHERE board_id=? AND phase=?",
             (board.board_id, board.turn.get_indexed_name()),
         )
@@ -685,6 +767,7 @@ class _DatabaseConnection:
         cursor.execute("DELETE FROM board_parameters WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM provinces WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM units WHERE board_id=?", (board.board_id,))
+        cursor.execute("DELETE FROM dp_orders WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM builds WHERE board_id=?", (board.board_id,))
         cursor.execute(
             "DELETE FROM retreat_options WHERE board_id=?", (board.board_id,)

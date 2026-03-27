@@ -97,6 +97,7 @@ class Move(UnitOrder):
         self.destination: Province = destination
         self.destination_coast: str | None = destination_coast
         self.is_support_holdable = False
+        self.is_sortie = False # Should Sortie be its own Order? Seems excessive.
 
     def __str__(self):
         return f"- {self.get_destination_str()}"
