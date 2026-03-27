@@ -32,6 +32,7 @@ class Manager(metaclass=SingletonMeta):
         self._spec_requests: dict[int, list[SpecRequest]] = (
             self._database.get_spec_requests()
         )
+        self.last_activity: dict[int, dict[str, float]] = {}
 
         # Stores failed and DP orders here, since we don't want them stored in the board itself
         # As that way we can fetch them for test adjudications without mutating the board state
@@ -542,3 +543,11 @@ class Manager(metaclass=SingletonMeta):
                     or simple_player_name(player.get_name()) == simple_player_name(role.name)):
                     return player
         return None
+
+    def update_player_activity(self, server_id: int, member: Member) -> None:
+        """Updates the last activity by a Player."""
+        player = self.get_member_player_object(member)
+        if player:
+            if server_id not in self.last_activity:
+                self.last_activity[server_id] = {}
+            self.last_activity[server_id][player.name] = time.time()

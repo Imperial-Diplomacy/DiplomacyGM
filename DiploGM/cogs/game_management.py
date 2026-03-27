@@ -1322,6 +1322,43 @@ class GameManagementCog(commands.Cog):
 
             available -= 1
 
+    @commands.command(brief="gets the last time a player sent a message",
+                      description="""Gets the last time each player sent a message.
+                                     Note that this data does not persist across bot restarts.""")
+    @perms.gm_only("get last message times")
+    async def last_message(self, ctx: commands.Context) -> None:
+        """Gets the last time each player sent a message
+
+        Usage: 
+            Used as `.last_message`
+
+        Note: 
+            This data does not persist across bot restarts
+
+        Args:
+            ctx (commands.Context): Context from discord regarding command invocation
+
+        Returns:
+            None
+        
+        Raises:
+            None:
+            Messages:
+                You are not a GM
+        """
+        assert ctx.guild is not None
+
+        last_message_dict = manager.last_activity.get(ctx.guild.id, {})
+        last_message_times: list[tuple[str, float]] = []
+        for player_name in manager.get_board(ctx.guild.id).players:
+            last_message_times.append((player_name.get_name(), last_message_dict.get(player_name.get_name(), 0.0)))
+        last_message_times.sort(key=lambda x: x[1], reverse=True)
+        message = "\n".join([f"{player}: <t:{int(last)}:R>"
+                             if last != 0.0
+                             else f"{player}: No messages seen"
+                             for player, last in last_message_times])
+        await send_message_and_file(channel=ctx.channel, title="Last Message Times", message=message)
+
     @commands.command(brief="publicize void for chaos")
     async def publicize(self, ctx: commands.Context) -> None:
         """Opens a channel (usually a void) to the spectator role

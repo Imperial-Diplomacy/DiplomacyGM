@@ -62,6 +62,7 @@ class DiploGM(commands.Bot):
         # bind command invocation handling methods
         self.before_invoke(self.before_any_command)
         self.after_invoke(self.after_any_command)
+        self.add_listener(self.on_message_listener, 'on_message')
 
         current_servers = [g.id async for g in self.fetch_guilds()]
         self.manager = Manager(board_ids=current_servers)
@@ -172,6 +173,19 @@ class DiploGM(commands.Bot):
                 logger.error(f"Failed to load event listener: {cls.__name__}: {e.__class__.__name__} - {str(e)}")
 
     # TODO: Functionality to unload/reload listeners
+
+    async def on_message_listener(self, message: discord.Message):
+        if message.author.bot:
+            return
+        server_id = message.guild.id if message.guild else None
+        sender = message.author
+        if isinstance(sender, discord.User) or server_id is None:
+            return
+        is_player = any(r.name.lower() == "player" for r in sender.roles)
+        if is_player:
+            self.manager.update_player_activity(server_id, sender)
+
+
 
     async def on_ready(self):
         now = datetime.datetime.now(datetime.timezone.utc)
