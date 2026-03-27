@@ -26,6 +26,7 @@ class TreeToOrder(Transformer):
         self.board = board
         self.build_options = board.data.get("build_options", "classic")
         self.transform_options = board.data.get("transformation", "disabled")
+        self.dp_options = board.data.get("dp", "disabled")
         self.player_restriction = player_restriction
 
     @v_args(inline=False)
@@ -87,6 +88,8 @@ class TreeToOrder(Transformer):
 
     def dp_order(self, _, points: str, dp_order: tuple[Unit, order.UnitOrder]) -> tuple[Unit, None]:
         """DP allocation order, of the form DP [Points] [Unit Order]."""
+        if self.dp_options == "disabled":
+            raise ValueError("DP allocation is disabled in this gamemode")
         if self.player_restriction is None:
             raise ValueError("DP allocation orders must be made in a player's orders channel.")
         unit, unit_order = dp_order
