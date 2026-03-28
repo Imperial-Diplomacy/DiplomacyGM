@@ -1,0 +1,127 @@
+{
+  "name": "Peloponnesian War 2.2",
+  "file": "Pelowar.svg",
+  "svg config": {
+    "year": -430,
+
+    "background": "layer3",
+    "sidebar": "layer8",
+    "season": "layer25",
+    "power_banners": "layer24",
+    "power_sc_index": 1,
+    "power_iscc_index": -1,
+    "power_vscc_index": -1,
+
+    "land_layer": "layer9",
+    "sea_borders": "layer15",
+    "island_borders": "layer16",
+    "island_ring_layer": "layer12",
+    "island_fill_layer": "layer11",
+
+    "province_names": "layer5",
+    "supply_center_icons": "layer1",
+    "coast_markers": "layer18",
+
+    "unit_output": "layer23",
+    "arrow_output": "layer10",
+    "other_fills": "layer13",
+
+    "starting_units": "layer6",
+    "army": "layer19",
+    "retreat_army": "layer21",
+    "fleet": "layer20",
+    "retreat_fleet": "layer22",
+
+    "detect_starting_units": true,
+    "unit_type_labeled": false,
+
+    "unit_labels": true,
+    "province_labels": true,
+    "center_labels": true,
+
+    "default_sea_color": "d5ebfd",
+    "border_margin_hint": 0.1,
+
+    "map_width": 858,
+    "unit_radius": 1,
+    "order_stroke_width": 0.2,
+    "neutral": { "standard": "c2bdbd" },
+    "neutral_sc": "ffffff",
+    "loc_x_offset": 7.7655,
+    "loc_y_offset": 7.033,
+    "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
+  },
+  "victory_conditions": "vscc",
+  "overrides": {
+    "provinces": {
+      "Aegean Sea": {
+        "remove_adjacencies": ["Phrygia"]
+      },
+	  "Astakos": {
+        "remove_adjacencies": [
+          "Kephallenia",
+          "Ionian Sea",
+          "Gulf of Kyparissia"
+        ]
+      },
+	  "Delphoi": {
+        "coasts": {
+          "nc": ["Doris", "Gulf of Euboea", "Boiotia"],
+          "sc": ["Naupaktos", "Gulf of Korinthos", "Korinthos"]
+        }
+      },
+      "Eastern Mediterranean": {
+        "remove_adjacencies": ["Ephesos"]
+      },
+      "Ephesos": {
+        "remove_adjacencies": ["Eastern Mediterranean"]
+      },
+      "Gulf of Kyparissia": {
+        "remove_adjacencies": ["Astakos"]
+      },
+      "Ionian Sea": {
+        "remove_adjacencies": ["Astakos"]
+      },
+      "Kephallenia": {
+        "remove_adjacencies": ["Astakos"]
+      },
+      "Mytilene": {
+        "remove_adjacencies": ["Phrygia"]
+      },
+	  "Pella": {
+		"remove_adjacencies": ["Thracian Sea"]
+	  },
+      "Pharsalos": {
+        "remove_adjacencies": ["Thracian Sea"]
+      },
+      "Phrygia": {
+        "remove_adjacencies": ["Mytilene"]
+      },
+      "Thracian Sea": {
+        "remove_adjacencies": [
+          "Pharsalos",
+          "Pella",
+          "Thrakike Chersonesos"
+        ]
+      },
+      "Thrakike": {
+        "remove_adjacent_coasts": ["Abdera"]
+      },
+      "Thrakike Chersonesos": {
+        "remove_adjacencies": ["Thracian Sea"]
+      }
+    }
+  },
+  "players": {
+    "Delian League": {
+      "color": { "standard": "6977c9" },
+      "vscc": 13,
+      "iscc": 6
+    },
+    "Peloponnesian League": {
+      "color": { "standard": "c85d5e" },
+      "vscc": 13,
+      "iscc": 6
+    }
+  }
+}

@@ -177,6 +177,8 @@ class SpectatorCog(commands.Cog):
         if isinstance(exc, commands.errors.UserNotFound):
             await send_message_and_file(channel=ctx.channel, message="Could not find that user!", embed_colour=ERROR_COLOUR)
             ctx.handled = True # type: ignore
+            return
+
 
     @spec_ban.command(name="remove")
     @perms.mod_only("remove a spectating ban")
@@ -289,6 +291,7 @@ class SpectatorCog(commands.Cog):
         elif not interaction.channel:
             return
 
+
         # check bot is on the gm team (for add_roles permissions)
         _member = guild.get_member(self.bot.user.id)
         if not _member:
@@ -385,8 +388,8 @@ class SpectatorCog(commands.Cog):
             prev_role = guild.get_role(prev_request.role_id)
             if prev_role:
                 await admin_channel.send(
-                    f"[SPECTATOR LOG] {interaction.user.mention} has requested to spectate {power_role.mention} " +
-                    f"after already being accepted for role: {prev_role.mention}"
+                    f"[SPECTATOR LOG] {interaction.user.mention} has requested to spectate {power_role.mention} "
+                    + f"after already being accepted for role: {prev_role.mention}"
                 )
 
                 await interaction.response.send_message(
@@ -430,8 +433,9 @@ class SpectatorCog(commands.Cog):
         # if player already a player or country spec
         if any(
             map(
-                lambda r: r.name
-                in ["Player", "Spectator", "Country Spectator", "Dead"],
+                lambda r: (
+                    r.name in ["Player", "Spectator", "Country Spectator", "Dead"]
+                ),
                 requester.roles,
             )
         ):

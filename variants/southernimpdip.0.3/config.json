@@ -1,0 +1,287 @@
+{
+  "name": "Southern Imperial Diplomacy v3",
+  "file": "Southern ImpDip V3.svg",
+  "svg config": {
+    "land_layer": "layer80",
+    "island_ring_layer": "layer77",
+    "island_fill_layer": "layer78",
+    "island_borders": "layer83",
+    "sea_borders": "layer82",
+    "province_names": "layer73",
+    "supply_center_icons": "layer74",
+    "season": "layer62",
+    "starting_units": "layer71",
+    "unit_output": "layer66",
+    "arrow_output": "layer65",
+    "other_fills": "layer79",
+    "coast_markers": "layer72",
+    "background": "layer1",
+    "sidebar": "layer64",
+
+    "power_banners": "layer25",
+    "power_sc_index": 2,
+    "power_iscc_index": 6,
+    "power_vscc_index": 4,
+
+    "army": "layer70",
+    "retreat_army": "layer69",
+    "fleet": "layer68",
+    "retreat_fleet": "layer67",
+
+    "detect_starting_units": true,
+    "unit_type_labeled": false,
+
+    "unit_labels": true,
+    "province_labels": true,
+    "center_labels": true,
+
+    "default_sea_color": "bee0f4",
+
+    "color replacements": {},
+
+    "border_margin_hint": 1.4,
+
+    "map_width": 5852,
+    "unit_radius": 15,
+    "order_stroke_width": 2,
+    "neutral": {
+      "standard": "f4eed7",
+      "dark": "B7AB80",
+      "pink": "c6b7ab",
+      "blue": "FFF3F3"
+    },
+    "neutral_sc": "f9f9f9",
+    "loc_x_offset": 7.7655,
+    "loc_y_offset": 7.033,
+    "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
+  },
+  "build_options": "cores",
+  "victory_conditions": "vscc",
+  "abbreviations": {},
+  "overrides": {
+    "provinces": {
+      "Honduras": {
+        "coasts": {
+          "nc": ["Bay of Panama", "Belize", "Panama"],
+          "sc": ["Colon Ridge", "Yucatan sc", "Panama"]
+        }
+      },
+      "Yucatan": {
+        "coasts": {
+          "nc": [
+            "Gulf of Mexico",
+            "Yucatan Channel",
+            "Mexico City ec",
+            "Belize"
+          ],
+          "sc": ["Colon Ridge", "Mexico City wc", "Honduras sc"]
+        }
+      },
+      "Mexico City": {
+        "coasts": {
+          "ec": ["Gulf of Mexico", "Karankawa", "Yucatan nc"],
+          "wc": [
+            "Colon Ridge",
+            "Berlanga Ridge",
+            "Southeast Corridor",
+            "Yucatan sc"
+          ]
+        }
+      },
+      "Nakhon Si": {
+        "coasts": {
+          "ec": ["Gulf of Siam", "Natuna Sea", "Kra", "Malay"],
+          "wc": ["Malacca Strait", "Tavoy", "Malay"]
+        }
+      },
+      "SPO1": {
+        "unit_loc": [[5478.65, 1021.33]],
+        "retreat_unit_loc": [[5493.07, 1033.607]]
+      },
+      "SPO2": {
+        "unit_loc": [[5595.59, 1021.06]],
+        "retreat_unit_loc": [[5610.278, 1033.607]]
+      },
+      "SPO3": {
+        "unit_loc": [[5712.59, 1021.06]],
+        "retreat_unit_loc": [[5727.216, 1032.806]]
+      },
+      "SPO4": {
+        "unit_loc": [[5534.99, 1085.94]],
+        "retreat_unit_loc": [[5550.207, 1100.085]]
+      },
+      "SPO5": {
+        "unit_loc": [[5651.39, 1085.94]],
+        "retreat_unit_loc": [[5667.15, 1097.95]]
+      },
+	    "Dani": {
+		    "remove_adjacencies": ["Manado"]
+      },
+	    "Manado": {
+		    "remove_adjacencies": ["Dani"]
+      }
+    }
+  },
+  "players": {
+    "Abyssinia": {
+      "color": {
+        "standard": "ab8282",
+        "dark": "9D6767",
+        "pink": "FFC0CB",
+        "blue": "4AB5A9"
+      },
+      "vscc": 32,
+      "iscc": 4
+    },
+    "Ajuuraan": {
+      "color": {
+        "standard": "587ba7",
+        "dark": "4A688D",
+        "pink": "FF6AB9",
+        "blue": "924EEF"
+      },
+      "vscc": 32,
+      "iscc": 4
+    },
+    "Aymara": {
+      "color": {
+        "standard": "9a2f56",
+        "dark": "AD295D",
+        "pink": "DB7093",
+        "blue": "A0DCD9"
+      },
+      "vscc": 36,
+      "iscc": 5
+    },
+    "Ayutthaya": {
+      "color": {
+        "standard": "9d84ae",
+        "dark": "B875CE",
+        "pink": "FF007F",
+        "blue": "5782EC"
+      },
+      "vscc": 38,
+      "iscc": 6
+    },
+    "Bornu": {
+      "color": {
+        "standard": "ffe680",
+        "dark": "a19a50",
+        "pink": "95004b",
+        "blue": "183e9c"
+      },
+      "vscc": 32,
+      "iscc": 4
+    },
+    "England": {
+      "color": {
+        "standard": "fe4557",
+        "dark": "E33544",
+        "pink": "E75480",
+        "blue": "467A70"
+      },
+      "vscc": 40,
+      "iscc": 7
+    },
+    "France": {
+      "color": {
+        "standard": "66a2e3",
+        "dark": "24A57B",
+        "pink": "FF6FFF",
+        "blue": "9F79CF"
+      },
+      "vscc": 40,
+      "iscc": 7
+    },
+    "Guarani": {
+      "color": {
+        "standard": "078690",
+        "dark": "078690",
+        "pink": "FFB3C6",
+        "blue": "078690"
+      },
+      "vscc": 32,
+      "iscc": 4
+    },
+    "Kalina": {
+      "color": {
+        "standard": "718d30",
+        "dark": "495b1f",
+        "pink": "FF617c",
+        "blue": "834ebc"
+      },
+      "vscc": 32,
+      "iscc": 4
+    },
+    "Kongo": {
+      "color": {
+        "standard": "924cb3",
+        "dark": "944FA5",
+        "pink": "FF91A4",
+        "blue": "C7A9E7"
+      },
+      "vscc": 32,
+      "iscc": 4
+    },
+    "Tehuelche": {
+      "color": {
+        "standard": "81889d",
+        "dark": "696E7F",
+        "pink": "FF85A1",
+        "blue": "5A72C2"
+      },
+      "vscc": 36,
+      "iscc": 5
+    },
+    "Mughal": {
+      "color": {
+        "standard": "ab9f26",
+        "dark": "999941",
+        "pink": "FDD7E4",
+        "blue": "8779AB"
+      },
+      "vscc": 24,
+      "iscc": 3
+    },
+    "Netherlands": {
+      "color": {
+        "standard": "fc9c23",
+        "dark": "DB7745",
+        "pink": "C44263",
+        "blue": "58AEC4"
+      },
+      "vscc": 54,
+      "iscc": 13
+    },
+    "Ottoman": {
+      "color": {
+        "standard": "a03838",
+        "dark": "AB2136",
+        "pink": "F4A7B9",
+        "blue": "649AE8"
+      },
+      "vscc": 38,
+      "iscc": 6
+    },
+    "Portugal": {
+      "color": {
+        "standard": "3c9553",
+        "dark": "23763F",
+        "pink": "F5B7C6",
+        "blue": "A9B6E3"
+      },
+      "vscc": 56,
+      "iscc": 14
+    },
+    "Spain": {
+      "color": {
+        "standard": "f0ce48",
+        "dark": "DBB045",
+        "pink": "65000B",
+        "blue": "3585B0"
+      },
+      "vscc": 46,
+      "iscc": 9
+    }
+  }
+}
