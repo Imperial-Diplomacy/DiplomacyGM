@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from discord.ext.commands import Paginator
 from lark import Lark, Transformer, UnexpectedEOF, UnexpectedCharacters, v_args
@@ -360,7 +361,7 @@ def _check_for_warnings(unit: Unit) -> str | None:
             return "This support is is between two non-adjacent provinces, and will fail unless there is a convoy."
     return None
 
-def parse_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, ...]:
+def parse_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, Any]:
     """Parses the order commands, adds the orders as necessary, and returns a message of the results."""
     ordertext = message.split(maxsplit=1)
     if len(ordertext) == 1:
@@ -456,7 +457,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                 "messages": output,
         }
 
-def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, ...]:
+def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, Any]:
     """Parses the .remove_order command and removes the specified orders."""
     invalid: list[tuple[str, Exception]] = []
     commands = message.splitlines()

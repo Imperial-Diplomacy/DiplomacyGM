@@ -2,8 +2,7 @@ from __future__ import annotations
 import inspect
 import logging
 from typing import TYPE_CHECKING
-
-from black.trans import defaultdict
+from collections import defaultdict
 from discord import Member
 from discord.ext import commands
 

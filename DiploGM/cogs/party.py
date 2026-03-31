@@ -7,17 +7,14 @@ from itertools import permutations
 
 import discord
 from discord.ext.commands import Bot
-
-from DiploGM.perms import is_superuser, is_gm
-from DiploGM.manager import Manager
-from scipy.integrate import odeint
-
 from discord.ext import commands
 
+from scipy.integrate import odeint
+
+from DiploGM.manager import Manager
 from DiploGM import perms
 from DiploGM.config import ERROR_COLOUR, is_bumble, temporary_bumbles, HUB_SERVER_ID
 from DiploGM.utils import log_command, send_message_and_file
-
 from DiploGM.db.database import get_connection
 
 logger = logging.getLogger(__name__)
@@ -572,7 +569,7 @@ class PartyCog(commands.Cog):
             Messages:
         """
 
-        if is_superuser(ctx.author):
+        if perms.is_superuser(ctx.author):
             await send_message_and_file(
                 channel=ctx.channel, title="Please don't shut me down", message=""
             )
@@ -614,7 +611,7 @@ class PartyCog(commands.Cog):
         assert ctx.guild is not None
         if ctx.author.id == 1352388421003251833:
             if (ctx.guild.id != HUB_SERVER_ID
-                and is_gm(ctx.author)
+                and perms.is_gm(ctx.author)
                 and (ctx.guild.id not in self.eolhc_ed_members or ctx.me.id not in self.eolhc_ed_members[ctx.guild.id])):
                 self.eolhc_ed_members.setdefault(ctx.guild.id, []).append(ctx.me.id)
                 await ctx.reply("*incoherent screaming*"[::-1])

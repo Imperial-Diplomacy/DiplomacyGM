@@ -33,7 +33,6 @@ from DiploGM.utils import (
     upload_map_to_archive,
 )
 
-from DiploGM.perms import is_gm
 from DiploGM.models.extension import ExtensionEvent, SQLiteExtensionEventRepository
 from DiploGM.models.order import Disband, Build
 from DiploGM.models.player import Player

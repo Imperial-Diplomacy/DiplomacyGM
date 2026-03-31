@@ -204,22 +204,7 @@ class PlayerCog(commands.Cog):
             message=order_text,
         )
 
-    @commands.command(
-        brief="Outputs the current map with submitted orders.",
-        description="""
-        For GMs, all submitted orders are displayed. For a player, only their own orders are displayed.
-        GMs may append true as an argument to this to instead get the svg.
-        * view_map {arguments}
-        Arguments: 
-        * pass true|t|svg|s to return an svg
-        * pass standard, dark, blue, or pink for different color modes if present
-        * pass season and optionally year for older maps
-        """,
-        aliases=["viewmap", "vm"],
-    )
-    @perms.player("view map")
-    async def view_map(self, ctx: commands.Context, player: Player | None):
-        """Outputs the current map with submitted orders."""
+    async def _fetch_maps(self, ctx: commands.Context, player: Player | None, show_moves: bool = False):
         assert ctx.guild is not None
         arguments = (
             ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
@@ -237,7 +222,7 @@ class PlayerCog(commands.Cog):
         movement_only = "movement" in arguments
         turn = parse_season(arguments, board.turn)
 
-        if player and not board.orders_enabled:
+        if player and show_moves and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
             await send_message_and_file(
                 channel=ctx.channel,
@@ -251,15 +236,19 @@ class PlayerCog(commands.Cog):
             if not board.fow:
                 file, file_name = manager.draw_map(
                     ctx.guild.id,
-                    draw_moves=True,
-                    player_restriction=player,
-                    color_mode=color_mode,
-                    turn=turn,
-                    movement_only=movement_only,
-                    is_severance=ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID],
+                    draw_moves = show_moves,
+                    player_restriction = player,
+                    color_mode = color_mode,
+                    turn = turn,
+                    movement_only = movement_only and show_moves,
+                    is_severance = ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID],
+                )
+            elif show_moves:
+                file, file_name = manager.draw_fow_players_moves_map(
+                    ctx.guild.id, player, color_mode
                 )
             else:
-                file, file_name = manager.draw_fow_players_moves_map(
+                file, file_name = manager.draw_fow_current_map(
                     ctx.guild.id, player, color_mode
                 )
         except Exception as err:
@@ -285,17 +274,35 @@ class PlayerCog(commands.Cog):
         log_command(
             logger,
             ctx,
-            message=f"Generated moves map for {turn}",
+            message=f"Generated {'moves' if show_moves else 'current'} map for {turn}",
         )
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{turn}",
+            title=f"{turn} {'Orders' if show_moves else 'Current'} Map",
             message=message,
             file=file,
             file_name=file_name,
             convert_svg=convert_svg,
             file_in_embed=False,
         )
+
+    @commands.command(
+        brief="Outputs the current map with submitted orders.",
+        description="""
+        For GMs, all submitted orders are displayed. For a player, only their own orders are displayed.
+        GMs may append true as an argument to this to instead get the svg.
+        * view_map {arguments}
+        Arguments: 
+        * pass true|t|svg|s to return an svg
+        * pass standard, dark, blue, or pink for different color modes if present
+        * pass season and optionally year for older maps
+        """,
+        aliases=["viewmap", "vm"],
+    )
+    @perms.player("view map")
+    async def view_map(self, ctx: commands.Context, player: Player | None):
+        """Outputs the current map with submitted orders."""
+        await self._fetch_maps(ctx, player, show_moves=True)
 
     @commands.command(
         brief="Outputs the current map without any orders.",
@@ -310,68 +317,7 @@ class PlayerCog(commands.Cog):
     @perms.player("view current")
     async def view_current(self, ctx: commands.Context, player: Player | None) -> None:
         """Outputs the current map without any orders."""
-        assert ctx.guild is not None
-        arguments = (
-            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
-            .strip()
-            .lower()
-            .split()
-        )
-        convert_svg = not ({"true", "t", "svg", "s"} & set(arguments))
-        board = manager.get_board(ctx.guild.id)
-        color_options = board.data["svg config"].get("color_options", config.color_options)
-        color_arguments = list(set(color_options) & set(arguments))
-        color_mode = color_arguments[0] if color_arguments else None
-        turn = parse_season(arguments, board.turn)
-
-        try:
-            if not board.fow:
-                file, file_name = manager.draw_map(
-                    ctx.guild.id,
-                    player_restriction=player,
-                    color_mode=color_mode,
-                    turn=turn,
-                    is_severance=ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID],
-                )
-            else:
-                file, file_name = manager.draw_fow_players_moves_map(
-                    ctx.guild.id, player, color_mode
-                )
-        except Exception as err:
-            logger.error(err, exc_info=True)
-            log_command(
-                logger,
-                ctx,
-                message="Failed to generate map for an unknown reason",
-                level=logging.ERROR,
-            )
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Unknown Error: Please contact your local bot dev",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        message = None
-        if {"true", "t"} & set(arguments):
-            message = ("`.vc true` and `.vc t` have been deprecated and will soon be disabled.\n"
-                       "Please use `.vm svg` instead")
-
-
-        log_command(
-            logger,
-            ctx,
-            message=f"Generated current map for {turn}",
-        )
-        await send_message_and_file(
-            channel=ctx.channel,
-            title=f"{turn}",
-            message=message,
-            file=file,
-            file_name=file_name,
-            convert_svg=convert_svg,
-            file_in_embed=False,
-        )
+        await self._fetch_maps(ctx, player, show_moves=False)
 
     @commands.command(
         brief="Outputs an interactive svg that you can issue orders in",
