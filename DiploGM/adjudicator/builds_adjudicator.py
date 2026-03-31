@@ -24,6 +24,7 @@ from DiploGM.models.unit import UnitType
 if TYPE_CHECKING:
     from DiploGM.models.board import Board
     from DiploGM.models.order import Order
+    from DiploGM.models.province import Province
 
 logger = logging.getLogger(__name__)
 
@@ -165,6 +166,29 @@ class BuildsAdjudicator(Adjudicator):
 
         return 0
 
+    def _adjudicate_civil_disorder(self, player: Player, needed_disbands: int):
+        """Uses the following algorithm to determine civil disorder disbands:
+        1. Furthest from an owned supply center
+        2. Furthest from an owned core
+        3. Alphabetical order"""
+        unit_distances: dict[Province, tuple[int, int]] = {}
+        supply_centers = sorted(player.centers, key=lambda p: p.name)
+        if len(supply_centers) == 0:
+            for unit in player.units:
+                self._board.delete_unit(unit.province)
+            return
+
+        owned_cores = {c for c in supply_centers if c.core_data.core == player}
+        for unit in player.units:
+            shortest_core_distance = min([unit.province.get_distance(c) for c in owned_cores]) if owned_cores else 0
+            shortest_sc_distance = min([unit.province.get_distance(c, shortest_core_distance) for c in supply_centers])
+            unit_distances[unit.province] = (shortest_sc_distance, shortest_core_distance)
+
+        sorted_units = sorted(player.units, key=lambda u: (unit_distances[u.province][0],
+                                                           unit_distances[u.province][1]), reverse=True)
+        for i in range(needed_disbands):
+            self._board.delete_unit(sorted_units[i].province)
+
     def run(self) -> Board:
         for player in self._board.players:
             available_builds = len(player.centers) - len(player.units)
@@ -174,6 +198,7 @@ class BuildsAdjudicator(Adjudicator):
                 available_builds += self._adjudicate_order(order, available_builds, player)
             if available_builds < 0:
                 logger.warning(f"Player {player.get_name()} disbanded less orders than they should have")
+                self._adjudicate_civil_disorder(player, -available_builds)
 
         if self.parameters.get("has_vassals"):
             self._vassal_adju()

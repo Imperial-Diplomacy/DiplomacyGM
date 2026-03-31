@@ -74,6 +74,9 @@ class Parser:
                        "army", "retreat_army", "fleet", "retreat_fleet"]:
             l = get_svg_element(svg_root, self.layers[layer])
             if l is None:
+                if layer == "island_borders":
+                    logger.warning(f"Layer {layer} not found in SVG, but it might not be necessary")
+                    continue
                 raise ValueError(f"Layer {layer} not found in SVG")
             self.layer_data[layer] = l
 
