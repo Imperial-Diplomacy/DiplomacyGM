@@ -4,6 +4,7 @@ import re
 
 from DiploGM.models.turn import PhaseName, Turn
 from DiploGM.models.unit import UnitType
+from discord.ext import commands
 
 coast_dict = {
     "nc": ["nc", "north coast", "(nc)"],
@@ -138,3 +139,7 @@ def parse_variant_path(variant: str, as_filename: bool = True, return_parent: bo
                 return f"variants/{variant_name}"
             return variant_path if as_filename else variant
     raise ValueError(f"Variant {variant} does not exist or is missing a config file.")
+
+def remove_prefix(ctx: commands.Context) -> str:
+    """Removes the command prefix from the message content."""
+    return ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").strip()

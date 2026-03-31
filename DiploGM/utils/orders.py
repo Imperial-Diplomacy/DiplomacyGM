@@ -138,7 +138,7 @@ def get_orders(
     #TODO: Lots of duplicated code here
     if board.turn.is_builds():
         for player in sorted(board.players, key=lambda sort_player: sort_player.get_name()):
-            if board.data["players"][player.name].get("hidden", "false") == "true":
+            if board.is_player_hidden(player):
                 continue
             title, body = get_build_orders(player, player_restriction, ctx, tags)
             if title is None:
@@ -156,7 +156,7 @@ def get_orders(
             players = {player_restriction}
 
         for player in sorted(players, key=lambda p: p.get_name()):
-            if board.data["players"][player.name].get("hidden", "false") == "true":
+            if board.is_player_hidden(player):
                 continue
             title, body = get_move_orders(board, player, player_restriction, ctx, tags, board.turn.is_retreats())
             if title is None:
@@ -174,7 +174,7 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
     if board.turn.is_builds():
         response = ""
         for player in sorted(board.players, key=lambda sort_player: sort_player.get_name()):
-            if board.data["players"][player.name].get("hidden", "false") == "true":
+            if board.is_player_hidden(player):
                 continue
             if not player_restriction or player == player_restriction:
                 visible = [
@@ -193,7 +193,7 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
     response = ""
 
     for player in board.players:
-        if board.data["players"][player.name].get("hidden", "false") == "true":
+        if board.is_player_hidden(player):
             continue
         if board.turn.is_retreats():
             in_moves = lambda u: u == u.province.dislodged_unit

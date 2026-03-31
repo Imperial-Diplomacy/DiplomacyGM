@@ -11,6 +11,7 @@ from DiploGM import perms
 from DiploGM.config import MAP_ARCHIVE_SAS_TOKEN
 from DiploGM.utils import log_command, parse_season, send_message_and_file, upload_map_to_archive
 from DiploGM.manager import Manager
+from DiploGM.utils.sanitise import remove_prefix
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -24,10 +25,10 @@ class AdminCog(commands.Cog):
     @commands.command(hidden=True)
     @perms.superuser_only("send a GM announcement")
     async def announce(self, ctx: commands.Context) -> None:
-        """Sends an annouuncement to all servers."""
+        """Sends an announcement to all servers."""
         bot: commands.Bot = ctx.bot
         guilds_with_games = manager.list_servers()
-        content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
+        content = remove_prefix(ctx)
         content = re.sub(r"<@&[0-9]{16,20}>", r"{}", content)
         roles = list(map(lambda role: role.name, ctx.message.role_mentions))
         message = ""
@@ -84,9 +85,7 @@ class AdminCog(commands.Cog):
         """Lists all servers the bot is in."""
         servers_with_games = manager.list_servers()
         message = ""
-        args = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").split(
-            " "
-        )
+        args = remove_prefix(ctx).split(" ")
         send_id = "id" in args
         send_invite = "invite" in args
         for server in ctx.bot.guilds:
@@ -135,7 +134,7 @@ class AdminCog(commands.Cog):
     @perms.superuser_only("leave server")
     async def leave_server(self, ctx: commands.Context) -> None:
         """Leaves a server with a given ID."""
-        leave_id = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
+        leave_id = remove_prefix(ctx)
         try:
             leave_id = int(leave_id)
         except ValueError:
@@ -202,7 +201,7 @@ class AdminCog(commands.Cog):
 
         # parse usernames from trailing contents
         # .bulk_allocate_role <@B1.4 Player> elisha thisisflare kingofprussia ...
-        content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
+        content = remove_prefix(ctx)
 
         usernames = []
         components = content.split(" ")
@@ -274,12 +273,7 @@ class AdminCog(commands.Cog):
                 embed_colour=config.ERROR_COLOUR,
             )
             return
-        arguments = (
-            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
-            .strip()
-            .lower()
-            .split()
-        )
+        arguments = remove_prefix(ctx).lower().split()
         server_id = int(arguments[0])
         board = manager.get_board(server_id)
         season = parse_season(arguments[1:], board.turn)
@@ -333,11 +327,7 @@ class AdminCog(commands.Cog):
                 self.text += " ".join(map(str, args)) + "\n"
 
         board = manager.get_board(ctx.guild.id)
-        code = (
-            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
-            .strip()
-            .strip("`")
-        )
+        code = remove_prefix(ctx).strip("`")
 
         embed_print = ContainedPrinter()
 

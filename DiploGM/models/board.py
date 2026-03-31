@@ -109,6 +109,10 @@ class Board:
             return {player for player in self.players if player.is_active}
         return self.players
 
+    def is_player_hidden(self, player: Player) -> bool:
+        """Checks to see if a player is hidden in the datafile."""
+        return self.data["players"][player.name].get("hidden", "false") == "true"
+
     def add_nickname(self, player: Player, nickname: str):
         """Adds or updates a player's nickname."""
         cleaned_name = sanitise_name(nickname.lower())
@@ -141,7 +145,7 @@ class Board:
     def get_players_sorted_by_score(self) -> list[Player]:
         """Gets a list of players sorted by their score."""
         return sorted(self.get_players(),
-            key=lambda sort_player: (self.data["players"][sort_player.name].get("hidden", "false"),
+            key=lambda sort_player: (self.is_player_hidden(sort_player),
                                     -self.get_score(sort_player),
                                     sort_player.get_name().lower()))
 
@@ -318,7 +322,6 @@ class Board:
             if unit.player is not None:
                 unit.player.units.remove(unit)
             self.units.remove(unit)
-
 
     def get_winning_dp_order(self, unit: Unit) -> UnitOrder | None:
         # We find which orders got the highest bid, and assign that to the unit.

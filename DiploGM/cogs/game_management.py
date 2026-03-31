@@ -14,7 +14,6 @@ from discord import (
     PermissionOverwrite,
     Role,
     TextChannel,
-    Thread,
     Guild,
 )
 from discord.ext import commands
@@ -37,6 +36,7 @@ from DiploGM.models.extension import ExtensionEvent, SQLiteExtensionEventReposit
 from DiploGM.models.order import Disband, Build
 from DiploGM.models.player import Player
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
+from DiploGM.utils.sanitise import remove_prefix
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -87,7 +87,7 @@ class GameManagementCog(commands.Cog):
             Available variants can be found by running .list_variants
         """
         assert ctx.guild is not None
-        gametype = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
+        gametype = remove_prefix(ctx)
         if gametype == "":
             gametype = "classic"
         else:
@@ -207,7 +207,7 @@ class GameManagementCog(commands.Cog):
         """
         assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
-        content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").strip()
+        content = remove_prefix(ctx)
         adjust = content.startswith("adjust")
         cancel = content.startswith("cancel")
         if adjust:
@@ -335,10 +335,7 @@ class GameManagementCog(commands.Cog):
         timestamp = board.data.get("deadline")
 
         # extract deadline argument
-        parsed_timestamp = re.match(
-            r"<t:(\d+):[a-zA-Z]>",
-            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").strip(),
-        )
+        parsed_timestamp = re.match(r"<t:(\d+):[a-zA-Z]>", remove_prefix(ctx))
         if parsed_timestamp:
             timestamp = parsed_timestamp.group(1)
 
@@ -857,12 +854,7 @@ class GameManagementCog(commands.Cog):
         board = manager.get_board(guild.id)
         color_options = board.data["svg config"].get("color_options", config.color_options)
 
-        arguments = (
-            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
-            .strip()
-            .lower()
-            .split()
-        )
+        arguments = remove_prefix(ctx).lower().split()
         return_svg = not ({"true", "t", "svg", "s"} & set(arguments))
         color_arguments = list(set(color_options) & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
@@ -1074,9 +1066,7 @@ class GameManagementCog(commands.Cog):
             `.edit <commands>`
         """
         assert ctx.guild is not None
-        edit_commands = ctx.message.content.removeprefix(
-            f"{ctx.prefix}{ctx.invoked_with}"
-        ).strip()
+        edit_commands = remove_prefix(ctx)
         title, message, file, file_name, embed_colour = parse_edit_state(edit_commands, manager.get_board(ctx.guild.id))
         log_command(logger, ctx, message=title)
         await send_message_and_file(channel=ctx.channel,
@@ -1333,9 +1323,7 @@ class GameManagementCog(commands.Cog):
             `.edit_game <commands>`
         """
         assert ctx.guild is not None
-        param_commands = ctx.message.content.removeprefix(
-            f"{ctx.prefix}{ctx.invoked_with}"
-        ).strip()
+        param_commands = remove_prefix(ctx)
         title, message, file, file_name, embed_colour = parse_board_params(param_commands,
                                                                            manager.get_board(ctx.guild.id))
         log_command(logger, ctx, message=title)

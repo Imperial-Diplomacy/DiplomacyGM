@@ -248,7 +248,7 @@ def _delete_unit(keywords: list[str], board: Board) -> None:
 
 def _delete_dislodged_unit(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
-    unit = board.delete_dislodged_unit(province)
+    unit = board.delete_unit(province, is_dislodged=True)
     if not unit:
         raise RuntimeError(f"No dislodged unit to delete in {province}")
     get_connection().execute_arbitrary_sql(

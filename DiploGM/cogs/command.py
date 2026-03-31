@@ -15,7 +15,7 @@ from DiploGM.utils import (
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
 from DiploGM.models.player import Player
 from DiploGM.models.province import ProvinceType
-from DiploGM.utils.sanitise import parse_season
+from DiploGM.utils.sanitise import parse_season, remove_prefix
 
 if TYPE_CHECKING:
     from DiploGM.models.board import Board
@@ -90,7 +90,7 @@ class CommandCog(commands.Cog):
         points_length = len(str(scoreboard_rows[0][1]))
 
         for index, player in scoreboard_rows:
-            if board.data["players"][player.name].get("hidden", "false") == "true":
+            if board.is_player_hidden(player):
                 continue
             response += (
                 f"\n\\#{index: >{index_length}} | {player.points: <{points_length}} | **{player.get_name()}**: "
@@ -122,7 +122,7 @@ class CommandCog(commands.Cog):
             else:
                 player_name = player.get_name()
 
-            if board.data["players"][player.name].get("hidden", "false") == "true":
+            if board.is_player_hidden(player):
                 continue
             response += (
                 f"\n**{player_name}**: "
@@ -150,12 +150,7 @@ class CommandCog(commands.Cog):
     async def scoreboard(self, ctx: commands.Context) -> None:
         """Outputs the scoreboard. Can be optionally sorted alphabetically."""
         assert ctx.guild is not None
-        arguments = (
-            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
-            .strip()
-            .lower()
-            .split()
-        )
+        arguments = remove_prefix(ctx).lower().split()
         csv = "csv" in arguments
         alphabetical = len({"a", "alpha", "alphabetical"} & set(arguments)) > 0
 
@@ -297,9 +292,7 @@ class CommandCog(commands.Cog):
             )
             return
 
-        province_name = ctx.message.content.removeprefix(
-            f"{ctx.prefix}{ctx.invoked_with}"
-        ).strip()
+        province_name = remove_prefix(ctx)
         if not province_name:
             log_command(logger, ctx, message="No province given")
             await send_message_and_file(
@@ -398,9 +391,7 @@ class CommandCog(commands.Cog):
             )
             return
 
-        player_name = ctx.message.content.removeprefix(
-            f"{ctx.prefix}{ctx.invoked_with}"
-        ).strip()
+        player_name = remove_prefix(ctx)
         if not player_name:
             log_command(logger, ctx, message="No player given")
             await send_message_and_file(
@@ -527,7 +518,7 @@ class CommandCog(commands.Cog):
             prefix = prefix + "] "
         else:
             prefix = ""
-        name = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").strip()
+        name = remove_prefix(ctx)
         if name == "":
             await send_message_and_file(
                 channel=ctx.channel,

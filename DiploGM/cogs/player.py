@@ -9,6 +9,7 @@ from DiploGM import perms
 from DiploGM.db.database import get_connection
 from DiploGM.parse_order import parse_order, parse_remove_order
 from DiploGM.utils import get_orders, log_command, parse_season, send_message_and_file
+from DiploGM.utils.sanitise import remove_prefix
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
 from DiploGM.models.player import ForcedDisbandOption, Player, ViewOrdersTags, OrdersSubsetOption
 
@@ -91,7 +92,7 @@ class PlayerCog(commands.Cog):
             )
             return
 
-        content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
+        content = remove_prefix(ctx)
 
         message = parse_remove_order(content, player, board)
         log_command(logger, ctx, message=message["message"])
@@ -155,12 +156,7 @@ class PlayerCog(commands.Cog):
     async def view_orders(self, ctx: commands.Context, player: Player | None) -> None:
         """Outputs your current submitted orders."""
         assert ctx.guild is not None
-        arguments = (
-            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
-            .strip()
-            .lower()
-            .split()
-        )
+        arguments = remove_prefix(ctx).lower().split()
 
         any_alias_in_args: Callable[[Iterable[str]], bool] = lambda aliases: 0 < len(set(arguments).intersection(set(aliases)))
 
@@ -206,12 +202,7 @@ class PlayerCog(commands.Cog):
 
     async def _fetch_maps(self, ctx: commands.Context, player: Player | None, show_moves: bool = False):
         assert ctx.guild is not None
-        arguments = (
-            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
-            .strip()
-            .lower()
-            .split()
-        )
+        arguments = remove_prefix(ctx).lower().split()
         convert_svg = (player is not None) or not (
             {"true", "t", "svg", "s"} & set(arguments)
         )
@@ -327,12 +318,7 @@ class PlayerCog(commands.Cog):
     async def view_gui(self, ctx: commands.Context, player: Player | None) -> None:
         """Outputs an interactive svg that you can issue orders in."""
         assert ctx.guild is not None
-        arguments = (
-            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
-            .strip()
-            .lower()
-            .split()
-        )
+        arguments = remove_prefix(ctx).lower().split()
         board = manager.get_board(ctx.guild.id)
         color_options = board.data["svg config"].get("color_options", config.color_options)
         color_arguments = list(set(color_options) & set(arguments))
@@ -430,12 +416,7 @@ class PlayerCog(commands.Cog):
                 embed_colour=config.ERROR_COLOUR,
             )
             return
-        arguments = (
-            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
-            .strip()
-            .lower()
-            .split()
-        )
+        arguments = remove_prefix(ctx).lower().split()
 
         if len(arguments) < 3:
             await send_message_and_file(
@@ -516,12 +497,7 @@ class PlayerCog(commands.Cog):
         assert ctx.guild is not None
         guild = ctx.guild
         gm_arguments = {"global"}
-        arguments = (
-            ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
-            .strip()
-            .lower()
-            .split()
-        )
+        arguments = remove_prefix(ctx).lower().split()
 
 
         if len(set(arguments).intersection(gm_arguments)) == 0:

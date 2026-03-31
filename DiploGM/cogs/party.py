@@ -15,6 +15,7 @@ from DiploGM.manager import Manager
 from DiploGM import perms
 from DiploGM.config import ERROR_COLOUR, is_bumble, temporary_bumbles, HUB_SERVER_ID
 from DiploGM.utils import log_command, send_message_and_file
+from DiploGM.utils.sanitise import remove_prefix
 from DiploGM.db.database import get_connection
 
 logger = logging.getLogger(__name__)
@@ -95,7 +96,7 @@ class PartyCog(commands.Cog):
                 embed_colour=ERROR_COLOUR,
             )
             return
-        content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
+        content = remove_prefix(ctx)
         content = content.replace(channel.mention, "").strip()
         if len(content) == 0:
             await send_message_and_file(
@@ -141,7 +142,7 @@ class PartyCog(commands.Cog):
         if random.random() < 0.1:
             author = ctx.message.author
             assert isinstance(author, discord.Member)
-            content = ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}")
+            content = remove_prefix(ctx)
             if content == "":
                 content = " nothing"
             name = author.nick

@@ -118,7 +118,7 @@ class PanelDrawer:
         else:
             players = self.board.get_players_sorted_by_score()
         players = sorted(players, key=lambda hidden_player:
-                                  self.board.data["players"][hidden_player.name].get("hidden", "false") == "true")
+                                  self.board.is_player_hidden(hidden_player))
 
         high_player_count = (len(self.board.get_players()) > len(self.scoreboard_power_locations)
                              or self.board.data.get("vassals") == "enabled")
