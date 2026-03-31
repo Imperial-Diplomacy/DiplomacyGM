@@ -113,10 +113,20 @@ class Board:
         """Checks to see if a player is hidden in the datafile."""
         return self.data["players"][player.name].get("hidden", "false") == "true"
 
-    def add_nickname(self, player: Player, nickname: str):
-        """Adds or updates a player's nickname."""
+    def add_nickname(self, player: Player, nickname: str) -> bool:
+        """Adds or updates a player's nickname.
+        Returns True if the nickname was removed, False if it was added/updated."""
         cleaned_name = sanitise_name(nickname.lower())
         simple_name = simple_player_name(nickname)
+
+        if player.name.lower() in [nickname.lower(), cleaned_name, simple_name]:
+            if (old_nick := self.data["players"][player.name].get("nickname")):
+                self.name_to_player.pop(old_nick.lower(), None)
+                self.name_to_player.pop(sanitise_name(old_nick.lower()), None)
+                self.name_to_player.pop(simple_player_name(old_nick), None)
+            self.data["players"][player.name].pop("nickname", None)
+            return True
+
         if (nickname.lower() in self.name_to_player
             or cleaned_name in self.name_to_player
             or simple_name in self.name_to_player):
@@ -131,6 +141,7 @@ class Board:
         self.name_to_player[nickname.lower()] = player
         self.name_to_player[cleaned_name] = player
         self.name_to_player[simple_name] = player
+        return False
 
     def get_score(self, player: Player) -> float:
         """Gets the player's score as a percentage towards victory, depending on the victory conditions."""
@@ -278,23 +289,15 @@ class Board:
         unit.coast = new_coast
         return unit
 
-    def delete_unit(self, province: Province) -> Unit | None:
+    def delete_unit(self, province: Province, is_dislodged: bool = False) -> Unit | None:
         """Deletes a unit from the board."""
-        unit = province.unit
+        unit = province.dislodged_unit if is_dislodged else province.unit
         if not unit:
             return None
-        province.unit = None
-        if unit.player is not None:
-            unit.player.units.remove(unit)
-        self.units.remove(unit)
-        return unit
-
-    def delete_dislodged_unit(self, province: Province) -> Unit | None:
-        """Deletes a dislodged unit from the board."""
-        unit = province.dislodged_unit
-        if not unit:
-            return None
-        province.dislodged_unit = None
+        if is_dislodged:
+            province.dislodged_unit = None
+        else:
+            province.unit = None
         if unit.player is not None:
             unit.player.units.remove(unit)
         self.units.remove(unit)

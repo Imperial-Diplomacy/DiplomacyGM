@@ -71,13 +71,14 @@ class Player:
         self.board: Optional[Board] = None
 
 
-    def find_discord_role(self, roles: Sequence[discord.Role]) -> Optional[discord.Role]:
+    def find_discord_role(self, roles: Sequence[discord.Role], get_order_role: bool = False) -> Optional[discord.Role]:
         """Gets the Discord role associated with this player, if it exists."""
+        suffix = "-orders" if get_order_role else ""
         for role in roles:
-            if simple_player_name(role.name) == simple_player_name(self.get_name()):
+            if simple_player_name(role.name) == simple_player_name(self.get_name()) + suffix:
                 return role
         for role in roles:
-            if simple_player_name(role.name) == simple_player_name(self.name):
+            if simple_player_name(role.name) == simple_player_name(self.name) + suffix:
                 return role
         return None
 

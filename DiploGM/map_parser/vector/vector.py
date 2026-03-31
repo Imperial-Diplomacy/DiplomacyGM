@@ -40,6 +40,8 @@ class Parser:
     def __init__(self, data: str):
         self.datafile = data
 
+        # Loads the config files for the variant
+        # We get the variant-wide config, and then apply any version-specific changes, if applicible
         config_merger = Merger(
             [
                 (list, ["override"]),
@@ -49,7 +51,6 @@ class Parser:
             ["override"],
             ["override"]
         )
-
         with open(f"{parse_variant_path(data)}/config.json", "r", encoding="utf-8") as f:
             variant_data = json.load(f)
         try:
@@ -69,6 +70,7 @@ class Parser:
         self.layers = self.data[SVG_CONFIG_KEY]
         self.layer_data: dict[str, Element] = {}
 
+        # Gets the SVG elements for each layer, and stores them in the Parser
         for layer in ["land_layer", "island_borders", "island_fill_layer",
                        "sea_borders", "province_names", "supply_center_icons",
                        "army", "retreat_army", "fleet", "retreat_fleet"]:
@@ -80,6 +82,7 @@ class Parser:
                 raise ValueError(f"Layer {layer} not found in SVG")
             self.layer_data[layer] = l
 
+        # If there are starting units in the map, get that layer as well
         if self.layers["detect_starting_units"]:
             starting_units = get_svg_element(svg_root, self.layers["starting_units"])
             if starting_units is None:
@@ -115,34 +118,39 @@ class Parser:
             for element in layer:
                 name = element.get(f"{NAMESPACE.get('inkscape')}label")
                 if not name:
-                    logger.error(f"[{layer_name}] Element has no name: {etree.tostring(element, encoding='unicode')[:120]}")
+                    logger.error("[%s] Element has no name: %s",
+                                 layer_name, etree.tostring(element, encoding='unicode')[:120])
                     is_valid = False
                     continue
 
                 if name in seen_names:
-                    logger.error(f"[{layer_name}] Duplicate name: '{name}'")
+                    logger.error("[%s] Duplicate name: '%s'", layer_name, name)
                     is_valid = False
                 else:
                     seen_names.add(name)
 
         # All elements in these layers should have names that reference known provinces
-        for layer_name in ["island_fill_layer", "supply_center_icons", "army", "retreat_army", "fleet", "retreat_fleet"]:
+        for layer_name in ["island_fill_layer", "supply_center_icons",
+                           "army", "retreat_army", "fleet", "retreat_fleet"]:
             layer = self.layer_data[layer_name]
             for element in layer:
                 name = element.get(f"{NAMESPACE.get('inkscape')}label")
                 if not name:
-                    logger.error(f"[{layer_name}] Element has no name: {etree.tostring(element, encoding='unicode')[:120]}")
+                    logger.error("[%s] Element has no name: %s",
+                                 layer_name, etree.tostring(element, encoding='unicode')[:120])
                     is_valid = False
                     continue
 
                 name = re.sub(r" \(?[ensw]c\)?$", "", name)  # Remove coast names
                 if name not in seen_names:
-                    logger.error(f"[{layer_name}] Name '{name}' not found in any province layer")
+                    logger.error("[%s] Name '%s' not found in any province layer",
+                                 layer_name, name)
                     is_valid = False
 
         return is_valid
 
     def parse(self) -> Board:
+        """Parses the SVG and config data to create a Board with the initial state."""
         logger.debug("map_parser.vector.parse.start")
         start = time.time()
 
@@ -150,8 +158,8 @@ class Parser:
         self.color_to_player = {}
         self.name_to_province = {}
 
+        # Get the players and their colors from the config, provided it's not a chaos game.
         self.autodetect_players = self.data["players"] == "chaos"
-
         if not self.autodetect_players:
             for name, data in self.data["players"].items():
                 color = data["color"]
@@ -196,6 +204,7 @@ class Parser:
         if "victory_count" not in self.data:
             self.data["victory_count"] = int((len([1 for p in provinces if p.has_supply_center]) + 1) / 2)
 
+        # Creates a deepcopy of the game data, and then loads player names and ISCC/VSCC values if needed
         game_data = copy.deepcopy(self.data)
         if (is_chaos := self.data["players"] == "chaos"):
             game_data["players"] = {}
@@ -233,6 +242,7 @@ class Parser:
                     province.set_unit_coordinate(None, unit_type, is_retreat, coast)
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
+        """Reads the SVG and returns a set of Provinces and a set of adjacencies between province names."""
         if self.cache_provinces is None:
             # set coordinates and names
             raw_provinces: set[Province] = self._get_province_coordinates()
@@ -249,6 +259,7 @@ class Parser:
                 self._initialize_province_names(self.cache_provinces)
 
         provinces = copy.deepcopy(self.cache_provinces)
+        # Stores the Provinces in the Parser, and applies Convoyable Islands if applicable
         for province in provinces:
             self.name_to_province[province.name] = province
             if self.data.get("convoyable_islands") == "enabled" and province.type == ProvinceType.ISLAND:
@@ -341,12 +352,15 @@ class Parser:
 
     def _get_provinces(self) -> set[Province]:
         provinces, adjacencies = self.read_map()
+
+        # Sets adjacencies for each province based on the adjacencies file
         for name1, name2 in adjacencies:
             province1 = self.name_to_province[name1]
             province2 = self.name_to_province[name2]
             province1.set_adjacent(province2)
             province2.set_adjacent(province1)
 
+        # Apply any manual overrides from the config file (e.g. adding adjacencies, multiple coasts, etc.)
         provinces = self.json_cheats(provinces)
 
         # set coasts

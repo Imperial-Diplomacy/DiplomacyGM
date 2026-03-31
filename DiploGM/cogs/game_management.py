@@ -36,7 +36,7 @@ from DiploGM.models.extension import ExtensionEvent, SQLiteExtensionEventReposit
 from DiploGM.models.order import Disband, Build
 from DiploGM.models.player import Player
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
-from DiploGM.utils.sanitise import remove_prefix
+from DiploGM.utils.sanitise import remove_prefix, sanitise_name, simple_player_name
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -1333,6 +1333,71 @@ class GameManagementCog(commands.Cog):
                                     file=file,
                                     file_name=file_name,
                                     embed_colour=embed_colour)
+
+    @commands.command(brief="Renames a player",
+                      description="Renames a player, and updates their role and channel names")
+    @perms.gm_only("rename player")
+    async def rename_player(self, ctx: commands.Context, old_name: str, new_name: str) -> None:
+        """Renames a player, and updates their role and channel names if possible.
+
+        Usage: 
+            `.rename_player <old_name> <new_name>`
+
+        Note:
+            To include a space in a name, surround the name with quotes.
+            You cannot rename a player to have the same name as another existing player.
+        """
+        assert ctx.guild is not None
+        message = ""
+        board = manager.get_board(ctx.guild.id)
+        if not (player := board.get_player(old_name)):
+            await send_message_and_file(
+                channel=ctx.channel,
+                message=f"Could not find a player with the name {old_name}",
+                embed_colour=config.ERROR_COLOUR,
+            )
+            return
+
+        old_role = player.find_discord_role(ctx.guild.roles)
+        old_order_role = player.find_discord_role(ctx.guild.roles, get_order_role=True)
+        order_channel_name = player.get_name().lower().replace(" ", "-") + "-orders"
+        void_channel_name = player.get_name().lower().replace(" ", "-") + "-void"
+
+        has_removed_nickname = board.add_nickname(player, new_name)
+        if has_removed_nickname:
+            get_connection().execute_arbitrary_sql(
+                "DELETE FROM board_parameters WHERE board_id = ? AND parameter_key = ?",
+                (board.board_id, f"players/{player.name}/nickname")
+            )
+        else:
+            get_connection().execute_arbitrary_sql(
+                "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
+                (board.board_id, f"players/{player.name}/nickname", new_name)
+            )
+        message += f"Renamed player {old_name} to {new_name}."
+
+        if old_role:
+            await old_role.edit(name = sanitise_name(new_name))
+            message += f"\nUpdated role {sanitise_name(old_name)} to {sanitise_name(new_name)}."
+        if old_order_role:
+            await old_order_role.edit(name = sanitise_name(new_name) + "-orders")
+            message += f"\nUpdated order role {sanitise_name(old_name)}-orders to {sanitise_name(new_name)}-orders."
+
+        order_channel = discord.utils.find(lambda c: c.name == order_channel_name, ctx.guild.text_channels)
+        if order_channel:
+            await order_channel.edit(name = new_name.lower().replace(" ", "-") + "-orders")
+            message += f"\nUpdated order channel {order_channel_name} to {new_name.lower().replace(" ", "-") + "-orders"}."
+
+        void_channel = discord.utils.find(lambda c: c.name == void_channel_name, ctx.guild.text_channels)
+        if void_channel:
+            await void_channel.edit(name = new_name.lower().replace(" ", "-") + "-void")
+            message += f"\nUpdated void channel {void_channel_name} to {new_name.lower().replace(" ", "-") + "-void"}."
+
+        log_command(logger, ctx, message=message)
+        await send_message_and_file(
+            channel=ctx.channel,
+            message=message,
+        )
 
 async def setup(bot):
     cog = GameManagementCog(bot)
