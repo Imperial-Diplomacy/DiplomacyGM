@@ -17,6 +17,7 @@ from DiploGM.config import ERROR_COLOUR, is_bumble, temporary_bumbles, HUB_SERVE
 from DiploGM.utils import log_command, send_message_and_file
 from DiploGM.utils.sanitise import remove_prefix
 from DiploGM.db.database import get_connection
+from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -80,31 +81,16 @@ class PartyCog(commands.Cog):
         """
         # noinspection PyTypeChecker
         if len(ctx.message.channel_mentions) == 0:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="No Channel Given",
-                embed_colour=ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.CHANNEL_NOT_GIVEN)
             return
         channel = ctx.message.channel_mentions[0]
         if not isinstance(channel, discord.abc.Messageable):
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Channel is not messageable",
-                embed_colour=ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.NOT_MESSAGEABLE)
             return
         content = remove_prefix(ctx)
         content = content.replace(channel.mention, "").strip()
         if len(content) == 0:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="No Message Given",
-                embed_colour=ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.MESSAGE_NOT_GIVEN)
             return
 
         message = await send_message_and_file(channel=channel, message=content)

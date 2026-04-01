@@ -36,7 +36,8 @@ from DiploGM.models.extension import ExtensionEvent, SQLiteExtensionEventReposit
 from DiploGM.models.order import Disband, Build
 from DiploGM.models.player import Player
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
-from DiploGM.utils.sanitise import remove_prefix, sanitise_name, simple_player_name
+from DiploGM.utils.sanitise import remove_prefix, sanitise_name
+from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -347,11 +348,7 @@ class GameManagementCog(commands.Cog):
 
         if len(player_roles) == 0:
             log_command(logger, ctx, message="No player role found")
-            await send_message_and_file(
-                channel=ctx.channel,
-                message="No player category found",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.NO_PLAYER_ROLE)
             return
 
         player_categories: list[CategoryChannel] = []
@@ -361,11 +358,7 @@ class GameManagementCog(commands.Cog):
 
         if len(player_categories) == 0:
             log_command(logger, ctx, message="No player category found")
-            await send_message_and_file(
-                channel=ctx.channel,
-                message="No player category found",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.NO_PLAYER_CATEGORY)
             return
 
         # ping required players
@@ -662,11 +655,7 @@ class GameManagementCog(commands.Cog):
                 message="Failed for an unknown reason",
                 level=logging.ERROR,
             )
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Unknown Error: Please contact your local bot dev",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.UNKNOWN_ERROR)
             return ""
         orders_log_channel = _get_orders_log(ctx.guild)
         if not orders_log_channel or not isinstance(orders_log_channel, TextChannel):

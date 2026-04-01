@@ -67,6 +67,15 @@ class SlashSubstituteCog(commands.Cog):
         None
 
         """
+        def send_advertise_error(message: str):
+            assert isinstance(interaction.channel, discord.TextChannel)
+            return send_message_and_file(
+                channel=interaction.channel,
+                title="Error running /advertise",
+                message=message,
+                embed_colour=config.ERROR_COLOUR,
+            )
+
         guild = interaction.guild
         if (not guild
             or not isinstance(interaction.user, discord.Member)
@@ -112,12 +121,7 @@ class SlashSubstituteCog(commands.Cog):
                 if v is None:
                     out += f"- {k}\n"
 
-            await send_message_and_file(
-                channel=interaction.channel,
-                title="/advertise output",
-                message=f"{out}",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_advertise_error(f"{out}")
             await interaction.response.send_message("Failure!", ephemeral=True)
             return
 
@@ -125,22 +129,14 @@ class SlashSubstituteCog(commands.Cog):
             lambda r: r.name == "Interested Substitute", locations["hub_server"].roles
         )
         if not interested_sub_role:
-            await send_message_and_file(
-                channel=interaction.channel,
-                message="Could not find the role for interested substitutes.",
-            )
+            await send_advertise_error("Could not find the role for interested substitutes.")
             return
 
         board = manager.get_board(guild.id)
         player = board.get_player(power_role.name)
         if not player:
             out = f"Could not find Player object for given role {power_role.mention}"
-            await send_message_and_file(
-                channel=interaction.channel,
-                title="/advertise output",
-                message=f"{out}",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_advertise_error(f"{out}")
             await interaction.response.send_message("Failure!", ephemeral=True)
             return
 
@@ -154,12 +150,7 @@ class SlashSubstituteCog(commands.Cog):
                 timestamp_msg = f"until <t:{match.group(1)}:F>"
             else:
                 out = "Improper value for argument 'timestamp'"
-                await send_message_and_file(
-                    channel=interaction.channel,
-                    title="/advertise output",
-                    message=f"{out}",
-                    embed_colour=config.ERROR_COLOUR,
-                )
+                await send_advertise_error(f"{out}")
                 await interaction.followup.send("Failure!", ephemeral=True)
                 return
 
@@ -253,6 +244,15 @@ class SlashSubstituteCog(commands.Cog):
         None
 
         """
+        def send_substitute_error(message: str):
+            assert isinstance(interaction.channel, discord.TextChannel)
+            return send_message_and_file(
+                channel=interaction.channel,
+                title="Error running /substitute",
+                message=message,
+                embed_colour=config.ERROR_COLOUR,
+            )
+
         guild = interaction.guild
         bot = interaction.client
         if (not guild
@@ -297,12 +297,7 @@ class SlashSubstituteCog(commands.Cog):
                 if v is None:
                     out += f"- {k}\n"
 
-            await send_message_and_file(
-                channel=interaction.channel,
-                title="Error running /substitute",
-                message=f"{out}",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_substitute_error(f"{out}")
             await interaction.response.send_message("Failure!", ephemeral=True)
             return
 
@@ -311,12 +306,7 @@ class SlashSubstituteCog(commands.Cog):
         player = board.get_player(power_role.name)
         if not player:
             out = f"Could not find Player object for given role {power_role.mention}"
-            await send_message_and_file(
-                channel=interaction.channel,
-                title="Error running /substitute",
-                message=f"{out}",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_substitute_error(f"{out}")
             await interaction.response.send_message("Failure!", ephemeral=True)
             return
 
@@ -338,12 +328,7 @@ class SlashSubstituteCog(commands.Cog):
                 if v is None:
                     out += f"- {k}\n"
 
-            await send_message_and_file(
-                channel=interaction.channel,
-                title="Error running /substitute",
-                message=f"{out}",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_substitute_error(f"{out}")
             await interaction.response.send_message("Failure!", ephemeral=True)
             return
 

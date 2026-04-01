@@ -8,7 +8,7 @@ import numpy as np
 from xml.etree.ElementTree import Element, tostring
 
 import shapely
-from deepmerge import Merger
+from deepmerge.merger import Merger
 from lxml import etree
 
 from DiploGM.map_parser.vector.transform import TransGL3
@@ -96,7 +96,8 @@ class Parser:
             self.layer_data["impassibles_layer"] = impassibles_layer
 
         self.fow = self.layers.get("fow", False)
-        self.year_offset = self.layers.get("year", 1642)
+        # TODO: Move this out of SVG layers and update configs accordingly
+        self.year_offset = self.layers.get("year", 1901)
 
         self.color_to_player: dict[str, Player | None] = {}
         self.name_to_province: dict[str, Province] = {}

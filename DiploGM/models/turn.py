@@ -13,7 +13,7 @@ class PhaseName(Enum):
 class Turn:
     """Class representing a turn in the game, including the year and phase.
     Start_year is included mostly for legacy database reasons."""
-    def __init__(self, year: int = 1642, phase: PhaseName = PhaseName.SPRING_MOVES, start_year: int = 1642):
+    def __init__(self, year: int = 1901, phase: PhaseName = PhaseName.SPRING_MOVES, start_year: int = 1901):
         self.phase_names: dict[PhaseName, str] = {
             PhaseName.SPRING_MOVES: "Spring Moves",
             PhaseName.SPRING_RETREATS: "Spring Retreats",

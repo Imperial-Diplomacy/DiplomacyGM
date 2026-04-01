@@ -34,7 +34,7 @@ class Board:
         data: dict,
         datafile: str,
         fow: bool = False,
-        year_offset: int = 1642
+        year_offset: int = 1901
     ):
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces

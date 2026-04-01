@@ -10,6 +10,7 @@ from DiploGM.config import ERROR_COLOUR, HUB_SERVER_ID, PARTIAL_ERROR_COLOUR
 from DiploGM.models.spec_request import SpectatorBan, SpectatorBanRepository
 from DiploGM.utils import send_message_and_file
 from DiploGM.manager import Manager
+from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -342,12 +343,11 @@ class SpectatorCog(commands.Cog):
 
             if end_ts is not None and now_ts < end_ts:
                 await interaction.response.send_message(
-                    f"You are currently banned from spectating with DiploGM until this time:\n\n{end_ts}\n\nContact the Imperial Diplomacy Moderation team if you are unsure why.",
+                    f"You are currently banned from spectating with DiploGM until this time:\n\n{end_ts}\n\nContact the Moderation team if you are unsure why.",
                     ephemeral=True,
                 )
                 return
-            else:
-                self.ban_repo.delete(requester.id)
+            self.ban_repo.delete(requester.id)
 
         # check for membership and verification on the hub Server
         hub = self.bot.get_guild(HUB_SERVER_ID)
@@ -490,21 +490,11 @@ class SpectatorCog(commands.Cog):
             return
 
         if len(ctx.message.role_mentions) == 0:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Did not mention a nation.",
-                embed_colour=ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.POWER_NOT_MENTIONED)
             return
 
         if len(ctx.message.mentions) == 0:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Did not mention a user.",
-                embed_colour=ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.USER_NOT_MENTIONED)
             return
 
         user = ctx.message.mentions[0]

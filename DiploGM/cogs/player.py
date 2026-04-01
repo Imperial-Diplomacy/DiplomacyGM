@@ -12,6 +12,7 @@ from DiploGM.utils import get_orders, log_command, parse_season, send_message_an
 from DiploGM.utils.sanitise import remove_prefix
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
 from DiploGM.models.player import ForcedDisbandOption, Player, ViewOrdersTags, OrdersSubsetOption
+from DiploGM.utils.send_message import ErrorMessage, send_error, send_orders_locked_error
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -49,12 +50,7 @@ class PlayerCog(commands.Cog):
 
         if player and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Orders locked!",
-                message="If you think this is an error, contact a GM.",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_orders_locked_error(ctx.channel)
             return
 
         message = parse_order(ctx.message.content, player, board)
@@ -84,12 +80,7 @@ class PlayerCog(commands.Cog):
 
         if player and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Orders locked!",
-                message="If you think this is an error, contact a GM.",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_orders_locked_error(ctx.channel)
             return
 
         content = remove_prefix(ctx)
@@ -182,11 +173,7 @@ class PlayerCog(commands.Cog):
                 message="Failed for an unknown reason",
                 level=logging.ERROR,
             )
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Unknown Error: Please contact your local bot dev",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.UNKNOWN_ERROR)
             return
         log_command(
             logger,
@@ -215,12 +202,7 @@ class PlayerCog(commands.Cog):
 
         if player and show_moves and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Orders locked!",
-                message="If you think this is an error, contact a GM.",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_orders_locked_error(ctx.channel)
             return
 
         try:
@@ -250,11 +232,7 @@ class PlayerCog(commands.Cog):
                 message="Failed to generate map for an unknown reason",
                 level=logging.ERROR,
             )
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Unknown Error: Please contact your local bot dev",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.UNKNOWN_ERROR)
             return
 
         message = None
@@ -326,12 +304,7 @@ class PlayerCog(commands.Cog):
 
         if player and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Orders locked!",
-                message="If you think this is an error, contact a GM.",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_orders_locked_error(ctx.channel)
             return
 
         try:
@@ -350,11 +323,7 @@ class PlayerCog(commands.Cog):
                 message="Failed to generate map for an unknown reason",
                 level=logging.ERROR,
             )
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Unknown Error: Please contact your local bot dev",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.UNKNOWN_ERROR)
             raise err
             return
         log_command(
@@ -408,23 +377,23 @@ class PlayerCog(commands.Cog):
     @perms.player("create a private press channel")
     async def create_press_channel(self, ctx: commands.Context, player: Player | None) -> None:
         """Creates a new private press channel."""
-        assert ctx.guild is not None
-        if player is None:
-            await send_message_and_file(
+        def send_creation_error(message: str):
+            assert isinstance(ctx.channel, discord.TextChannel)
+            return send_message_and_file(
                 channel=ctx.channel,
-                message="Only players can create press channels.",
+                title="Error creating press channel",
+                message=message,
                 embed_colour=config.ERROR_COLOUR,
             )
+        assert ctx.guild is not None
+        if player is None:
+            await send_creation_error("Only players can create press channels.")
             return
         arguments = remove_prefix(ctx).lower().split()
 
         if len(arguments) < 3:
-            await send_message_and_file(
-                channel=ctx.channel,
-                message="Invalid command format. " +
-                        "Please use `.create_press_channel {category} {name} {@country1} {@country2} ...`",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_creation_error("Invalid command format. " +
+                "Please use `.create_press_channel {category} {name} {@country1} {@country2} ...`")
             return
         seed_channel = ctx.message.channel_mentions[0] if ctx.message.channel_mentions else None
         channel_name = arguments[1]
@@ -433,11 +402,7 @@ class PlayerCog(commands.Cog):
         board = manager.get_board(ctx.guild.id)
         comms_category_prefix = "comms-"
         if not seed_channel or not (category:= seed_channel.category):
-            await send_message_and_file(
-                channel=ctx.channel,
-                message="You must select a channel in a press category (e.g. #comms-1, #comms-2, etc.).",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_creation_error("You must select a channel in a press category (e.g. #comms-1, #comms-2, etc.).")
             return
         has_comms_category = False
         for channel in category.channels:
@@ -445,21 +410,13 @@ class PlayerCog(commands.Cog):
                 has_comms_category = True
                 break
         if not has_comms_category:
-            await send_message_and_file(
-                channel=ctx.channel,
-                message="You must select a channel in a press category (e.g. #comms-1, #comms-2, etc.).",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_creation_error("You must select a channel in a press category (e.g. #comms-1, #comms-2, etc.).")
             return
         for role in roles:
             try:
                 board.get_player(role.name)
             except ValueError:
-                await send_message_and_file(
-                    channel=ctx.channel,
-                    message=f"{role.mention} does not correspond to a player in this game.",
-                    embed_colour=config.ERROR_COLOUR,
-                )
+                await send_creation_error(f"{role.mention} does not correspond to a player in this game.")
                 return
 
         overwrites = {
@@ -471,19 +428,12 @@ class PlayerCog(commands.Cog):
         try:
             channel = await category.create_text_channel(channel_name, overwrites=overwrites)
         except discord.Forbidden:
-            await send_message_and_file(
-                channel=ctx.channel,
-                message="Bot does not have permission to create channels in this category. Please contact the GM Team.",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_creation_error("Bot does not have permission to create channels in this category. " +
+                                      "Please contact the GM Team.")
             return
         except discord.HTTPException:
-            await send_message_and_file(
-                channel=ctx.channel,
-                message="Failed to create channel, probably because the category is full. " +
-                        "If you keep seeing this error, please contact the GM Team.",
-                embed_colour=config.ERROR_COLOUR,
-            )
+            await send_creation_error("Failed to create channel, probably because the category is full. " +
+                                      "If you keep seeing this error, please contact the GM Team.")
             return
 
         message = f"Created press channel {channel_name}"

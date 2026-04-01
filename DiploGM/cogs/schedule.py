@@ -16,6 +16,7 @@ from DiploGM.utils import (
     log_command_no_ctx,
 )
 from DiploGM.manager import Manager
+from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -136,12 +137,7 @@ class ScheduleCog(commands.Cog):
         now = datetime.datetime.now(datetime.timezone.utc)
         scheduled_time = get_value_from_timestamp(timestamp)
         if not scheduled_time:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Did not give a proper timestamp.",
-                embed_colour=ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.IMPROPER_TIMESTAMP)
             return
 
         # check schedule time is in the future
@@ -150,12 +146,7 @@ class ScheduleCog(commands.Cog):
         )
 
         if scheduled_time <= now:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Don't schedule a command to occur in the past.",
-                embed_colour=ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.COMMAND_IN_PAST)
             return
 
         # check command is real and prevent recursive scheduling

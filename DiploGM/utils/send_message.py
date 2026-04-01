@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 import io
 import re
 from typing import List, Tuple
@@ -21,6 +22,36 @@ discord_file_limit = 10 * (2**20)
 discord_embed_description_limit = 4096
 discord_embed_total_limit = 6000
 
+
+class ErrorMessage(Enum):
+    CHANNEL_NOT_GIVEN = "No channel given."
+    COMMAND_IN_PAST = "Don't schedule a command to occur in the past."
+    IMPROPER_TIMESTAMP = "Did not give a proper timestamp."
+    MESSAGE_NOT_GIVEN = "No message given."
+    NO_PLAYER_CATEGORY = "No player category found."
+    NO_ROLES_SUPPLIED = "No roles were supplied to allocate. Please include a role mention in the command."
+    NOT_MESSAGEABLE = "Channel is not messageable."
+    POWER_NOT_MENTIONED = "Did not mention a nation."
+    USER_NOT_MENTIONED = "Did not mention a user."
+    UNKNOWN_ERROR = "Unknown Error: Please contact your local bot dev."
+
+
+async def send_error(channel: Messageable, error_message: ErrorMessage) -> Message:
+    """Sends an error message to the specified channel based on the provided ErrorMessage enum."""
+    return await send_message_and_file(
+        channel=channel,
+        title=error_message.value,
+        message=error_message.value,
+        embed_colour=config.ERROR_COLOUR,
+    )
+
+async def send_orders_locked_error(channel: Messageable) -> Message:
+    return await send_message_and_file(
+                    channel=channel,
+                    title="Orders locked!",
+                    message="If you think this is an error, contact a GM.",
+                    embed_colour=config.ERROR_COLOUR,
+                )
 
 async def send_message_and_file(
     *,

@@ -12,6 +12,7 @@ from DiploGM.config import MAP_ARCHIVE_SAS_TOKEN
 from DiploGM.utils import log_command, parse_season, send_message_and_file, upload_map_to_archive
 from DiploGM.manager import Manager
 from DiploGM.utils.sanitise import remove_prefix
+from DiploGM.utils.send_message import send_error, ErrorMessage
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -192,11 +193,7 @@ class AdminCog(commands.Cog):
                 roles.remove(role)
 
         if len(roles) == 0:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="No roles were supplied to allocate. Please include a role mention in the command.",
-            )
+            await send_error(ctx.channel, ErrorMessage.NO_ROLES_SUPPLIED)
             return
 
         # parse usernames from trailing contents
