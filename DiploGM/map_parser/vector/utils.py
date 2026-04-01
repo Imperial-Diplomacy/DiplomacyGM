@@ -9,17 +9,43 @@ from xml.etree.ElementTree import Element, ElementTree
 from DiploGM.map_parser.vector.transform import TransGL3
 from DiploGM.models.province import Province
 
+LAYER_DICTIONARY = {
+    "land_layer": {"Region Colors"},
+    "island_borders": {"Island Adjacencies"},
+    "island_fill_layer": {"Island Fills"},
+    "sea_borders": {"Sea Adjacencies"},
+    "province_names": {"Titles"},
+    "supply_center_icons": {"SC Markers", "SC markers"},
+    "army": {"Army Locations"},
+    "retreat_army": {"Army Locations (Retreats)"},
+    "fleet": {"Fleet Locations"},
+    "retreat_fleet": {"Fleet Locations (Retreats)"},
+    "starting_units": {"Units"},
+    "unit_output": {"Unit Output Layer"},
+    "arrow_output": {"Orders Output Layer"},
+    "background": {"Background"},
+    "season": {"Season Title"},
+    "power_banners": {"Power Banners"},
+}
+LAYER_NAMES = set(LAYER_DICTIONARY.keys())
+
 logger = logging.getLogger(__name__)
 
-def get_svg_element(svg_root: Element | ElementTree, element_id: str) -> Element | None:
-    try:
-        return svg_root.find(f'*[@id="{element_id}"]')
-    except:
-        logger.error(f"{element_id} isn't contained in svg_root")
+def find_svg_element(svg_root: Element | ElementTree, layer_name: str, config_data: dict) -> Element | None:
+    """Given a set of element ids and labels, tries to find a matching element in the SVG or None if none found."""
+    layer_id = config_data.get(layer_name)
+    if layer_id is not None and isinstance(layer_id, str):
+        if (element := svg_root.find(f'*[@id="{layer_id}"]')) is not None:
+            return element
+    for element_label in LAYER_DICTIONARY.get(layer_name, set()):
+        if (element := svg_root.find(f'*[@inkscape:label="{element_label}"]',
+            namespaces={"inkscape": "http://www.inkscape.org/namespaces/inkscape"})) is not None:
+            return element
+    return None
 
-def clear_svg_element(svg_root: Element | ElementTree, element_id: str) -> None:
+def clear_svg_element(svg_root: Element | ElementTree, layer_name: str, config_data: dict) -> None:
     """Clears an element from the SVG. Tends to run much quicker than deleting it entirely."""
-    element = get_svg_element(svg_root, element_id)
+    element = find_svg_element(svg_root, layer_name, config_data)
     if element is not None:
         element.clear()
 

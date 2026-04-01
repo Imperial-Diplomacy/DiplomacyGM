@@ -12,7 +12,7 @@ import lxml.etree as etree
 # from diplomacy.map_parser.vector import config_svg as svgcfg
 
 from DiploGM.map_parser.vector.utils import (
-    clear_svg_element, get_element_color, get_svg_element,
+    clear_svg_element, get_element_color, find_svg_element,
     get_unit_coordinates, initialize_province_resident_data
 )
 from DiploGM.db.database import logger
@@ -75,12 +75,12 @@ class Mapper:
 
         self.utils.add_arrow_definition_to_svg(self.board_svg, self.board, self.player_colors)
 
-        clear_svg_element(self.board_svg, self.board_svg_data["starting_units"])
+        clear_svg_element(self.board_svg, "starting_units", self.board_svg_data)
 
         self.cached_elements = {}
         for element_name in ["army", "fleet", "retreat_army", "retreat_fleet", "unit_output"]:
-            self.cached_elements[element_name] = get_svg_element(
-                self.board_svg, self.board_svg_data[element_name]
+            self.cached_elements[element_name] = find_svg_element(
+                self.board_svg, element_name, self.board_svg_data
             )
 
         visible_provinces = (self.board.get_visible_provinces(restriction)
@@ -96,8 +96,8 @@ class Mapper:
 
         self._moves_svg = copy.deepcopy(self.board_svg)
         self.order_drawer = OrderDrawer(self.utils, self._moves_svg, self.board_svg_data, self.adjacent_provinces)
-        self.cached_elements["unit_output_moves"] = get_svg_element(
-            self._moves_svg, self.board_svg_data["unit_output"]
+        self.cached_elements["unit_output_moves"] = find_svg_element(
+            self._moves_svg, "unit_output", self.board_svg_data
         )
 
         self.state_svg = copy.deepcopy(self.board_svg)
@@ -108,7 +108,7 @@ class Mapper:
     def clean_layers(self, svg: ElementTree):
         """Clears layers that we won't need in the final display map."""
         for element_name in self.board_svg_data["delete_layer"]:
-            clear_svg_element(svg, self.board_svg_data[element_name])
+            clear_svg_element(svg, element_name, self.board_svg_data)
 
     def draw_moves_and_retreats(self, arrow_layer: Element, current_turn: turn.Turn, movement_only: bool):
         """Draws move and retreat arrows."""
@@ -184,7 +184,7 @@ class Mapper:
 
         t = self._moves_svg.getroot()
         assert t is not None
-        arrow_layer = get_svg_element(self._moves_svg, self.board_svg_data["arrow_output"])
+        arrow_layer = find_svg_element(self._moves_svg, "arrow_output", self.board_svg_data)
         if arrow_layer is None:
             raise ValueError("Arrow layer not found in SVG")
 
@@ -216,8 +216,8 @@ class Mapper:
         root = self._moves_svg.getroot()
         if root is None:
             raise ValueError("SVG root is None")
-        clear_svg_element(self._moves_svg, self.board_svg_data["sidebar"])
-        clear_svg_element(self._moves_svg, self.board_svg_data["power_banners"])
+        clear_svg_element(self._moves_svg, "sidebar", self.board_svg_data)
+        clear_svg_element(self._moves_svg, "power_banners", self.board_svg_data)
         with open("DiploGM/mapper/mapper.js", 'r', encoding='utf-8') as f:
             js = f.read()
 
@@ -270,7 +270,7 @@ class Mapper:
                             province_to_unit_type, province_to_province_type, immediate)
         root.append(script)
 
-        coasts = get_svg_element(root, self.board_svg_data["coast_markers"])
+        coasts = find_svg_element(root, "coast_markers", self.board_svg_data)
         def get_text_coordinate(e : etree.Element) -> tuple[float, float]:
             trans = TransGL3(e)
             x, y = e.attrib["x"], e.attrib["y"]
@@ -300,7 +300,7 @@ class Mapper:
             e.set("onclick", f'obj_clicked(event, "{p.name}", false)')
             e.set("oncontextmenu", f'obj_clicked(event, "{p.name}", false)')
 
-        supply_center_icons = get_svg_element(root, self.board_svg_data["supply_center_icons"])
+        supply_center_icons = find_svg_element(root, "supply_center_icons", self.board_svg_data)
         if supply_center_icons is None:
             raise ValueError("Supply center icons layer not found in SVG")
         initialize_province_resident_data(self.board.provinces,
@@ -309,7 +309,7 @@ class Mapper:
                                           set_province_supply_center)
 
         for layer_name in ("land_layer", "island_borders", "island_ring_layer", "island_fill_layer", "sea_borders"):
-            layer = get_svg_element(root, self.board_svg_data[layer_name])
+            layer = find_svg_element(root, layer_name, self.board_svg_data)
             if layer is None:
                 raise ValueError(f"Layer {layer_name} not found in SVG")
             for province_data in layer:
@@ -366,8 +366,8 @@ class Mapper:
 
     def replace_colors(self, color_mode: str) -> None:
         """Replaces colors in the SVG based on the color mode."""
-        other_fills = get_svg_element(self.board_svg, self.board_svg_data["other_fills"])
-        background = get_svg_element(self.board_svg, self.board_svg_data["background"])
+        other_fills = find_svg_element(self.board_svg, "other_fills", self.board_svg_data)
+        background = find_svg_element(self.board_svg, "background", self.board_svg_data)
         if self.replacements is not None:
             elements_to_process = []
             if other_fills is not None:
@@ -387,8 +387,8 @@ class Mapper:
         # Difficult to detect correctly using either geometry or province names
         # Marking manually would work, but for all svgs is time consuming. TODO
 
-        # get_svg_element(self.board_svg, self.board_svg_data["starting_units"])
-        # province_names = get_svg_element(self.board_svg, self.board_svg_data["province_names"]).getchildren()
+        # find_svg_element(self.board_svg, "starting_units", self.board_svg_data)
+        # province_names = find_svg_element(self.board_svg, "province_names", self.board_svg_data).getchildren()
         # for text_box in province_names:
         #     try:
         #         text = text_box[0].text.lower()
@@ -416,13 +416,16 @@ class Mapper:
         self.order_drawer.moves_svg = self._moves_svg
 
     def _color_provinces(self) -> None:
-        province_layer = get_svg_element(self.board_svg, self.board_svg_data["land_layer"])
-        island_fill_layer = get_svg_element(self.board_svg, self.board_svg_data["island_fill_layer"])
-        island_ring_layer = get_svg_element(self.board_svg, self.board_svg_data["island_ring_layer"])
-        sea_layer = get_svg_element(self.board_svg, self.board_svg_data["sea_borders"])
-        island_layer = get_svg_element(self.board_svg, self.board_svg_data["island_borders"])
-        if sea_layer is None or island_layer is None or island_ring_layer is None:
+        province_layer = find_svg_element(self.board_svg, "land_layer", self.board_svg_data)
+        island_fill_layer = find_svg_element(self.board_svg, "island_fill_layer", self.board_svg_data)
+        island_ring_layer = find_svg_element(self.board_svg, "island_ring_layer", self.board_svg_data)
+        sea_layer = find_svg_element(self.board_svg, "sea_borders", self.board_svg_data)
+        island_layer = find_svg_element(self.board_svg, "island_borders", self.board_svg_data)
+        if sea_layer is None or province_layer is None:
             raise ValueError("Missing a layer in SVG!")
+        island_fill_layer = island_fill_layer or []
+        island_layer = island_layer or []
+        island_ring_layer = island_ring_layer or []
 
         visited_provinces: set[str] = set()
 
@@ -474,7 +477,7 @@ class Mapper:
                 print(f"Warning: Province {province.name} was not recolored by mapper!")
 
     def _color_centers(self) -> None:
-        centers_layer = get_svg_element(self.board_svg, self.board_svg_data["supply_center_icons"])
+        centers_layer = find_svg_element(self.board_svg, "supply_center_icons", self.board_svg_data)
         if centers_layer is None:
             raise ValueError("Supply Center layer not found in SVG")
 

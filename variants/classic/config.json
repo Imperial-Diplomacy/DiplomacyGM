@@ -4,26 +4,6 @@
     "svg config": {
 		"year": 1901,
 		
-        "land_layer": "layer2",
-        "sea_borders": "layer4",
-        "province_names": "layer7",
-        "supply_center_icons": "g260",
-        "starting_units": "layer11",
-        "unit_output": "layer12",
-        "arrow_output": "layer13",
-		"background": "MapLayer",
-
-        "army": "layer8",
-        "retreat_army": "g914",
-        "fleet": "layer9",
-        "retreat_fleet": "g690",
-		
-		"island_borders": "layer15",
-		"island_fill_layer": "layer15",
-		"island_ring_layer": "layer15",
-		"season": "layer4-1",
-		
-		"power_banners": "layer16",
 		"power_sc_index": 2,
 		"power_iscc_index": -1,
 		"power_vscc_index": -1,
