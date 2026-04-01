@@ -31,6 +31,7 @@ from DiploGM.utils import (
     send_message_and_file,
     upload_map_to_archive,
 )
+from DiploGM.adjudicator.utils import svg_to_png
 
 from DiploGM.models.extension import ExtensionEvent, SQLiteExtensionEventRepository
 from DiploGM.models.order import Disband, Build
@@ -886,21 +887,25 @@ class GameManagementCog(commands.Cog):
         )
         title = f"{board.name} — " if board.name else ""
         title += f"{old_turn}"
+
+        converted_file: bytes | None = None
+        converted_file_name: str | None = None
+        needs_png = return_svg or (full_adjudicate and _get_maps_channel(guild))
+        if needs_png:
+            converted_file, converted_file_name = await svg_to_png(file, file_name)
         await send_message_and_file(
             channel=ctx.channel,
             title=f"{title} Orders Map",
             message="Test adjudication" if test_adjudicate else "",
-            file=file,
-            file_name=file_name,
-            convert_svg=return_svg,
+            file=converted_file if return_svg else file,
+            file_name=converted_file_name if return_svg else file_name,
         )
         if full_adjudicate and (map_channel := _get_maps_channel(guild)):
             map_message = await send_message_and_file(
                 channel=map_channel,
                 title=f"{title} Orders Map",
-                file=file,
-                file_name=file_name,
-                convert_svg=True,
+                file=converted_file,
+                file_name=converted_file_name,
             )
             try:
                 await map_message.publish()
@@ -926,22 +931,24 @@ class GameManagementCog(commands.Cog):
             )
 
         file, file_name = manager.draw_map_for_board(new_board, color_mode=color_mode)
+
+        needs_png = return_svg or (full_adjudicate and _get_maps_channel(guild))
+        if needs_png:
+            converted_file, converted_file_name = await svg_to_png(file, file_name)
         await send_message_and_file(
             channel=ctx.channel,
             title=f"{title} Results Map",
             message="Test adjudication results" if test_adjudicate else "",
-            file=file,
-            file_name=file_name,
-            convert_svg=return_svg,
+            file=converted_file if return_svg else file,
+            file_name=converted_file_name if return_svg else file_name,
         )
 
         if full_adjudicate and (map_channel := _get_maps_channel(guild)):
             map_message = await send_message_and_file(
                 channel=map_channel,
                 title=f"{title} Results Map",
-                file=file,
-                file_name=file_name,
-                convert_svg=True,
+                file=converted_file,
+                file_name=converted_file_name,
             )
             try:
                 await map_message.publish()

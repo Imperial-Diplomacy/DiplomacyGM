@@ -8,27 +8,28 @@ import logging
 import discord
 from discord import Message, Embed, Colour
 from discord.abc import Messageable
-from discord.ext import commands
 
 from DiploGM import config
-from .logging import log_command_no_ctx
 from DiploGM.adjudicator.utils import svg_to_png, png_to_jpg
+from .logging import log_command_no_ctx
 
 
 logger = logging.getLogger(__name__)
 
-discord_message_limit = 2000
-discord_file_limit = 10 * (2**20)
-discord_embed_description_limit = 4096
-discord_embed_total_limit = 6000
+DISCORD_MESSAGE_LIMIT = 2000
+DISCORD_FILE_LIMIT = 10 * (2**20)
+DISCORD_EMBED_DESCRIPTION_LIMIT = 4096
+DISCORD_EMBED_TOTAL_LIMIT = 6000
 
 
 class ErrorMessage(Enum):
+    """Enum that gives a common set of error messages for send_error()."""
     CHANNEL_NOT_GIVEN = "No channel given."
     COMMAND_IN_PAST = "Don't schedule a command to occur in the past."
     IMPROPER_TIMESTAMP = "Did not give a proper timestamp."
     MESSAGE_NOT_GIVEN = "No message given."
     NO_PLAYER_CATEGORY = "No player category found."
+    NO_PLAYER_ROLE = "No player role found."
     NO_ROLES_SUPPLIED = "No roles were supplied to allocate. Please include a role mention in the command."
     NOT_MESSAGEABLE = "Channel is not messageable."
     POWER_NOT_MENTIONED = "Did not mention a nation."
@@ -46,6 +47,7 @@ async def send_error(channel: Messageable, error_message: ErrorMessage) -> Messa
     )
 
 async def send_orders_locked_error(channel: Messageable) -> Message:
+    """Sends an 'Orders locked' error message to the specified channel."""
     return await send_message_and_file(
                     channel=channel,
                     title="Orders locked!",
@@ -103,16 +105,16 @@ async def send_message_and_file(
             message = messages.pop()
             while message:
                 cutoff = -1
-                if len(message) <= discord_embed_description_limit:
+                if len(message) <= DISCORD_EMBED_DESCRIPTION_LIMIT:
                     cutoff = len(message)
                 # Try to find an even line break to split the long messages on
                 if cutoff == -1:
-                    cutoff = message.rfind("\n", 0, discord_embed_description_limit)
+                    cutoff = message.rfind("\n", 0, DISCORD_EMBED_DESCRIPTION_LIMIT)
                 if cutoff == -1:
-                    cutoff = message.rfind(" ", 0, discord_embed_description_limit)
+                    cutoff = message.rfind(" ", 0, DISCORD_EMBED_DESCRIPTION_LIMIT)
                 # otherwise split at limit
                 if cutoff == -1:
-                    cutoff = discord_embed_description_limit
+                    cutoff = DISCORD_EMBED_DESCRIPTION_LIMIT
 
                 embed = Embed(
                     title=title,
@@ -124,7 +126,7 @@ async def send_message_and_file(
 
                 # check that embed totals aren't over the total message embed character limit.
                 if (
-                    sum(map(len, embeds)) + len(embed) > discord_embed_total_limit
+                    sum(map(len, embeds)) + len(embed) > DISCORD_EMBED_TOTAL_LIMIT
                     or len(embeds) == 10
                 ):
                     await channel.send(embeds=embeds)
@@ -143,7 +145,7 @@ async def send_message_and_file(
             if (
                 len(embeds[-1].fields) == 25
                 or sum(map(len, embeds)) + sum(map(len, field))
-                > discord_embed_total_limit
+                > DISCORD_EMBED_TOTAL_LIMIT
                 or len(embeds) == 10
             ):
                 await channel.send(embeds=embeds)
@@ -159,7 +161,7 @@ async def send_message_and_file(
 
     discord_file = None
     if file is not None and file_name is not None:
-        if file_name.lower().endswith(".png") and len(file) > discord_file_limit:
+        if file_name.lower().endswith(".png") and len(file) > DISCORD_FILE_LIMIT:
             log_command_no_ctx(
                 logger,
                 "?",
@@ -179,7 +181,7 @@ async def send_message_and_file(
                     "?",
                     f"png to jpeg conversion errors: {error}",
                 )
-            if len(file) > discord_file_limit or len(file) == 0:
+            if len(file) > DISCORD_FILE_LIMIT or len(file) == 0:
                 log_command_no_ctx(
                     logger,
                     "?",
