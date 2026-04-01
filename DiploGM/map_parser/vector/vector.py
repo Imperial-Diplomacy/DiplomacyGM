@@ -88,9 +88,8 @@ class Parser:
                 raise ValueError("Layer impassibles_layer not found in SVG")
             self.layer_data["impassibles_layer"] = impassibles_layer
 
-        self.fow = self.layers.get("fow", False)
-        # TODO: Move this out of SVG layers and update configs accordingly
-        self.year_offset = self.layers.get("year", 1901)
+        self.fow = self.data.get("fow", False)
+        self.year_offset = self.data.get("year", 1901)
 
         self.color_to_player: dict[str, Player | None] = {}
         self.name_to_province: dict[str, Province] = {}
@@ -402,6 +401,17 @@ class Parser:
         land_provinces = self._create_provinces_type(self.layer_data.get("land_layer"), ProvinceType.LAND)
         island_provinces = self._create_provinces_type(self.layer_data.get("island_borders"), ProvinceType.ISLAND)
         sea_provinces = self._create_provinces_type(self.layer_data.get("sea_borders"), ProvinceType.SEA)
+
+        # If a province is in both Land and Sea, we treat is as a hybrid province.
+        hybrid_provinces = set()
+        land_province_names = {p.name: p for p in land_provinces}
+        sea_province_names = {p.name: p for p in sea_provinces}
+        for common_names in set(land_province_names.keys()) & set(sea_province_names.keys()):
+            new_hybrid_province = Province(common_names,
+                                           sea_province_names[common_names].geometry,
+                                           ProvinceType.HYBRID)
+            hybrid_provinces.add(new_hybrid_province)
+
         # detect impassible to allow for better understanding
         # of coastlines
         # they don't go in board.provinces

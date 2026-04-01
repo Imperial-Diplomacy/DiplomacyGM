@@ -21,8 +21,9 @@ class ProvinceType(Enum):
     """Whether the province is land, sea, or somewhere in between."""
     LAND = 1
     ISLAND = 2
-    SEA = 3
-    IMPASSIBLE = 4
+    HYBRID = 3
+    SEA = 4
+    IMPASSIBLE = 5
 
 @dataclass
 class ProvinceCore:
@@ -60,7 +61,7 @@ class Province():
         self.geometry: Polygon | MultiPolygon = coordinates
         self.unit_coordinates: dict[str, UnitLocation] = {}
         self.type: ProvinceType = province_type
-        self.can_convoy: bool = province_type == ProvinceType.SEA
+        self.can_convoy: bool = province_type in (ProvinceType.SEA, ProvinceType.HYBRID)
         self.has_supply_center: bool = False
         self.owner: player.Player | None = None
         self.core_data: ProvinceCore = ProvinceCore()
