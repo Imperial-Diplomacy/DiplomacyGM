@@ -453,7 +453,6 @@ class Manager(metaclass=SingletonMeta):
         """Rolls back the board to the previous turn."""
         logger.info(f"Rolling back in server {server_id}")
         board = self.get_board(server_id)
-        # TODO: what happens if we're on the first phase?
         last_turn = board.turn.get_previous_turn()
 
         old_board = self._database.get_board(
@@ -478,9 +477,8 @@ class Manager(metaclass=SingletonMeta):
         return message, file, file_name
 
     def get_previous_board(self, server_id: int) -> Board | None:
-        """Gets the previous board for a server."""
+        """Gets the previous board for a server. Returns None if it doesn't exist."""
         board = self.get_board(server_id)
-        # TODO: what happens if we're on the first phase?
         last_turn = board.turn.get_previous_turn()
         old_board = self._database.get_board(
             board.board_id,

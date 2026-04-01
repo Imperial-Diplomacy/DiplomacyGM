@@ -135,39 +135,26 @@ def get_orders(
     if tags is None:
         tags = ViewOrdersTags.get_default()
 
-    #TODO: Lots of duplicated code here
-    if board.turn.is_builds():
-        for player in sorted(board.players, key=lambda sort_player: sort_player.get_name()):
-            if board.is_player_hidden(player):
-                continue
-            title, body = get_build_orders(player, player_restriction, ctx, tags)
-            if title is None:
-                continue
-            if isinstance(response, list):
-                response.append(("", f"{title}{body}"))
-            else:
-                response += f"\n{title}{body}"
-        return response
+    if player_restriction is None:
+        players = board.players
     else:
+        players = {player_restriction}
 
-        if player_restriction is None:
-            players = board.players
+    for player in sorted(players, key=lambda sort_player: sort_player.get_name()):
+        if board.is_player_hidden(player):
+            continue
+        if board.turn.is_builds():
+            title, body = get_build_orders(player, player_restriction, ctx, tags)
         else:
-            players = {player_restriction}
-
-        for player in sorted(players, key=lambda p: p.get_name()):
-            if board.is_player_hidden(player):
-                continue
-            title, body = get_move_orders(board, player, player_restriction, ctx, tags, board.turn.is_retreats())
-            if title is None:
-                continue
-            if isinstance(response, list):
-                response.append(("", f"{title}\n{body}"))
-            else:
-                response += f"{title}\n{body}"
-
-        return response
-
+            title, body = get_move_orders(board, player, player_restriction, ctx, tags,
+                                          board.turn.is_retreats())
+        if title is None:
+            continue
+        if isinstance(response, list):
+            response.append(("", f"{title}\n{body}"))
+        else:
+            response += f"{title}\n{body}"
+    return response
 
 def get_filtered_orders(board: Board, player_restriction: Player) -> str:
     visible = board.get_visible_provinces(player_restriction)

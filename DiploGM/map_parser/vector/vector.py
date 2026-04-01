@@ -14,7 +14,8 @@ from lxml import etree
 from DiploGM.map_parser.vector.transform import TransGL3
 from DiploGM.map_parser.vector.utils import (
     find_svg_element, get_element_color, get_unit_coordinates,
-    parse_path, initialize_province_resident_data, LAYER_DICTIONARY
+    parse_path, initialize_province_resident_data,
+    LAYER_DICTIONARY, NAMESPACE, SVG_CONFIG_KEY
 )
 from DiploGM.models.turn import PhaseName, Turn
 from DiploGM.models.board import Board
@@ -25,13 +26,7 @@ from DiploGM.utils.sanitise import parse_variant_path
 
 # TODO: (BETA) all attribute getting should be in utils which we import and call utils.my_unit()
 # TODO: (BETA) consistent in bracket formatting
-NAMESPACE: dict[str, str] = {
-    "inkscape": "{http://www.inkscape.org/namespaces/inkscape}",
-    "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
-    "svg": "http://www.w3.org/2000/svg",
-}
 HIGH_PROVINCES_KEY = "high provinces"
-SVG_CONFIG_KEY = "svg config"
 LAYER_NAMES = set(LAYER_DICTIONARY.keys())
 
 logger = logging.getLogger(__name__)

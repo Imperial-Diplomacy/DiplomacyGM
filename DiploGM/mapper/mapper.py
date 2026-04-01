@@ -13,7 +13,8 @@ import lxml.etree as etree
 
 from DiploGM.map_parser.vector.utils import (
     clear_svg_element, get_element_color, find_svg_element,
-    get_unit_coordinates, initialize_province_resident_data
+    get_unit_coordinates, initialize_province_resident_data,
+    NAMESPACE, SVG_CONFIG_KEY
 )
 from DiploGM.db.database import logger
 from DiploGM.mapper.order_drawer import OrderDrawer
@@ -28,20 +29,6 @@ from DiploGM.models.unit import Unit, UnitType
 
 from DiploGM.map_parser.vector.transform import TransGL3
 from DiploGM.map_parser.vector.vector import Parser
-
-
-# TODO: Move this (and vector.py's copy to a central file)
-NAMESPACE: dict[str, str] = {
-    "inkscape": "{http://www.inkscape.org/namespaces/inkscape}",
-    "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
-    "svg": "http://www.w3.org/2000/svg",
-}
-SVG_CONFIG_KEY: str = "svg config"
-
-
-# OUTPUTLAYER = "layer16"
-# UNITLAYER = "layer17"
-
 
 # if you make any rendering changes,
 # make sure to sync them with mapper.js

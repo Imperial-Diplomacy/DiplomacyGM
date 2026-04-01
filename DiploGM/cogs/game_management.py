@@ -842,7 +842,7 @@ class GameManagementCog(commands.Cog):
         assert guild is not None
 
         board = manager.get_board(guild.id)
-        color_options = board.data["svg config"].get("color_options", config.color_options)
+        color_options = board.data["svg config"].get("color_options", {"standard"})
 
         arguments = remove_prefix(ctx).lower().split()
         return_svg = not ({"true", "t", "svg", "s"} & set(arguments))

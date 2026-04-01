@@ -194,7 +194,7 @@ class PlayerCog(commands.Cog):
             {"true", "t", "svg", "s"} & set(arguments)
         )
         board = manager.get_board(ctx.guild.id)
-        color_options = board.data["svg config"].get("color_options", config.color_options)
+        color_options = board.data["svg config"].get("color_options", {"standard"})
         color_arguments = list(set(color_options) & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
         movement_only = "movement" in arguments
@@ -298,7 +298,7 @@ class PlayerCog(commands.Cog):
         assert ctx.guild is not None
         arguments = remove_prefix(ctx).lower().split()
         board = manager.get_board(ctx.guild.id)
-        color_options = board.data["svg config"].get("color_options", config.color_options)
+        color_options = board.data["svg config"].get("color_options", {"standard"})
         color_arguments = list(set(color_options) & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
 

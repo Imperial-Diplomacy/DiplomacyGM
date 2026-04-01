@@ -75,9 +75,6 @@ EMBED_STANDARD_COLOUR = all_config["colours"]["embed_standard"]
 PARTIAL_ERROR_COLOUR = all_config["colours"]["embed_partial_success"]
 ERROR_COLOUR = all_config["colours"]["embed_error"]
 
-# TODO: move to config_defaults.toml if applicable or elsewhere
-color_options = {"standard", "dark", "pink", "blue", "kingdoms", "empires"}
-
 # INKSCAPE
 SIMULATRANEOUS_SVG_EXPORT_LIMIT = all_config["inkscape"]["simultaneous_svg_exports_limit"]
 

@@ -28,6 +28,12 @@ LAYER_DICTIONARY = {
     "power_banners": {"Power Banners"},
 }
 LAYER_NAMES = set(LAYER_DICTIONARY.keys())
+NAMESPACE: dict[str, str] = {
+    "inkscape": "{http://www.inkscape.org/namespaces/inkscape}",
+    "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
+    "svg": "http://www.w3.org/2000/svg",
+}
+SVG_CONFIG_KEY: str = "svg config"
 
 logger = logging.getLogger(__name__)
 
