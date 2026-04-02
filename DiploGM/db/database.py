@@ -439,6 +439,9 @@ class _DatabaseConnection:
         ).fetchall()
         for dp_info in dp_data:
             self._load_dp_orders(board, dp_info)
+
+        board.run_variant_scripts()
+
         return board
 
     def save_board(self, board_id: int, board: Board):

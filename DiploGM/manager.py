@@ -349,6 +349,7 @@ class Manager(metaclass=SingletonMeta):
         }
         self.last_dp_orders[server_id] = getattr(adjudicator, 'dp_order_strings', {})
         new_board.turn = new_board.turn.get_next_turn()
+        new_board.run_variant_scripts()
         logger.info("Adjudicator ran successfully")
         if not test:
             self._boards[new_board.board_id] = new_board

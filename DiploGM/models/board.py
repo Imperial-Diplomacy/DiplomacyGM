@@ -1,7 +1,8 @@
 """The board for a given turn, containing all the game state information."""
 from __future__ import annotations
-import re
 import logging
+import os
+import re
 import time
 from typing import Dict, Optional, TYPE_CHECKING
 
@@ -10,8 +11,7 @@ from discord import Thread, TextChannel
 from DiploGM.config import player_channel_suffix, is_player_category
 from DiploGM.models.order import Move
 from DiploGM.models.unit import Unit, UnitType
-from DiploGM.utils.sanitise import sanitise_name
-from DiploGM.utils.sanitise import simple_player_name
+from DiploGM.utils.sanitise import parse_variant_path, sanitise_name, simple_player_name
 
 if TYPE_CHECKING:
     from discord.abc import Messageable
@@ -84,6 +84,16 @@ class Board:
             self.data["players"][name]["iscc"] = 1
         if "vscc" not in self.data["players"][name]:
             self.data["players"][name]["vscc"] = self.data["victory_count"]
+
+    def run_variant_scripts(self):
+        """Runs the variant's scripts.py if it exists, in a sandboxed environment."""
+        variant_path = parse_variant_path(self.datafile)
+        scripts_path = os.path.join(variant_path, "scripts.py")
+        if os.path.isfile(scripts_path):
+            with open(scripts_path, "r", encoding="utf-8") as f:
+                script_code = f.read()
+            allowed_globals = {"__builtins__": {}, "board": self}
+            exec(compile(script_code, scripts_path, "exec"), allowed_globals)
 
     def update_players(self):
         """Goes through the datafile and adds any missing players/nicknames."""
