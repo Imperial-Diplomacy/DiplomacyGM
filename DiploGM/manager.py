@@ -222,7 +222,7 @@ class Manager(metaclass=SingletonMeta):
         for province_name, (order_type, dest_str, source_str) in dp_orders.items():
             province = board.get_province(province_name)
             if province.unit and province.unit.order is None:
-                order = self._database._parse_order(board, order_type, dest_str, source_str)
+                order = board.parse_order(order_type, dest_str, source_str)
                 if order:
                     province.unit.order = order
 

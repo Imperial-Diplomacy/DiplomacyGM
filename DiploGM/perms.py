@@ -19,35 +19,34 @@ manager = Manager()
 
 
 def get_player_by_context(ctx: commands.Context):
+    """Gets the player associated with the command context, if it exists."""
     assert ctx.guild is not None
     # FIXME cleaner way of doing this
     board = manager.get_board(ctx.guild.id)
     # return if in order channel
     weak_channel_checking = "weak channel checking" in board.data.get("flags", [])
     if board.fow or weak_channel_checking:
-        player = board.get_player_by_channel(
+        return board.get_player_by_channel(
             ctx.channel, ignore_category=weak_channel_checking
         )
-    else:
-        if not isinstance(ctx.author, discord.Member):
-            return None
-        player = manager.get_member_player_object(ctx.message.author)
-
-    return player
-
+    if not isinstance(ctx.author, discord.Member):
+        return None
+    return manager.get_member_player_object(ctx.message.author)
 
 def is_player_channel(player_role: Player, channel: Messageable) -> bool:
+    """Checks to see if the given channel is the player's orders channel."""
     if not isinstance(channel, discord.TextChannel) or channel.category is None:
         return False
-    player_channel = player_role.name + config.player_channel_suffix
-    nickname_channel = player_role.get_name() + config.player_channel_suffix
+    player_channel = player_role.name + config.PLAYER_CHANNEL_SUFFIX
+    nickname_channel = player_role.get_name() + config.PLAYER_CHANNEL_SUFFIX
     return ((simple_player_name(player_channel) == simple_player_name(channel.name)
              or simple_player_name(nickname_channel) == simple_player_name(channel.name))
             and config.is_player_category(channel.category))
 
-
-
 def require_player_by_context(ctx: commands.Context, description: str):
+    """Gets the player associated with the command context, if it exists,
+    but requires that the command is run by a player in their orders channel
+    or by a GM in a GM channel or a player's orders channel."""
     assert ctx.guild is not None and ctx.message is not None
     # FIXME cleaner way of doing this
     board = manager.get_board(ctx.guild.id)
@@ -83,8 +82,8 @@ def require_player_by_context(ctx: commands.Context, description: str):
 
 # Player
 
-# adds one extra argument, player in a player's channel, which is None if run by a GM in a GM channel
 def player(description: str = "run this command"):
+    """Adds one extra argument, player in a player's channel, which is None if run by a GM in a GM channel"""
     def decorator(func: Callable[..., Awaitable[Any]]):
         @wraps(func)
         async def wrapper(self, ctx: commands.Context, player: Player | None):
@@ -103,6 +102,8 @@ def player(description: str = "run this command"):
 async def assert_mod_only(
     ctx: commands.Context, description: str = "run this command"
 ) -> bool:
+    """Checks that the command invoker is a moderator on the Hub server and the current server.
+    Raises a CommandPermissionError if not, otherwise returns True."""
     _hub = ctx.bot.get_guild(HUB_SERVER_ID)
     if not _hub:
         raise CommandPermissionError(
@@ -129,9 +130,12 @@ async def assert_mod_only(
 
 
 def mod_only(description: str = "run this command"):
+    """Checks that the command invoker is a moderator on the Hub server and the current server.
+    Raises a CommandPermissionError if not, otherwise returns True."""
     return commands.check(lambda ctx: assert_mod_only(ctx, description))
 
 def is_moderator(author: discord.Member | discord.User) -> bool:
+    """Checks if the given author is a moderator on the current server."""
     if not isinstance(author, discord.Member):
         return False
     for role in author.roles:
@@ -145,26 +149,31 @@ def is_moderator(author: discord.Member | discord.User) -> bool:
 def assert_gm_only(
     ctx: commands.Context, description: str = "run this command", non_gm_alt: str = ""
 ):
+    """Checks that the command invoker is a GM and the command is run in a GM channel.
+    Raises a CommandPermissionError if not, otherwise returns True."""
     assert ctx.message is not None
     if not is_gm(ctx.message.author):
         raise CommandPermissionError(
             non_gm_alt or f"You cannot {description} because you are not a GM."
         )
-    elif not is_gm_channel(ctx.channel):
+    if not is_gm_channel(ctx.channel):
         raise CommandPermissionError(f"You cannot {description} in a non-GM channel.")
-    else:
-        return True
+    return True
 
 
 def gm_only(description: str = "run this command"):
+    """Checks that the command invoker is a GM and the command is run in a GM channel.
+    Raises a CommandPermissionError if not, otherwise returns True."""
     return commands.check(lambda ctx: assert_gm_only(ctx, description))
 
 def is_gm_channel(channel: Messageable) -> bool:
+    """Checks if the given channel is a GM channel in the GM category."""
     return (isinstance(channel, discord.TextChannel)
             and config.is_gm_channel(channel)
             and config.is_gm_category(channel.category))
 
 def is_gm(author: discord.Member | discord.User) -> bool:
+    """Checks if the given author is a GM on the current server."""
     if isinstance(author, discord.User):
         return False
     for role in author.roles:
@@ -175,16 +184,20 @@ def is_gm(author: discord.Member | discord.User) -> bool:
 # Superuser
 
 def assert_superuser_only(ctx: commands.Context, description: str = "run this command"):
+    """Checks that the command invoker is a superuser.
+    Raises a CommandPermissionError if not, otherwise returns True."""
     if not is_superuser(ctx.message.author):
         raise CommandPermissionError(
-            f"You cannot {description} as you are not an superuser"
+            f"You cannot {description} as you are not a superuser"
         )
-    else:
-        return True
+    return True
 
 
 def superuser_only(description: str = "run this command"):
+    """Checks that the command invoker is a superuser.
+    Raises a CommandPermissionError if not, otherwise returns True."""
     return commands.check(lambda ctx: assert_superuser_only(ctx, description))
 
 def is_superuser(author: discord.Member | discord.User) -> bool:
+    """Checks if the given author is a superuser."""
     return author.id in SUPERUSERS

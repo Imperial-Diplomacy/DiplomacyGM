@@ -10,26 +10,8 @@ from DiploGM.models.province import Province
 from DiploGM.models.turn import Turn
 from DiploGM.models.board import Board
 from DiploGM.models.order import (
-    Core,
-    NMR,
-    Hold,
-    Move,
-    Support,
-    ConvoyTransport,
-    RetreatDisband,
-    RetreatMove,
-    PlayerOrder,
-    Build,
-    Disband,
-    Transform,
-    TransformBuild,
-    UnitOrder,
-    Vassal,
-    Liege,
-    DualMonarchy,
-    Disown,
-    Defect,
-    RebellionMarker,
+    PlayerOrder, Build, Disband, TransformBuild,
+    Vassal, Liege, DualMonarchy, Disown, Defect, RebellionMarker
 )
 from DiploGM.models.player import Player
 from DiploGM.models.spec_request import SpecRequest
@@ -55,7 +37,7 @@ class _DatabaseConnection:
 
     def _initialize_schema(self):
         # FIXME: move the sql file somewhere more accessible (maybe it shouldn't be inside the package? /resources ?)
-        with open("DiploGM/db/schema.sql", "r") as sql_file:
+        with open("DiploGM/db/schema.sql", "r", encoding="utf-8") as sql_file:
             cursor = self._connection.cursor()
             cursor.executescript(sql_file.read())
             cursor.close()
@@ -227,53 +209,6 @@ class _DatabaseConnection:
         province.unit = None
         province.dislodged_unit = None
 
-    def _parse_order(self, board: Board, order_type: str, destination: Optional[str], source: Optional[str]) -> Optional[UnitOrder]:
-        order_classes = [
-            NMR,
-            Hold,
-            Core,
-            Transform,
-            Move,
-            ConvoyTransport,
-            Support,
-            RetreatMove,
-            RetreatDisband,
-            ]
-        order_class = next(
-            _class
-            for _class in order_classes
-            if _class.__name__ == order_type
-        )
-        source_province, destination_province, destination_coast = None, None, None
-        if destination is not None:
-            if len(destination) == 2 and destination[1] == "c":
-                destination_coast = destination
-            else:
-                destination_province, destination_coast = (
-                    board.get_province_and_coast(destination)
-                )
-        if source is not None:
-            source_province = board.get_province(source)
-        if order_class == NMR:
-            return None
-        if order_class in [Hold, Core, RetreatDisband]:
-            return order_class()
-        if order_class in [Transform]:
-            return order_class(destination_coast=destination_coast)
-        if order_class in [Move, RetreatMove]:
-            return order_class(destination=destination_province, destination_coast=destination_coast)
-        if order_class in [ConvoyTransport]:
-            if destination_province is None or source_province is None:
-                raise ValueError(f"Invalid source or destination for ConvoyTransport order")
-            return order_class(destination=destination_province, source=source_province)
-        if order_class in [Support]:
-            if destination_province is None or source_province is None:
-                raise ValueError(f"Invalid source or destination for Support order")
-            return order_class(
-                destination=destination_province, source=source_province, destination_coast=destination_coast
-            )
-        raise ValueError(f"Could not parse {order_class}")
-
     def _load_unit(self, board: Board, board_id: int, unit_info: tuple, cursor):
         (
             location,
@@ -318,11 +253,11 @@ class _DatabaseConnection:
         if order_type is None:
             return
         try:
-            order = self._parse_order(board, order_type, order_destination, order_source)
+            order = board.parse_order(order_type, order_destination, order_source)
             if order is not None:
                 order.has_failed = has_failed
             unit.order = order
-        except:
+        except ValueError:
             logger.warning("BAD UNIT INFO: replacing with hold")
 
     def _load_dp_orders(self, board: Board, dp_data: tuple):
@@ -337,10 +272,10 @@ class _DatabaseConnection:
             logger.warning(f"Couldn't find player {player_name} for DP order at {location}")
             return
         try:
-            dp_order = self._parse_order(board, order_type, order_destination, order_source)
+            dp_order = board.parse_order(order_type, order_destination, order_source)
             if dp_order is not None:
                 unit.dp_allocations[player.name] = DPAllocation(int(points), dp_order)
-        except:
+        except ValueError:
             logger.warning("BAD UNIT INFO: replacing with hold")
 
     def _get_board(
@@ -423,7 +358,8 @@ class _DatabaseConnection:
                 (board_id, board.turn.get_indexed_name()))
 
         unit_data = cursor.execute(
-            "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source, failed_order FROM units WHERE board_id=? and phase=?",
+            "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source, failed_order " +
+            "FROM units WHERE board_id=? and phase=?",
             (board_id, board.turn.get_indexed_name()),
         ).fetchall()
         for province in board.provinces:
@@ -434,7 +370,8 @@ class _DatabaseConnection:
             self._load_unit(board, board_id, unit_info, cursor)
 
         dp_data = cursor.execute(
-            "SELECT location, player, points, order_type, order_destination, order_source FROM dp_orders WHERE board_id=? and phase=?",
+            "SELECT location, player, points, order_type, order_destination, order_source " +
+            "FROM dp_orders WHERE board_id=? and phase=?",
             (board_id, board.turn.get_indexed_name()),
         ).fetchall()
         for dp_info in dp_data:
@@ -445,6 +382,7 @@ class _DatabaseConnection:
         return board
 
     def save_board(self, board_id: int, board: Board):
+        """Saves a board to the database."""
         # TODO: Check if board already exists
         cursor = self._connection.cursor()
         cursor.execute(
@@ -558,7 +496,8 @@ class _DatabaseConnection:
             ],
         )
         cursor.executemany(
-            "INSERT INTO dp_orders (board_id, phase, location, player, points, order_type, order_destination, order_source) " +
+            "INSERT INTO dp_orders (board_id, phase, location, player, points, " +
+                                   "order_type, order_destination, order_source) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
@@ -580,6 +519,7 @@ class _DatabaseConnection:
         self._connection.commit()
 
     def save_order_for_units(self, board: Board, units: Iterable[Unit]):
+        """Saves orders for the given units."""
         cursor = self._connection.cursor()
         cursor.executemany(
             "UPDATE units SET order_type=?, order_destination=?, order_source=?, failed_order=? "
@@ -612,7 +552,8 @@ class _DatabaseConnection:
             ],
         )
         cursor.executemany(
-            "INSERT INTO dp_orders (board_id, phase, location, player, points, order_type, order_destination, order_source) " +
+            "INSERT INTO dp_orders (board_id, phase, location, player, points, order_type, " +
+                                   "order_destination, order_source) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
              [
                 (
@@ -660,6 +601,7 @@ class _DatabaseConnection:
         self._connection.commit()
 
     def save_build_orders_for_players(self, board: Board, player: Player | None):
+        """Stores build/disband/vassal/etc. orders for the given player, or all players if None."""
         if player is None:
             players = board.players
         else:
@@ -703,6 +645,7 @@ class _DatabaseConnection:
         self._connection.commit()
 
     def get_spec_requests(self) -> dict[int, list[SpecRequest]]:
+        """Gets all spec requests, organized by server ID."""
         requests = {}
 
         cursor = self._connection.cursor()
@@ -721,6 +664,7 @@ class _DatabaseConnection:
         return requests
 
     def save_spec_request(self, request: SpecRequest):
+        """Saves a spec request to the database."""
         cursor = self._connection.cursor()
 
         cursor.execute(
@@ -732,6 +676,7 @@ class _DatabaseConnection:
         self._connection.commit()
 
     def delete_board(self, board: Board):
+        """Deletes a board and all associated data for that phase."""
         cursor = self._connection.cursor()
         cursor.execute(
             "DELETE FROM boards WHERE board_id=? AND phase=?",
@@ -765,6 +710,7 @@ class _DatabaseConnection:
         self._connection.commit()
 
     def total_delete(self, board: Board):
+        """Deletes a board and all associated data, regardless of phase."""
         cursor = self._connection.cursor()
         cursor.execute("DELETE FROM boards WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM board_parameters WHERE board_id=?", (board.board_id,))

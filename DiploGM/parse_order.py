@@ -270,7 +270,9 @@ class TreeToOrder(Transformer):
         """Hold order, of the form [Province] Hold."""
         return province, order.Hold()
 
-    def l_move_order(self, province: Province, _, destination: tuple[Province, str | None]) -> tuple[Province, order.Move]:
+    def l_move_order(self,
+                     province: Province, _,
+                     destination: tuple[Province, str | None]) -> tuple[Province, order.Move]:
         """Move order, of the form [Province] Move [Destination]."""
         return province, order.Move(destination[0], destination[1])
 
@@ -407,7 +409,8 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                     color = "\u001b[0;33m"
                 else:
                     color = "\u001b[0;32m"
-                if (ordered_unit.player is None or not ordered_unit.player.is_active) and player_restriction is not None:
+                if ((ordered_unit.player is None or not ordered_unit.player.is_active)
+                    and player_restriction is not None):
                     if (dp_order := ordered_unit.dp_allocations.get(player_restriction.name)) is not None:
                         orderoutput.append(f"{color}DP {dp_order.points}: {ordered_unit} {dp_order.order}")
                     else:

@@ -131,7 +131,7 @@ class PlayerCog(commands.Cog):
 
     @commands.command(
         brief="Outputs your current submitted orders.",
-        description=f"""Outputs your current submitted orders. 
+        description=f"""Outputs your current submitted orders.
         Use .view_map to view a sample moves map of your orders. 
         Use the 'missing' or 'submitted' argument to view only units without orders or only submitted orders. 
         \tAliases: {MISSING_ALIASES}; {SUBMITTED_ALIASES}
@@ -152,7 +152,7 @@ class PlayerCog(commands.Cog):
         any_alias_in_args: Callable[[Iterable[str]], bool] = lambda aliases: 0 < len(set(arguments).intersection(set(aliases)))
 
         tags = ViewOrdersTags(
-            subset=OrdersSubsetOption.MISSING if any_alias_in_args(MISSING_ALIASES) 
+            subset=OrdersSubsetOption.MISSING if any_alias_in_args(MISSING_ALIASES)
                 else OrdersSubsetOption.SUBMITTED if any_alias_in_args(SUBMITTED_ALIASES)
                 else OrdersSubsetOption.FULL,
             blind=any_alias_in_args(BLIND_ALIASES),
@@ -459,7 +459,7 @@ class PlayerCog(commands.Cog):
         if player is None:
             if "global" in arguments:
                 for player in board.get_players():
-                    order_channel_name = player.get_name().lower().replace(" ", "-") + "-orders"
+                    order_channel_name = player.get_name().lower().replace(" ", "-") + config.PLAYER_CHANNEL_SUFFIX
 
                     order_channel = discord.utils.find(lambda c: c.name == order_channel_name, ctx.guild.text_channels)
                     if order_channel:

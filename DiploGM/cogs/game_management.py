@@ -19,7 +19,7 @@ from discord import (
 from discord.ext import commands
 
 from DiploGM import config
-from DiploGM.config import ERROR_COLOUR, MAP_ARCHIVE_SAS_TOKEN
+from DiploGM.config import ERROR_COLOUR, MAP_ARCHIVE_SAS_TOKEN, PLAYER_CHANNEL_SUFFIX
 from DiploGM.db.database import get_connection
 from DiploGM.models.board import Board
 from DiploGM.parse_edit_state import parse_edit_state
@@ -1356,7 +1356,7 @@ class GameManagementCog(commands.Cog):
 
         old_role = player.find_discord_role(ctx.guild.roles)
         old_order_role = player.find_discord_role(ctx.guild.roles, get_order_role=True)
-        order_channel_name = player.get_name().lower().replace(" ", "-") + "-orders"
+        order_channel_name = player.get_name().lower().replace(" ", "-") + PLAYER_CHANNEL_SUFFIX
         void_channel_name = player.get_name().lower().replace(" ", "-") + "-void"
 
         has_removed_nickname = board.add_nickname(player, new_name)
@@ -1376,13 +1376,15 @@ class GameManagementCog(commands.Cog):
             await old_role.edit(name = sanitise_name(new_name))
             message += f"\nUpdated role {sanitise_name(old_name)} to {sanitise_name(new_name)}."
         if old_order_role:
-            await old_order_role.edit(name = sanitise_name(new_name) + "-orders")
-            message += f"\nUpdated order role {sanitise_name(old_name)}-orders to {sanitise_name(new_name)}-orders."
+            await old_order_role.edit(name = sanitise_name(new_name) + PLAYER_CHANNEL_SUFFIX)
+            message += f"\nUpdated order role {sanitise_name(old_name)}{PLAYER_CHANNEL_SUFFIX} " + \
+                       f"to {sanitise_name(new_name)}{PLAYER_CHANNEL_SUFFIX}."
 
         order_channel = discord.utils.find(lambda c: c.name == order_channel_name, ctx.guild.text_channels)
         if order_channel:
-            await order_channel.edit(name = new_name.lower().replace(" ", "-") + "-orders")
-            message += f"\nUpdated order channel {order_channel_name} to {new_name.lower().replace(" ", "-") + "-orders"}."
+            await order_channel.edit(name = new_name.lower().replace(" ", "-") + PLAYER_CHANNEL_SUFFIX)
+            message += f"\nUpdated order channel {order_channel_name} to " + \
+                       f"{new_name.lower().replace(" ", "-") + PLAYER_CHANNEL_SUFFIX}."
 
         void_channel = discord.utils.find(lambda c: c.name == void_channel_name, ctx.guild.text_channels)
         if void_channel:

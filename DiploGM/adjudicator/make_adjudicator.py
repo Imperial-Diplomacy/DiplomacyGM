@@ -1,3 +1,4 @@
+"""Factory function for creating an adjudicator for the current phase."""
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -10,11 +11,12 @@ if TYPE_CHECKING:
     from DiploGM.adjudicator.adjudicator import Adjudicator
 
 def make_adjudicator(board: Board) -> Adjudicator:
+    """Factory function for creating an adjudicator for the current phase."""
     if board.turn.is_moves():
         return MovesAdjudicator(board)
-    elif board.turn.is_retreats():
+    if board.turn.is_retreats():
         return RetreatsAdjudicator(board)
-    elif board.turn.is_builds():
+    if board.turn.is_builds():
         return BuildsAdjudicator(board)
     else:
         raise ValueError("Board is in invalid phase")

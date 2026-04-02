@@ -8,8 +8,9 @@ from typing import Dict, Optional, TYPE_CHECKING
 
 from discord import Thread, TextChannel
 
-from DiploGM.config import player_channel_suffix, is_player_category
-from DiploGM.models.order import Move
+from DiploGM.config import PLAYER_CHANNEL_SUFFIX, is_player_category
+from DiploGM.models.order import NMR, Move, Hold, Support, ConvoyTransport, Core, Transform, RetreatMove, RetreatDisband
+from DiploGM.models.province import ProvinceType
 from DiploGM.models.unit import Unit, UnitType
 from DiploGM.utils.sanitise import parse_variant_path, sanitise_name, simple_player_name
 
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
     from discord.abc import Messageable
     from DiploGM.models.turn import Turn
     from DiploGM.models.player import Player
-    from DiploGM.models.province import Province, ProvinceType
+    from DiploGM.models.province import Province
     from DiploGM.models.order import UnitOrder
 
 
@@ -172,7 +173,10 @@ class Board:
 
     def get_players_sorted_by_points(self) -> list[Player]:
         """Gets a list of players sorted by their points."""
-        return sorted(self.get_players(), key=lambda sort_player: (-sort_player.points, -len(sort_player.centers), sort_player.get_name().lower()))
+        return sorted(self.get_players(),
+            key=lambda sort_player: (-sort_player.points,
+                                    -len(sort_player.centers),
+                                    sort_player.get_name().lower()))
 
     def get_province(self, name: str) -> Province:
         """Gets a province by its name, ignoring coasts."""
@@ -337,11 +341,11 @@ class Board:
             self.units.remove(unit)
 
     def get_winning_dp_order(self, unit: Unit) -> UnitOrder | None:
-        # We find which orders got the highest bid, and assign that to the unit.
-        # If a player is ordering an attack or support against that unit, they lose their bid.
-        # If there is a tie, then the unit holds.
+        """We find which orders got the highest bid, and assign that to the unit.
+        If a player is ordering an attack or support against that unit, they lose their bid.
+        If there is a tie, then the unit holds."""
         if not unit.dp_allocations:
-            return
+            return None
         dp_allocations: dict[str, int] = {}
         str_to_order: dict[str, UnitOrder] = {}
         for player_name, allocation in unit.dp_allocations.items():
@@ -414,12 +418,53 @@ class Board:
         if self.is_chaos() and name.endswith("-void"):
             name = name[:-5]
         else:
-            if not name.endswith(player_channel_suffix):
+            if not name.endswith(PLAYER_CHANNEL_SUFFIX):
                 return None
 
-            name = name[: -(len(player_channel_suffix))]
+            name = name[: -(len(PLAYER_CHANNEL_SUFFIX))]
 
         try:
             return self.get_player(name)
         except ValueError:
             return None
+
+    def parse_order(self, order_type: str, destination: Optional[str], source: Optional[str]) -> Optional[UnitOrder]:
+        """Given an order type and source/destination strings, attempts to parse it into an Order object."""
+        order_classes = [
+            NMR, Hold, Core, Transform, Move, ConvoyTransport, Support,
+            RetreatMove, RetreatDisband
+            ]
+        order_class = next(
+            _class
+            for _class in order_classes
+            if _class.__name__ == order_type
+        )
+        source_province, destination_province, destination_coast = None, None, None
+        if destination is not None:
+            if len(destination) == 2 and destination[1] == "c":
+                destination_coast = destination
+            else:
+                destination_province, destination_coast = (
+                    self.get_province_and_coast(destination)
+                )
+        if source is not None:
+            source_province = self.get_province(source)
+        if order_class == NMR:
+            return None
+        if order_class in [Hold, Core, RetreatDisband]:
+            return order_class()
+        if order_class in [Transform]:
+            return order_class(destination_coast=destination_coast)
+        if order_class in [Move, RetreatMove]:
+            return order_class(destination=destination_province, destination_coast=destination_coast)
+        if order_class in [ConvoyTransport]:
+            if destination_province is None or source_province is None:
+                raise ValueError("Invalid source or destination for ConvoyTransport order")
+            return order_class(destination=destination_province, source=source_province)
+        if order_class in [Support]:
+            if destination_province is None or source_province is None:
+                raise ValueError("Invalid source or destination for Support order")
+            return order_class(
+                destination=destination_province, source=source_province, destination_coast=destination_coast
+            )
+        raise ValueError(f"Could not parse {order_class}")

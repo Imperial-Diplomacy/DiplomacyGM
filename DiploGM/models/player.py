@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Optional, Sequence
 from enum import Enum, auto
 import discord
 
+from DiploGM import config
 from DiploGM.models import order
 from DiploGM.models.order import Disband, Build
 from DiploGM.utils import simple_player_name
@@ -65,6 +66,9 @@ class Player:
         self.liege: Player | None = None
         self.vassals: list[Player] = []
 
+        # Currently defaults to 1 DP per SC, but can be overwritten
+        self.dp_max: int = min(len(self.centers), 3)
+
         self.is_active: bool = is_active
 
         # Must be initialised when the board is made
@@ -73,7 +77,7 @@ class Player:
 
     def find_discord_role(self, roles: Sequence[discord.Role], get_order_role: bool = False) -> Optional[discord.Role]:
         """Gets the Discord role associated with this player, if it exists."""
-        suffix = "-orders" if get_order_role else ""
+        suffix = config.PLAYER_CHANNEL_SUFFIX if get_order_role else ""
         for role in roles:
             if simple_player_name(role.name) == simple_player_name(self.get_name()) + suffix:
                 return role

@@ -8,12 +8,12 @@ from DiploGM.db.database import get_connection
 def parse_board_params(message: str, board: Board) -> tuple[str, str, bytes | None, str | None, str | None]:
     """Parses a message containing commands to edit the board parameters,
     executes those commands, and returns a response message and an updated map if applicable."""
-    invalid: list[tuple[str, Exception]] = []
+    invalid: list[tuple[str, RuntimeError | ValueError]] = []
     commands = str.splitlines(message)
     for command in commands:
         try:
             _parse_command(command, board)
-        except Exception as error:
+        except (RuntimeError, ValueError) as error:
             invalid.append((command, error))
 
     embed_colour: str | None = None

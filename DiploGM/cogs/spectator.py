@@ -6,7 +6,7 @@ from discord.utils import find as discord_find
 
 from DiploGM import perms
 from DiploGM import utils
-from DiploGM.config import ERROR_COLOUR, HUB_SERVER_ID, PARTIAL_ERROR_COLOUR
+from DiploGM.config import ERROR_COLOUR, HUB_SERVER_ID, PARTIAL_ERROR_COLOUR, PLAYER_CHANNEL_SUFFIX
 from DiploGM.models.spec_request import SpectatorBan, SpectatorBanRepository
 from DiploGM.utils import send_message_and_file
 from DiploGM.manager import Manager
@@ -444,7 +444,7 @@ class SpectatorCog(commands.Cog):
 
         # get power channel to send request
         role_channel = discord.utils.find(
-            lambda c: c.name == f"{power_role.name.lower()}-orders", guild.text_channels
+            lambda c: c.name == f"{power_role.name.lower()}{PLAYER_CHANNEL_SUFFIX}", guild.text_channels
         )
         role_void = discord.utils.find(
             lambda c: c.name == f"{power_role.name.lower()}-void", guild.text_channels

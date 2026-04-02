@@ -305,9 +305,9 @@ class ScheduleCog(commands.Cog):
         )
 
         out = ["(sorted by soonest)"]
-        for id, task in guild_tasks.items():
+        for task_id, task in guild_tasks.items():
             user = self.bot.get_user(task["invoking_user_id"])
-            s = f"Task ID = `{id}`:\n- [{user.mention if user else task['invoking_user_name']}] -> `{task['command']}` at {task['execute_at']}"
+            s = f"Task ID = `{task_id}`:\n- [{user.mention if user else task['invoking_user_name']}] -> `{task['command']}` at {task['execute_at']}"
             if len(task["args"]) != 0:
                 s += f"\n  - Arguments: {task['args']}"
 
