@@ -82,12 +82,6 @@ class Parser:
                 raise ValueError("Starting_units layer expected but not found in SVG")
             self.layer_data["starting_units"] = starting_units
 
-        if "impassibles_layer" in self.layers:
-            impassibles_layer = find_svg_element(svg_root, "impassibles_layer", self.layers)
-            if impassibles_layer is None:
-                raise ValueError("Layer impassibles_layer not found in SVG")
-            self.layer_data["impassibles_layer"] = impassibles_layer
-
         self.fow = self.layers.get("fow", False)
         # TODO: Move this out of SVG layers and update configs accordingly
         self.year_offset = self.layers.get("year", 1901)
@@ -368,10 +362,6 @@ class Parser:
         for province in provinces:
             province.set_adjacent_coasts()
 
-        # impassible provinces aren't in the list; they're "ghost" and only show up
-        # when explicitly asked for in costal topology algorithms
-        provinces = {p for p in provinces if p.type != ProvinceType.IMPASSIBLE}
-
         self._initialize_province_owners(self.layer_data.get("land_layer"))
         self._initialize_province_owners(self.layer_data.get("island_fill_layer"))
 
@@ -402,14 +392,7 @@ class Parser:
         land_provinces = self._create_provinces_type(self.layer_data.get("land_layer"), ProvinceType.LAND)
         island_provinces = self._create_provinces_type(self.layer_data.get("island_borders"), ProvinceType.ISLAND)
         sea_provinces = self._create_provinces_type(self.layer_data.get("sea_borders"), ProvinceType.SEA)
-        # detect impassible to allow for better understanding
-        # of coastlines
-        # they don't go in board.provinces
-        impassible_provinces = set()
-        if self.layer_data.get("impassibles_layer") is not None:
-            impassible_provinces = self._create_provinces_type(
-                self.layer_data.get("impassibles_layer"), ProvinceType.IMPASSIBLE)
-        return land_provinces | island_provinces | sea_provinces | impassible_provinces
+        return land_provinces | island_provinces | sea_provinces
 
     # TODO: (BETA) can a library do all of this for us? more safety from needing to support wild SVG legal syntax
     def _create_provinces_type(
@@ -451,6 +434,13 @@ class Parser:
                 if name == "":
                     raise RuntimeError(f"Province name not found in province with data {province_data}")
 
+            color = get_element_color(province_data)
+            impassable_color = self.data[SVG_CONFIG_KEY].get("impassable", "000000")
+            if isinstance(impassable_color, dict):
+                impassable_color = impassable_color.get("standard", "000000")
+            if color == impassable_color:
+                province_type = ProvinceType.IMPASSABLE
+
             province = Province(name, poly, province_type)
 
             provinces.add(province)
@@ -461,6 +451,8 @@ class Parser:
             return
         for province_data in provinces_layer:
             name = self.get_province_name(province_data)
+            if self.name_to_province[name].type == ProvinceType.IMPASSABLE:
+                continue
             self.name_to_province[name].owner = self.get_element_player(province_data, province_name=name)
 
     # Sets province names given the names layer

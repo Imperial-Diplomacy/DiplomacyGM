@@ -345,8 +345,7 @@ class CommandCog(commands.Cog):
                 adjacent_list.append(f"{adj[0] if isinstance(adj, tuple) else adj}")
             adjacent_coasts += "\n- ".join(sorted(adjacent_list))
             adjacent_coasts += "\n"
-        adjacent_sorted = sorted([adjacent.name for adjacent in province.adjacency_data.adjacent |
-                                province.adjacency_data.impassible_adjacent])
+        adjacent_sorted = sorted([adjacent.name for adjacent in province.adjacency_data.adjacent])
         unit_text = ((province.unit.player.get_name() if province.unit.player is not None else '')
                         + ' ' + province.unit.unit_type.name
                     if province.unit else 'None')

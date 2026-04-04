@@ -23,6 +23,7 @@
         "order_stroke_width": 4,
         "neutral": "f5deb3",
         "neutral_sc": "ffffff",
+        "impassable": "a69f8f",
         "loc_x_offset": 7.7655,
         "loc_y_offset": 7.033,
         "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]

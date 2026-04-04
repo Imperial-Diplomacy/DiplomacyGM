@@ -101,7 +101,10 @@ class Mapper:
         """Draws move and retreat arrows."""
         units = sorted(self.board.units, key=lambda unit: 0 if unit.order is None else unit.order.display_priority)
         for unit in units:
-            if not self.order_drawer.utils.is_moveable(unit, self.adjacent_provinces, self.player_restriction, current_turn.is_retreats()):
+            if not self.order_drawer.utils.is_moveable(unit,
+                                                       self.adjacent_provinces,
+                                                       self.player_restriction,
+                                                       current_turn.is_retreats()):
                 continue
 
             # Only show moves that succeed if requested
@@ -125,7 +128,9 @@ class Mapper:
             if isinstance(order, (RetreatMove, Move, Support)):
                 new_locs = []
                 dest_coords = order.destination.all_coordinates
-                if order.destination_coast and order.destination_coast in dest_coords:
+                if len(dest_coords) == 0:
+                    e_list = [UnitLocation((0, 0), (0, 0))]
+                elif order.destination_coast and order.destination_coast in dest_coords:
                     e_list = dest_coords[order.destination_coast]
                 elif unit.unit_type.name not in dest_coords:
                     e_list = next(iter(dest_coords.values()))
@@ -358,6 +363,11 @@ class Mapper:
             self.neutral_color = neutral_colors
         else:
             self.neutral_color = neutral_colors.get(color_mode, neutral_colors["standard"])
+        impassable_colors = self.board_svg_data.get("impassable", "000000")
+        if isinstance(impassable_colors, str):
+            self.impassable_color = impassable_colors
+        else:
+            self.impassable_color = impassable_colors.get(color_mode, impassable_colors["standard"])
 
         self.clear_seas_color = self.board_svg_data["default_sea_color"]
         if (self.replacements is not None
@@ -438,7 +448,7 @@ class Mapper:
                 continue
 
             visited_provinces.add(province.name)
-            color = self.neutral_color
+            color = self.impassable_color if province.type == ProvinceType.IMPASSABLE else self.neutral_color
             if province.name not in self.adjacent_provinces:
                 color = self.board_svg_data["unknown"]
             elif province.owner:
