@@ -36,7 +36,8 @@ class ProvinceAdjacency:
     """Contains adjacency information about a province.
     At some point this should be moved into a ProvinceGeom class or something."""
     adjacent: set[Province] = field(default_factory=set)
-    fleet_adjacent: set[tuple[Province, str | None]] | dict[str, set[tuple[Province, str | None]]] = field(default_factory=set)
+    fleet_adjacent: set[tuple[Province, str | None]] | dict[str, set[tuple[Province, str | None]]] \
+                  = field(default_factory=set)
     impassible_adjacent: set[Province] = field(default_factory=set)
     nonadjacent_coasts: set[str] = field(default_factory=set)
     difficult_adjacencies: set[str] = field(default_factory=set)

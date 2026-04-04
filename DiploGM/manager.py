@@ -1,6 +1,7 @@
 import logging
 import time
 import os
+from itertools import combinations
 from typing import Optional
 
 from discord import Member, User
@@ -110,22 +111,19 @@ class Manager(metaclass=SingletonMeta):
         visited_provinces = set()
 
         # High Seas
-        for province in board.provinces:
-            if province.name[-1] not in "23456789":
-                continue
+        for province in [p for p in board.provinces if p.name[-1] in "23456789"]:
             try:
                 comp_province = board.get_province(province.name[:-1] + "1")
                 # Two high seas' adjacencies should differ by only each other
-                if comp_province.adjacency_data.adjacent ^ province.adjacency_data.adjacent != {province, comp_province}:
+                if (comp_province.adjacency_data.adjacent ^ province.adjacency_data.adjacent
+                    != {province, comp_province}):
                     warnings.append(f"Province {province.name} and {comp_province.name} have different adjacencies")
                 visited_provinces.add(province)
             except ValueError:
                 warnings.append(f"Province {province.name} is named like a high seas province " +
                                 f"but {province.name[:-1]}1 was not found")
 
-        for province in board.provinces:
-            if province in visited_provinces:
-                continue
+        for province in board.provinces - visited_provinces:
             if len(province.adjacency_data.adjacent) == 0:
                 warnings.append(f"Province {province.name} has no adjacencies")
             visited_adjacent = set()
@@ -141,23 +139,20 @@ class Manager(metaclass=SingletonMeta):
                     # Comparing names of the first and last provinces in the loop so we only report it once
                     if loop is not None and loop[1].name > loop[-1].name:
                         warnings.append(f"Found a loop of provinces {', '.join(p.name for p in loop)}. " +
-                                        "If they surround an impassible province or the board edge, this is expected")
+                                        "If they surround an impassable province or the board edge, this is expected")
 
                 # Searching for groups of four provinces that all share a border
-                visited_third = set()
-                for third_province in common_adj - visited_provinces - visited_adjacent:
-                    fourth_adjacent = (common_adj & self._get_adjacent_geom(third_province)
-                                       - visited_provinces - visited_adjacent - visited_third)
-                    for fourth_province in fourth_adjacent:
-                        if min(len(self._get_adjacent_geom(province)),
-                               len(self._get_adjacent_geom(adj)),
-                               len(self._get_adjacent_geom(third_province)),
-                               len(self._get_adjacent_geom(fourth_province))) == 3:
-                            # Skips provinces that only border the other three, as that's geometrically possible
-                            continue
-                        warnings.append(f"Provinces {province.name}, {adj.name}, {third_province.name}, " +
-                                        f"and {fourth_province.name} all border each other")
-                    visited_third.add(third_province)
+                for third, fourth in combinations(common_adj - visited_provinces - visited_adjacent, 2):
+                    if fourth not in self._get_adjacent_geom(third):
+                        continue
+                    if min(len(self._get_adjacent_geom(province)),
+                           len(self._get_adjacent_geom(adj)),
+                           len(self._get_adjacent_geom(third)),
+                           len(self._get_adjacent_geom(fourth))) == 3:
+                        # Skips provinces that only border the other three, as that's geometrically possible
+                        continue
+                    warnings.append(f"Provinces {province.name}, {adj.name}, {third.name}, " +
+                                    f"and {fourth.name} all border each other")
                 visited_adjacent.add(adj)
             visited_provinces.add(province)
         return "\n".join(warnings) if warnings else "No adjacency issues found"
@@ -192,7 +187,8 @@ class Manager(metaclass=SingletonMeta):
         return "Approved request Logged!"
 
     def get_board(self, server_id: int) -> Board:
-        """Gets the current board for a server."""
+        """Gets the current board for a server.
+        Raises a RuntimeError if there is no game in the server."""
         # NOTE: Temporary for Meme's Severence Diplomacy Event
         if server_id == SEVERENCE_B_ID:
             server_id = SEVERENCE_A_ID

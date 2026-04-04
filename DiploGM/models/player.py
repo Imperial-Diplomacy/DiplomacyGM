@@ -72,7 +72,7 @@ class Player:
         self.is_active: bool = is_active
 
         # Must be initialised when the board is made
-        self.board: Optional[Board] = None
+        self.board: Board | None = None
 
 
     def find_discord_role(self, roles: Sequence[discord.Role], get_order_role: bool = False) -> Optional[discord.Role]:
@@ -104,13 +104,17 @@ class Player:
         centers = sorted(self.centers, key=lambda c: c.name)
 
         if board.data["players"] == "chaos":
+            units = ((bullet + bullet.join([unit.province.get_name(unit.coast) for unit in units]))
+                    if len(units) > 0 else 'None')
+            centers = ((bullet + bullet.join([center.name for center in centers]))
+                      if len(centers) > 0 else 'None')
             out = (
                 f"Color: #{self.render_color}\n"
                 + f"Points: {self.points}\n"
                 + f"Vassals: {', '.join(map(str,self.vassals))}\n"
                 + f"Liege: {self.liege if self.liege else 'None'}\n"
-                + f"Units ({len(units)}): {(bullet + bullet.join([unit.province.get_name(unit.coast) for unit in units])) if len(units) > 0 else 'None'}\n"
-                + f"Centers ({len(centers)}): {(bullet + bullet.join([center.name for center in centers])) if len(centers) > 0 else 'None'}\n"
+                + f"Units ({len(units)}): {units}\n"
+                + f"Centers ({len(centers)}): {centers}\n"
             )
             return out
 
@@ -128,9 +132,11 @@ class Player:
         for unit in units:
             unit_str += f"{bullet}({unit.unit_type.value}) {unit.province.get_name(unit.coast)}"
 
+        color = (bullet + bullet.join([k + ': ' + v for k, v in self.color_dict.items()])
+                if self.color_dict is not None else self.render_color)
         out = (
             ""
-            + f"Color: {(bullet + bullet.join([k + ': ' + v for k, v in self.color_dict.items()]) if self.color_dict is not None else self.render_color)}\n"
+            + f"Color: {color}\n"
             + f"Score: [{len(self.centers)}/{int(board.data['players'][self.name]['vscc'])}] "
                 + f"{round(board.get_score(self) * 100, 2)}%\n"
             + f"{center_str}\n"

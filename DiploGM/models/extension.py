@@ -39,11 +39,11 @@ class ExtensionEvent:
 
 class SQLiteExtensionEventRepository(Repository):
     def __init__(self) -> None:
-        self.conn = get_connection()
+        self.conn = get_connection()._connection
         self._initialise_schema()
 
     def _initialise_schema(self):
-        cursor = self.conn._connection.cursor()
+        cursor = self.conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS extension_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,24 +54,24 @@ class SQLiteExtensionEventRepository(Repository):
                 created_at TEXT NOT NULL
             );
         """)
-        self.conn._connection.commit()
+        self.conn.commit()
 
     def save(self, entity: ExtensionEvent) -> ExtensionEvent:
-        cursor = self.conn._connection.cursor()
+        cursor = self.conn.cursor()
         cursor.execute(
             "INSERT INTO extension_events (user_id, server_id, hours, reason, created_at) VALUES (?, ?, ?, ?, ?)",
             (entity.user_id, entity.server_id, entity.hours, entity.reason, entity.created_at.isoformat()),
         )
-        self.conn._connection.commit()
+        self.conn.commit()
         entity.id = cursor.lastrowid
 
         return entity
 
-    def load(self, id: int) -> Optional[ExtensionEvent]:
-        cursor = self.conn._connection.cursor()
+    def load(self, object_id: int) -> Optional[ExtensionEvent]:
+        cursor = self.conn.cursor()
         cursor.execute(
             "SELECT (id, user_id, server_id, hours, reason, created_at) FROM extension_events WHERE id = ?;",
-            (id,),
+            (object_id,),
         )
         data = cursor.fetchone()
         if not data:
@@ -88,24 +88,23 @@ class SQLiteExtensionEventRepository(Repository):
 
         return entity
 
-    def delete(self, id: int) -> None:
-        cursor = self.conn._connection.cursor()
+    def delete(self, object_id: int) -> None:
+        cursor = self.conn.cursor()
         cursor.execute(
             "DELETE FROM extension_events WHERE id = ?;",
-            (id,),
+            (object_id,),
         )
-        self.conn._connection.commit()
+        self.conn.commit()
 
     def clear(self) -> None:
-        cursor = self.conn._connection.cursor()
+        cursor = self.conn.cursor()
         cursor.execute(
             "DELETE FROM extension_events;",
-            (id,),
         )
-        self.conn._connection.commit()
+        self.conn.commit()
 
     def all(self) -> Iterable[ExtensionEvent]:
-        cursor = self.conn._connection.cursor()
+        cursor = self.conn.cursor()
         cursor.execute(
             "SELECT id, user_id, server_id, hours, reason, created_at FROM extension_events;",
         )
@@ -125,7 +124,7 @@ class SQLiteExtensionEventRepository(Repository):
         ]
 
     def load_by_user(self, user_id: int) -> list[ExtensionEvent]:
-        cursor = self.conn._connection.cursor()
+        cursor = self.conn.cursor()
         cursor.execute(
             "SELECT id, user_id, server_id, hours, reason, created_at FROM extension_events WHERE user_id = ?;",
             (user_id,),
@@ -146,7 +145,7 @@ class SQLiteExtensionEventRepository(Repository):
         ]
 
     def load_by_server(self, server_id: int) -> list[ExtensionEvent]:
-        cursor = self.conn._connection.cursor()
+        cursor = self.conn.cursor()
         cursor.execute(
             "SELECT id, user_id, server_id, hours, reason, created_at FROM extension_events WHERE server_id = ?;",
             (server_id,),

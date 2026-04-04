@@ -50,15 +50,15 @@ class SQLiteCommunityRepository(Repository):
         self.conn.commit()
         return entity
 
-    def load(self, id: int) -> Optional[Community]:
+    def load(self, object_id: int) -> Optional[Community]:
         cur = self.conn.cursor()
-        cur.execute("SELECT * FROM communities WHERE id = ?", (id,))
+        cur.execute("SELECT * FROM communities WHERE id = ?", (object_id,))
         row = cur.fetchone()
         return self._row_to_model(row) if row else None
 
-    def delete(self, id: int) -> None:
+    def delete(self, object_id: int) -> None:
         cur = self.conn.cursor()
-        cur.execute("DELETE FROM communities WHERE id = ?", (id,))
+        cur.execute("DELETE FROM communities WHERE id = ?", (object_id,))
         self.conn.commit()
 
     def clear(self) -> None:

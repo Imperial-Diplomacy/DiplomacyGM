@@ -42,7 +42,8 @@ class SlashSubstituteCog(commands.Cog):
         message: Optional[str] = "No message given.",
     ):
         """
-        Create an advertisement for substitutes automatically, to enforce a standard of information that should be contained within.
+        Create an advertisement for substitutes automatically,
+        to enforce a standard of information that should be contained within.
 
         Process:
             1. If nothing is given for *message, set to string "No message given.", else join with space delimiter
@@ -166,7 +167,8 @@ class SlashSubstituteCog(commands.Cog):
             f"Message: {message}\n"
             "\n"
             f"If you are interested, please go to {locations['tickets_channel'].mention} and create a ticket. " +
-            f"Don't forget to ping {interaction.user.mention}[{interaction.user.name}] so that they know you want to join the game!"
+            f"Don't forget to ping {interaction.user.mention}[{interaction.user.name}] " +
+            "so that they know you want to join the game!"
         )
         file, file_name = manager.draw_map_for_board(
             board, player_restriction=None, draw_moves=False, color_mode="standard"

@@ -20,7 +20,7 @@ class SpectatorBanRepository(Repository):
         self.bans: dict = {}
 
         if db_path.exists():
-            with open(db_path, "r") as f:
+            with open(db_path, "r", encoding="utf-8") as f:
                 data = json.loads(f.read())
                 for k, v in data.items():
                     self.bans[k] = SpectatorBan(**v)
@@ -32,10 +32,10 @@ class SpectatorBanRepository(Repository):
             curr[k] = dataclasses.asdict(v)
 
         if not self.db_path.exists():
-            s = self.db_path.open("x")
+            s = self.db_path.open("x", encoding="utf-8")
             s.close()
 
-        with open(self.db_path, "w") as f:
+        with open(self.db_path, "w", encoding="utf-8") as f:
             data = json.dumps(curr)
             f.write(data)
 
@@ -44,12 +44,12 @@ class SpectatorBanRepository(Repository):
         self._save_to_file()
         return entity
 
-    def load(self, id: int) -> Optional[SpectatorBan]:
-        return self.bans.get(id)
+    def load(self, object_id: int) -> Optional[SpectatorBan]:
+        return self.bans.get(object_id)
 
-    def delete(self, id: int) -> None:
-        if id in self.bans:
-            del self.bans[id]
+    def delete(self, object_id: int) -> None:
+        if object_id in self.bans:
+            del self.bans[object_id]
             self._save_to_file()
 
     def clear(self):

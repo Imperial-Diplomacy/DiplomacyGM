@@ -1,3 +1,4 @@
+"""Module to handle database interactions."""
 import logging
 import sqlite3
 from collections.abc import Iterable
@@ -358,7 +359,8 @@ class _DatabaseConnection:
                 (board_id, board.turn.get_indexed_name()))
 
         unit_data = cursor.execute(
-            "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source, failed_order " +
+            "SELECT location, is_dislodged, owner, is_army, order_type, " +
+                   "order_destination, order_source, failed_order " +
             "FROM units WHERE board_id=? and phase=?",
             (board_id, board.turn.get_indexed_name()),
         ).fetchall()

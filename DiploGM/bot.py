@@ -157,7 +157,7 @@ class DiploGM(commands.Bot):
             logger.error(f"Failed to import {module_path}: {e}")
             return
 
-        for attr in module.__dir__():
+        for attr in dir(module):
             cls = getattr(module, attr)
             if not isinstance(cls, type):
                 continue

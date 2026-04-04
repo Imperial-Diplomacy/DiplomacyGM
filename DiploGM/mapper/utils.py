@@ -28,12 +28,12 @@ class MapperUtils:
     def is_moveable(self,
                     unit: Unit,
                     adjacent_provinces: set[str],
-                    player_restriction: Player | None,
+                    player_restriction: str | None,
                     is_retreats: bool = False) -> bool:
         """Checks if a unit is moveable."""
         if unit.province.name not in adjacent_provinces:
             return False
-        if player_restriction and unit.player is not None and unit.player.name != player_restriction.name:
+        if player_restriction and unit.player is not None and unit.player.name != player_restriction:
             return False
         if is_retreats and unit.province.dislodged_unit != unit:
             return False

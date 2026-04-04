@@ -67,7 +67,7 @@ class SpecView(discord.ui.View):
             await interaction.response.send_message(
                 f"Accept response sent to {self.member.mention}!", ephemeral=True
             )
-        except:
+        except discord.Forbidden:
             logger.warning(
                 "Unable to send a message to direct message. The user might have DMs blocked."
             )
@@ -97,7 +97,7 @@ class SpecView(discord.ui.View):
             await interaction.response.send_message(
                 f"Reject response sent to {self.member.mention}!", ephemeral=True
             )
-        except:
+        except discord.Forbidden:
             logger.warning(
                 "Unable to send a message to direct message. The user might have DMs blocked."
             )
@@ -176,7 +176,9 @@ class SpectatorCog(commands.Cog):
     @spec_ban_add.error
     async def spec_ban_add_error(self, ctx: commands.Context, exc):
         if isinstance(exc, commands.errors.UserNotFound):
-            await send_message_and_file(channel=ctx.channel, message="Could not find that user!", embed_colour=ERROR_COLOUR)
+            await send_message_and_file(channel=ctx.channel,
+                                        message="Could not find that user!",
+                                        embed_colour=ERROR_COLOUR)
             ctx.handled = True # type: ignore
 
     @spec_ban.command(name="remove")
@@ -287,7 +289,7 @@ class SpectatorCog(commands.Cog):
                 "Please use the spectate command in a Game server!"
             )
             return
-        elif not interaction.channel:
+        if not interaction.channel:
             return
 
         # check bot is on the gm team (for add_roles permissions)
@@ -343,7 +345,8 @@ class SpectatorCog(commands.Cog):
 
             if end_ts is not None and now_ts < end_ts:
                 await interaction.response.send_message(
-                    f"You are currently banned from spectating with DiploGM until this time:\n\n{end_ts}\n\nContact the Moderation team if you are unsure why.",
+                    f"You are currently banned from spectating with DiploGM until this time:\n\n" +
+                    f"{end_ts}\n\nContact the Moderation team if you are unsure why.",
                     ephemeral=True,
                 )
                 return

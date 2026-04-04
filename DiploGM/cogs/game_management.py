@@ -833,7 +833,8 @@ class GameManagementCog(commands.Cog):
             `svg`: Uploads the maps as SVGs instead of PNGs.
         
         Note:
-            By default, the command will not adjudicate if there are missing orders. Use the "confirm" argument to override this.
+            By default, the command will not adjudicate if there are missing orders.
+            Use the "confirm" argument to override this.
             Arguments can be combined as desired, so `.adjudicate full svg dark confirm` is valid.
             If `svg` and `full` are included, maps will still be uploaded as PNGs to the #maps channel.
             To undo an adjudication, use `.rollback`.
@@ -909,7 +910,7 @@ class GameManagementCog(commands.Cog):
             )
             try:
                 await map_message.publish()
-            except:
+            except discord.Forbidden:
                 pass
 
         if movement_adjudicate:
@@ -952,7 +953,7 @@ class GameManagementCog(commands.Cog):
             )
             try:
                 await map_message.publish()
-            except:
+            except discord.Forbidden:
                 pass
 
         if full_adjudicate:
@@ -1149,7 +1150,7 @@ class GameManagementCog(commands.Cog):
 
             name, p1, p2 = cs.pop(0)
 
-            overwrites = {
+            overwrites: dict[discord.Role | discord.Member | discord.Object, PermissionOverwrite] = {
                 guild.default_role: PermissionOverwrite(view_channel=False),
                 spectator_role: PermissionOverwrite(view_channel=True),
                 player_to_role[p1]: PermissionOverwrite(view_channel=True),

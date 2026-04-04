@@ -76,18 +76,18 @@ class SQLiteRelationshipRepository(Repository[Relationship]):
         )
         self.conn.commit()
 
-    def load(self, id: int) -> Optional[Relationship]:
+    def load(self, object_id: int) -> Optional[Relationship]:
         row = self.conn.execute(
-            "SELECT * FROM relationships WHERE id = ?", (id,)
+            "SELECT * FROM relationships WHERE id = ?", (object_id,)
         ).fetchone()
         return self._row_to_model(row) if row else None
 
-    def delete(self, id: int) -> None:
-        self.conn.execute("DELETE FROM relationships WHERE id = ?", (id,))
+    def delete(self, object_id: int) -> None:
+        self.conn.execute("DELETE FROM relationships WHERE id = ?", (object_id,))
         self.conn.commit()
 
-    def delete_many(self, ids: list[int]):
-        self.conn.executemany("DELETE FROM relationships WHERE id = ?", [(id,) for id in ids])
+    def delete_many(self, object_ids: list[int]):
+        self.conn.executemany("DELETE FROM relationships WHERE id = ?", [(object_id,) for object_id in object_ids])
         self.conn.commit()
 
     def clear(self) -> None:

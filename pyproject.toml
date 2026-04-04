@@ -5,3 +5,8 @@ disable = ["W1203"]
 
 [tool.pylint.format]
 max-line-length = 120
+
+[tool.pylint.typecheck]
+generated-members = ["discord.*", "discord.ext.commands.*"]
+ignored-modules = ["discord"]
+ignored-classes = ["discord.ext.commands.Context"]

@@ -26,7 +26,7 @@ class OrderDrawer:
                  moves_svg: ElementTree,
                  board_svg_data: dict[str, Any],
                  adjacent_provinces: set[str],
-                 player_restriction: Player | None = None):
+                 player_restriction: str | None = None):
         self.utils = utils
         self.moves_svg: ElementTree = moves_svg
         self.board_svg_data = board_svg_data
@@ -176,7 +176,7 @@ class OrderDrawer:
             if (
                 possibility.can_convoy
                 and possibility.unit is not None
-                and (self.player_restriction is None or possibility.unit.player == self.player_restriction)
+                and (self.player_restriction is None or possibility.unit.player.name == self.player_restriction)
                 and possibility.unit.unit_type == UnitType.FLEET
                 and isinstance(possibility.unit.order, ConvoyTransport)
                 and possibility.unit.order.source is source
@@ -296,7 +296,7 @@ class OrderDrawer:
                 and destorder.source == destorder.destination == unit.province
                 and order.source == order.destination
                 and (self.player_restriction is None
-                     or order.destination.unit.player == self.player_restriction)
+                     or order.destination.unit.player.name == self.player_restriction)
             ):
                 # This check is so we only do it once, so it doesn't overlay
                 # it doesn't matter which one is the origin & which is the dest

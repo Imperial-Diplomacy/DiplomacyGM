@@ -47,7 +47,7 @@ class Mapper:
         self.utils = MapperUtils(self.board_svg_data)
         self.current_turn: turn.Turn = board.turn
         self.board_svg: ElementTree = etree.parse(self.board.data["file"])
-        self.player_restriction: Player | None = None
+        self.player_restriction: str | None = restriction.name if restriction else None
 
         # different colors
         if "color replacements" in self.board_svg_data:
@@ -112,8 +112,8 @@ class Mapper:
             unit_locs = self._get_unit_coordinates(unit, current_turn.is_retreats())
 
             if unit.order is None and unit.dp_allocations:
-                if self.player_restriction is not None and self.player_restriction.name in unit.dp_allocations:
-                    order = unit.dp_allocations[self.player_restriction.name].order
+                if self.player_restriction is not None and self.player_restriction in unit.dp_allocations:
+                    order = unit.dp_allocations[self.player_restriction].order
                 elif self.player_restriction is None:
                     order = self.board.get_winning_dp_order(unit)
                 else:
@@ -158,7 +158,7 @@ class Mapper:
 
     def draw_moves_map(self,
                        current_turn: turn.Turn,
-                       player_restriction: Player | None,
+                       player_restriction: str | None,
                        movement_only: bool = False) -> tuple[bytes, str]:
         """Draws the map with orders.
         If player_restriction is not None, then only show orders for that player.
@@ -178,7 +178,7 @@ class Mapper:
         if not current_turn.is_builds():
             self.draw_moves_and_retreats(arrow_layer, current_turn, movement_only)
         else:
-            for player in self.board.players if player_restriction is None else {player_restriction}:
+            for player in self.board.players if player_restriction is None else {self.board.get_player(player_restriction)}:
                 for build_order in player.build_orders:
                     if isinstance(build_order, PlayerOrder) and build_order.province.name in self.adjacent_provinces:
                         self.order_drawer.draw_player_order(build_order)
@@ -194,7 +194,7 @@ class Mapper:
         svg_file_name = f"{str(self.board.turn).replace(' ', '_')}_moves_map.svg"
         return elementToString(t, encoding="utf-8"), svg_file_name
 
-    def draw_gui_map(self, current_turn: turn.Turn, player_restriction: Player | None) -> tuple[bytes, str]:
+    def draw_gui_map(self, current_turn: turn.Turn, player_restriction: str | None) -> tuple[bytes, str]:
         """Draws the interactive GUI map."""
         self.player_restriction = player_restriction
         self.current_turn = current_turn

@@ -52,19 +52,19 @@ MAP_ARCHIVE_URL = all_config["archive_website"]["url"]
 
 
 # DEVELOPMENT SERVER HUB
-BOT_DEV_SERVER_ID = all_config["dev_hub"]["id"]
-BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID = all_config["dev_hub"]["unhandled_errors_channel"]
+BOT_DEV_SERVER_ID: int = all_config["dev_hub"]["id"]
+BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID: int = all_config["dev_hub"]["unhandled_errors_channel"]
 
 # HUB SERVER
-HUB_SERVER_ID = all_config["hub"]["id"]
+HUB_SERVER_ID: int = all_config["hub"]["id"]
 ## Channels
-HUB_SERVER_BOT_STATUS_CHANNEL_ID = all_config["hub"]["status_channel"]
-HUB_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID = all_config["hub"]["substitute_ticket_channel"]
-HUB_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID = all_config["hub"]["substitute_advertise_channel"]
-HUB_SERVER_SUBSTITUTE_LOG_CHANNEL_ID = all_config["hub"]["substitute_log_channel"]
-HUB_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID = all_config["hub"]["winter_scoreboard_output_channel"]
+HUB_SERVER_BOT_STATUS_CHANNEL_ID: int = all_config["hub"]["status_channel"]
+HUB_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID: int = all_config["hub"]["substitute_ticket_channel"]
+HUB_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID: int = all_config["hub"]["substitute_advertise_channel"]
+HUB_SERVER_SUBSTITUTE_LOG_CHANNEL_ID: int = all_config["hub"]["substitute_log_channel"]
+HUB_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID: int = all_config["hub"]["winter_scoreboard_output_channel"]
 ## Roles
-HUB_BOT_WIZARD_ROLE = all_config["hub"]["bot_wizard"]
+HUB_BOT_WIZARD_ROLE: int = all_config["hub"]["bot_wizard"]
 
 # PERMISSIONS
 SUPERUSERS = all_config["permissions"]["superusers"]

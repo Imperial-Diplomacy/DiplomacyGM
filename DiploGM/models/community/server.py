@@ -51,23 +51,23 @@ class SQLiteServerRepository(Repository[Server]):
         self.conn.commit()
         return entity
 
-    def load(self, id: int) -> Optional[Server]:
+    def load(self, object_id: int) -> Optional[Server]:
         row = self.conn.execute(
-            "SELECT * FROM community_servers WHERE id = ?", (id,)
+            "SELECT * FROM community_servers WHERE id = ?", (object_id,)
         ).fetchone()
         return self._row_to_model(row) if row else None
 
-    def delete(self, id: int) -> None:
-        self.conn.execute("DELETE FROM servers WHERE id = ?", (id,))
+    def delete(self, object_id: int) -> None:
+        self.conn.execute("DELETE FROM community_servers WHERE id = ?", (object_id,))
         self.conn.commit()
 
-    def soft_delete(self, id: int) -> None:
+    def soft_delete(self, object_id: int) -> None:
         self.conn.execute("""
             UPDATE community_servers 
             SET active = 0,
                 deactivated_at = ?
             WHERE id = ?
-        """, (datetime.datetime.now().isoformat(), id,))
+        """, (datetime.datetime.now().isoformat(), object_id,))
 
     def clear(self) -> None:
         self.conn.execute("DELETE FROM community_servers")
