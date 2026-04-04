@@ -15,7 +15,7 @@ from scipy.integrate import odeint
 from discord.ext import commands
 
 from DiploGM import perms
-from DiploGM.config import ERROR_COLOUR, is_bumble, temporary_bumbles, IMPDIP_SERVER_ID
+from DiploGM.config import ERROR_COLOUR, is_bumble, temporary_bumbles, HUB_SERVER_ID
 from DiploGM.utils import log_command, send_message_and_file
 
 from DiploGM.db.database import get_connection
@@ -273,14 +273,14 @@ class PartyCog(commands.Cog):
             sample = random.choice(
                 [
                     f"It looks like {author} is getting coalitioned this turn :cry:",
-                    f"{author} is talking about stabbing {random.choice(list(board.players)).name} again",
+                    f"{author} is talking about stabbing {random.choice(list(board.get_players())).name} again",
                     f"looks like he's throwing to {author}... shame",
                     "yeah",
                     "People in this game are not voiding enough",
                     f"I can't believe {author} is moving to {random.choice(list(board.provinces)).name}",
                     f"{author} has a bunch of invalid orders",
                     f"No one noticed that {author} overbuilt?",
-                    f"{random.choice(list(board.players)).name} is in a perfect position to stab {author}",
+                    f"{random.choice(list(board.get_players())).name} is in a perfect position to stab {author}",
                     ".bumble",
                 ]
             )
@@ -613,7 +613,7 @@ class PartyCog(commands.Cog):
 
         assert ctx.guild is not None
         if ctx.author.id == 1352388421003251833:
-            if (ctx.guild.id != IMPDIP_SERVER_ID
+            if (ctx.guild.id != HUB_SERVER_ID
                 and is_gm(ctx.author)
                 and (ctx.guild.id not in self.eolhc_ed_members or ctx.me.id not in self.eolhc_ed_members[ctx.guild.id])):
                 self.eolhc_ed_members.setdefault(ctx.guild.id, []).append(ctx.me.id)

@@ -97,12 +97,12 @@ class SlashSubstituteCog(commands.Cog):
             return
 
         locations = {
-            "hub_server": bot.get_guild(config.IMPDIP_SERVER_ID),
+            "hub_server": bot.get_guild(config.HUB_SERVER_ID),
             "advertise_channel": bot.get_channel(
-                config.IMPDIP_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID
+                config.HUB_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID
             ),
             "tickets_channel": bot.get_channel(
-                config.IMPDIP_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID
+                config.HUB_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID
             ),
         }
 
@@ -285,9 +285,9 @@ class SlashSubstituteCog(commands.Cog):
 
         # CHECK ALL LOCATIONS ARE AVAILABLE
         locations = {
-            "hub_server": bot.get_guild(config.IMPDIP_SERVER_ID),
+            "hub_server": bot.get_guild(config.HUB_SERVER_ID),
             "tracker_channel": bot.get_channel(
-                config.IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID
+                config.HUB_SERVER_SUBSTITUTE_LOG_CHANNEL_ID
             ),
         }
 

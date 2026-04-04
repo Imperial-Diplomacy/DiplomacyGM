@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS vassal_orders (
     FOREIGN KEY (board_id, player) REFERENCES players (board_id, player),
     FOREIGN KEY (board_id, target_player) REFERENCES players (board_id, player)
 );
+
 CREATE TABLE IF NOT EXISTS spec_requests (
 	request_id INTEGER PRIMARY KEY AUTOINCREMENT,
 	server_id INTEGER NOT NULL,
@@ -89,4 +90,20 @@ CREATE TABLE IF NOT EXISTS board_parameters (
     parameter_key TEXT NOT NULL,
     parameter_value TEXT NOT NULL,
     PRIMARY KEY (board_id, parameter_key)
-)
+);
+
+CREATE TABLE IF NOT EXISTS dp_orders (
+    board_id int,
+    phase text,
+    location text,
+    player text,
+    points int,
+    order_type text,
+    order_destination text,
+    order_source text,
+    PRIMARY KEY (board_id, phase, location, player),
+    FOREIGN KEY (board_id, phase) REFERENCES boards (board_id, phase),
+    FOREIGN KEY (board_id, phase, location) REFERENCES provinces (board_id, phase, province_name),
+    FOREIGN KEY (board_id, player) REFERENCES players (board_id, player_name),
+    FOREIGN KEY (board_id, phase, location) REFERENCES retreat_options (board_id, phase, origin)
+);

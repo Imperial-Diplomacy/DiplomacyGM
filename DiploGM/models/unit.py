@@ -1,6 +1,7 @@
 """Armies and fleets and so forth."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -16,6 +17,11 @@ class UnitType(Enum):
     ARMY = "A"
     FLEET = "F"
 
+@dataclass
+class DPAllocation:
+    """Dataclass for storing DP allocation information."""
+    points: int
+    order: order.UnitOrder
 
 class Unit:
     """Units information. They don't have a lot of logic to them aside from retreat options at the moment."""
@@ -35,6 +41,8 @@ class Unit:
         # When there are retreat options, they are stored as a set of (Province, coast) tuples
         self.retreat_options: set[tuple[province.Province, str | None]] | None = None
         self.order: order.UnitOrder | None = None
+
+        self.dp_allocations: dict[str, DPAllocation] = {}
 
     def __str__(self):
         return f"{self.unit_type.value} {self.province.get_name(self.coast)}"

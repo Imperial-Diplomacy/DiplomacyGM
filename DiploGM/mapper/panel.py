@@ -34,8 +34,8 @@ class PanelDrawer:
         )
         self.scoreboard_power_locations: list[tuple[float, float]] = []
         for power_element in all_power_banners_element or []:
-            destination_pretransform_coordinates = (float(power_element[0].get("x", 0)),
-                                                    float(power_element[0].get("y", 0)))
+            destination_pretransform_coordinates = TransGL3(power_element[0]).transform((float(power_element[0].get("x", 0)),
+                                                                                         float(power_element[0].get("y", 0))))
             destination_coordinates = TransGL3(power_element).transform(destination_pretransform_coordinates)
             self.scoreboard_power_locations.append(destination_coordinates)
 
@@ -53,7 +53,8 @@ class PanelDrawer:
                            banner_index: int, high_player_count: bool) -> bool:
         if len(power_element) == 0:
             return False
-        initial_pretransform_coordinates = (float(power_element[0].get("x", 0)), float(power_element[0].get("y", 0)))
+        initial_pretransform_coordinates = TransGL3(power_element[0]).transform((float(power_element[0].get("x", 0)),
+                                                                                 float(power_element[0].get("y", 0))))
         banner_coordinates = TransGL3(power_element).transform(initial_pretransform_coordinates)
         if high_player_count and banner_coordinates != self.scoreboard_power_locations[banner_index]:
             return False
@@ -113,13 +114,13 @@ class PanelDrawer:
 
         if self.board.fow and self.restriction is not None:
             # don't get info
-            players = sorted(self.board.players, key=lambda sort_player: sort_player.name)
+            players = sorted(self.board.get_players(), key=lambda sort_player: sort_player.name)
         else:
             players = self.board.get_players_sorted_by_score()
         players = sorted(players, key=lambda hidden_player:
                                   self.board.data["players"][hidden_player.name].get("hidden", "false") == "true")
 
-        high_player_count = (len(self.board.players) > len(self.scoreboard_power_locations)
+        high_player_count = (len(self.board.get_players()) > len(self.scoreboard_power_locations)
                              or self.board.data.get("vassals") == "enabled")
         for i, player in enumerate(self.board.get_players_sorted_by_score()):
             if i >= len(self.scoreboard_power_locations):

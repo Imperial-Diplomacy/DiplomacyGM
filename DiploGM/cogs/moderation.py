@@ -43,7 +43,7 @@ class ModerationCog(commands.Cog):
     async def on_member_join(self, member: Member):
         """Checks for potentially suspicious accounts joining a server."""
         guild = member.guild
-        hub = self.bot.get_guild(config.IMPDIP_SERVER_ID)
+        hub = self.bot.get_guild(config.HUB_SERVER_ID)
         if not hub:
             logger.warning("%s joined %s: Could not find the Hub server to check for moderation.",
                            member.name, member.guild.name)
@@ -59,7 +59,7 @@ class ModerationCog(commands.Cog):
             problems.append(msg)
 
         # NOT HUB
-        if hub and guild.id != config.IMPDIP_SERVER_ID:
+        if hub and guild.id != config.HUB_SERVER_ID:
             hub_member = discord.utils.find(lambda m: m.name == member.name, hub.members)
             if not hub_member:
                 msg = "Not a member of the hub server!"

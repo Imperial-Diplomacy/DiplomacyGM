@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from DiploGM.models.unit import Unit
     from DiploGM.models.player import Player
     from DiploGM.models.turn import Turn
-    from DiploGM.models.order import PlayerOrder
+    from DiploGM.models.order import UnitOrder, PlayerOrder
     from DiploGM.mapper.utils import MapperUtils
 
 class OrderDrawer:
@@ -33,9 +33,8 @@ class OrderDrawer:
         self.adjacent_provinces = adjacent_provinces
         self.player_restriction = player_restriction
 
-    def draw_order(self, unit: Unit, coordinate: tuple[float, float], current_turn: Turn) -> None:
+    def draw_order(self, unit: Unit, order: UnitOrder | None, coordinate: tuple[float, float], current_turn: Turn) -> None:
         """Draws a specific order on the map."""
-        order = unit.order
         if isinstance(order, Hold):
             self._draw_hold(coordinate, order.has_failed)
         elif isinstance(order, Core):
@@ -44,9 +43,9 @@ class OrderDrawer:
             self._draw_transform(coordinate, order.has_failed)
         elif isinstance(order, Move):
             # moves are just convoyed moves that have no convoys
-            return self._draw_convoyed_move(unit, coordinate, order.has_failed)
+            return self._draw_convoyed_move(unit, order, coordinate, order.has_failed)
         elif isinstance(order, Support):
-            return self._draw_support(unit, coordinate, order.has_failed)
+            return self._draw_support(unit, order, coordinate, order.has_failed)
         elif isinstance(order, ConvoyTransport):
             self._draw_convoy(order, coordinate, order.has_failed)
         elif isinstance(order, RetreatMove):
@@ -200,11 +199,11 @@ class OrderDrawer:
         )
         return order_path
 
-    def _get_all_paths(self, unit: Unit) -> list[tuple[Province, Province]]:
-        assert unit.order is not None and unit.order.destination is not None
-        paths = self._path_helper(unit.province, unit.order.destination, unit.province)
+    def _get_all_paths(self, source: Province, order: Move) -> list[tuple[Province, Province]]:
+        assert order.destination is not None
+        paths = self._path_helper(source, order.destination, source)
         if not paths:
-            return [(unit.province, unit.order.destination)]
+            return [(source, order.destination)]
         return paths
 
     # removes unnecessary convoys, for instance [A->B->C & A->C] -> [A->C]
@@ -217,14 +216,14 @@ class OrderDrawer:
 
         return min_subsets
 
-    def _draw_convoyed_move(self, unit: Unit, coordinate: tuple[float, float], has_failed: bool):
+    def _draw_convoyed_move(self, unit: Unit, order: Move, coordinate: tuple[float, float], has_failed: bool):
         def f(point: tuple[float, float]):
             return " ".join(map(str, point))
 
         def norm(point: tuple[float, float]) -> tuple[float, float]:
             return point / ((np.sum(np.array(point)**2)) ** 0.5)
 
-        valid_convoys = self._get_all_paths(unit)
+        valid_convoys = self._get_all_paths(unit.province, order)
         # TODO: make this a setting
         if False:
             if len(valid_convoys):
@@ -234,7 +233,7 @@ class OrderDrawer:
             p = [coordinate]
             start = coordinate
             for loc in path[1:]:
-                p += [self.utils.loc_to_point(loc, unit.unit_type, unit.order.destination_coast if unit.order is not None else None, start)]
+                p += [self.utils.loc_to_point(loc, unit.unit_type, order.destination_coast, start)]
                 start = p[-1]
 
             if path[-1].unit:
@@ -261,10 +260,7 @@ class OrderDrawer:
             marker_color = "redarrow" if has_failed else "arrow"
             return self._draw_path(s, marker_end = marker_color, stroke_color = stroke_color)
 
-    def _draw_support(self, unit: Unit, coordinate: tuple[float, float], has_failed: bool) -> None:
-        if not isinstance(unit.order, Support):
-            raise ValueError("Trying to draw a non-support order as a support")
-        order: Support = unit.order
+    def _draw_support(self, unit: Unit, order: Support, coordinate: tuple[float, float], has_failed: bool) -> None:
         source: Province = order.source
         if source.unit is None:
             raise ValueError("Support order has no source unit")

@@ -119,9 +119,11 @@ def get_value_from_timestamp(timestamp: str) -> int | None:
 
     return None
 
-def parse_variant_path(variant: str, as_filename: bool = True) -> str:
+def parse_variant_path(variant: str, as_filename: bool = True, return_parent: bool = False) -> str:
     """Parses the variant path to get the correct path for the parser."""
     if os.path.isdir(f"variants/{variant}"):
+        if return_parent:
+            return f"variants/{variant}"
         if os.path.isfile(f"variants/{variant}/config.json"):
             return f"variants/{variant}" if as_filename else variant
         variant_list = sorted(os.listdir(f"variants/{variant}"), reverse=True)
@@ -132,5 +134,7 @@ def parse_variant_path(variant: str, as_filename: bool = True) -> str:
         variant_name, _ = variant.split(".", 1)
         variant_path = f"variants/{variant_name}/{variant}"
         if os.path.isdir(variant_path) and os.path.isfile(f"{variant_path}/config.json"):
+            if return_parent:
+                return f"variants/{variant_name}"
             return variant_path if as_filename else variant
     raise ValueError(f"Variant {variant} does not exist or is missing a config file.")

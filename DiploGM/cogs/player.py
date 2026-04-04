@@ -231,7 +231,7 @@ class PlayerCog(commands.Cog):
             {"true", "t", "svg", "s"} & set(arguments)
         )
         board = manager.get_board(ctx.guild.id)
-        color_options = board.data.get("color_options", config.color_options)
+        color_options = board.data["svg config"].get("color_options", config.color_options)
         color_arguments = list(set(color_options) & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
         movement_only = "movement" in arguments
@@ -388,7 +388,7 @@ class PlayerCog(commands.Cog):
             .split()
         )
         board = manager.get_board(ctx.guild.id)
-        color_options = board.data.get("color_options", config.color_options)
+        color_options = board.data["svg config"].get("color_options", config.color_options)
         color_arguments = list(set(color_options) & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
 
@@ -582,11 +582,11 @@ class PlayerCog(commands.Cog):
             perms.assert_gm_only(ctx, "use a gm argument for .press_directory")
 
         board = manager.get_board(ctx.guild.id)
-        power_roles = set(map(lambda p: p.find_discord_role(guild.roles), board.players))
+        power_roles = set(map(lambda p: p.find_discord_role(guild.roles), board.get_players()))
 
         if player is None:
             if "global" in arguments:
-                for player in board.players:
+                for player in board.get_players():
                     order_channel_name = player.get_name().lower().replace(" ", "-") + "-orders"
 
                     order_channel = discord.utils.find(lambda c: c.name == order_channel_name, ctx.guild.text_channels)

@@ -7,7 +7,7 @@ from discord.ext import commands
 
 from DiploGM import config
 from DiploGM.errors import CommandPermissionError
-from DiploGM.config import IMPDIP_SERVER_ID, SUPERUSERS
+from DiploGM.config import HUB_SERVER_ID, SUPERUSERS
 from DiploGM.utils import (simple_player_name)
 from DiploGM.manager import Manager
 from DiploGM.models.player import Player
@@ -103,21 +103,21 @@ def player(description: str = "run this command"):
 async def assert_mod_only(
     ctx: commands.Context, description: str = "run this command"
 ) -> bool:
-    _hub = ctx.bot.get_guild(IMPDIP_SERVER_ID)
+    _hub = ctx.bot.get_guild(HUB_SERVER_ID)
     if not _hub:
         raise CommandPermissionError(
-            "Cannot fetch the Imperial Diplomacy Hub server moderator permissions."
+            "Cannot fetch the Hub server moderator permissions."
         )
 
     _member = _hub.get_member(ctx.author.id)
     if not _member:
         raise CommandPermissionError(
-            f"You cannot {description} as you could not be found as a member of the Imperial Diplomacy Hub server."
+            f"You cannot {description} as you could not be found as a member of the Hub server."
         )
 
     if not is_moderator(_member):
         raise CommandPermissionError(
-            f"You cannot {description} as you are not a moderator on the Imperial Diplomacy Hub server."
+            f"You cannot {description} as you are not a moderator on the Hub server."
         )
 
     if not is_moderator(ctx.author):

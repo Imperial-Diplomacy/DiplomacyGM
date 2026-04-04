@@ -5,9 +5,9 @@ from discord.ext import commands
 import random
 
 from DiploGM.config import (
-    IMPDIP_SERVER_ID,
-    IMPDIP_BOT_WIZARD_ROLE,
-    IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID,
+    HUB_SERVER_ID,
+    HUB_BOT_WIZARD_ROLE,
+    HUB_SERVER_BOT_STATUS_CHANNEL_ID,
 )
 from DiploGM.bot import DiploGM
 from DiploGM import perms
@@ -46,8 +46,8 @@ class DevelopmentCog(commands.Cog):
         for cog in self.bot.cogs.keys():
             cogs_body += f"- {cog}\n"
 
-        guild = self.bot.get_guild(IMPDIP_SERVER_ID)
-        bot_wizard_role = guild.get_role(IMPDIP_BOT_WIZARD_ROLE) if guild else None
+        guild = self.bot.get_guild(HUB_SERVER_ID)
+        bot_wizard_role = guild.get_role(HUB_BOT_WIZARD_ROLE) if guild else None
         bot_wizards = bot_wizard_role.members if bot_wizard_role else []
         footer = random.choice(
             [f"Rather upset at {bot_wizard.nick} >:(" for bot_wizard in bot_wizards]
@@ -70,7 +70,7 @@ class DevelopmentCog(commands.Cog):
         await send_message_and_file(
             channel=ctx.channel, title="Why would you do this to me?", message="Shutting down"
         )
-        channel = self.bot.get_channel(IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID)
+        channel = self.bot.get_channel(HUB_SERVER_BOT_STATUS_CHANNEL_ID)
         if channel and isinstance(channel, TextChannel):
             await channel.send(f"{ctx.author.mention} stabbed me")
         await self.bot.close()

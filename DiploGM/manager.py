@@ -8,6 +8,7 @@ from discord import Member, User
 from DiploGM.models.province import Province
 from DiploGM.utils import SingletonMeta
 from DiploGM.adjudicator.make_adjudicator import make_adjudicator
+from DiploGM.adjudicator.defs import Resolution
 from DiploGM.mapper.mapper import Mapper
 from DiploGM.map_parser.vector.vector import get_parser
 from DiploGM.models.turn import Turn
@@ -31,6 +32,14 @@ class Manager(metaclass=SingletonMeta):
         self._spec_requests: dict[int, list[SpecRequest]] = (
             self._database.get_spec_requests()
         )
+        self.last_activity: dict[int, dict[str, float]] = {}
+
+        # Stores failed and DP orders here, since we don't want them stored in the board itself
+        # As that way we can fetch them for test adjudications without mutating the board state
+        # We store the values as strings because we don't want to modify existing Province objects
+        # Ideally we should deepcopy the board, but it requires a custom implementation
+        self.last_failed_orders: dict[int, set[str]] = {}
+        self.last_dp_orders: dict[int, dict[str, tuple[str, str | None, str | None]]] = {}
         # TODO: have multiple for each variant?
         # do it like this so that the parser can cache data between board initializations
 
@@ -197,6 +206,31 @@ class Manager(metaclass=SingletonMeta):
             raise RuntimeError("There is no existing game this this server.")
         return board
 
+    def get_board_from_db(self, server_id: int, turn: Turn) -> Board:
+        """Loads a fresh board from the database for the given server and turn."""
+        cur_board = self.get_board(server_id)
+        board = self._database.get_board(
+            cur_board.board_id, turn, cur_board.fish, cur_board.name, cur_board.datafile
+        )
+        if board is None:
+            raise RuntimeError(f"There is no {turn} board for this server")
+        return board
+
+    def apply_test_adjudication_results(self, server_id: int, board: Board) -> None:
+        """Applies stored failed orders and DP orders to a fresh board for test drawing."""
+        dp_orders = self.last_dp_orders.get(server_id, {})
+        for province_name, (order_type, dest_str, source_str) in dp_orders.items():
+            province = board.get_province(province_name)
+            if province.unit and province.unit.order is None:
+                order = self._database._parse_order(board, order_type, dest_str, source_str)
+                if order:
+                    province.unit.order = order
+
+        failed = self.last_failed_orders.get(server_id, set())
+        for unit in board.units:
+            if unit.order and unit.province.name in failed:
+                unit.order.has_failed = True
+
     def total_delete(self, server_id: int):
         """Completely wipes all data for a server."""
         self._database.total_delete(self._boards[server_id])
@@ -305,11 +339,15 @@ class Manager(metaclass=SingletonMeta):
             server_id, board.turn, board.fish, board.name, board.datafile
         )
         assert old_board is not None
-        # mapper = Mapper(self._boards[server_id])
-        # mapper.draw_moves_map(None)
         adjudicator = make_adjudicator(old_board)
         adjudicator.save_orders = not test
         new_board = adjudicator.run()
+        self.last_failed_orders[server_id] = {
+            order.current_province.name
+            for order in getattr(adjudicator, 'orders', [])
+            if order.resolution == Resolution.FAILS
+        }
+        self.last_dp_orders[server_id] = getattr(adjudicator, 'dp_order_strings', {})
         new_board.turn = new_board.turn.get_next_turn()
         logger.info("Adjudicator ran successfully")
         if not test:
@@ -505,3 +543,11 @@ class Manager(metaclass=SingletonMeta):
                     or simple_player_name(player.get_name()) == simple_player_name(role.name)):
                     return player
         return None
+
+    def update_player_activity(self, server_id: int, member: Member) -> None:
+        """Updates the last activity by a Player."""
+        player = self.get_member_player_object(member)
+        if player:
+            if server_id not in self.last_activity:
+                self.last_activity[server_id] = {}
+            self.last_activity[server_id][player.name] = time.time()

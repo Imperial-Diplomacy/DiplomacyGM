@@ -2,11 +2,13 @@ import copy
 import itertools
 import json
 import logging
+import re
 import time
 import numpy as np
 from xml.etree.ElementTree import Element, tostring
 
 import shapely
+from deepmerge import Merger
 from lxml import etree
 
 from DiploGM.map_parser.vector.transform import TransGL3
@@ -38,8 +40,27 @@ class Parser:
     def __init__(self, data: str):
         self.datafile = data
 
+        config_merger = Merger(
+            [
+                (list, ["override"]),
+                (dict, ["merge"]),
+                (set, ["union"]),
+            ],
+            ["override"],
+            ["override"]
+        )
+
         with open(f"{parse_variant_path(data)}/config.json", "r", encoding="utf-8") as f:
-            self.data = json.load(f)
+            variant_data = json.load(f)
+        try:
+            with open(f"{parse_variant_path(data, return_parent=True)}/config.json", "r", encoding="utf-8") as f:
+                self.data = json.load(f)
+                self.data = config_merger.merge(self.data, variant_data)
+        except FileNotFoundError:
+            self.data = variant_data
+        keys_to_delete = [p[0] for p in self.data["players"].items() if p[1].get("disabled", "False").lower() == "true"]
+        for key in keys_to_delete:
+            del self.data["players"][key]
 
         self.data["file"] = f"{parse_variant_path(data)}/{self.data['file']}"
 
@@ -60,8 +81,7 @@ class Parser:
             starting_units = get_svg_element(svg_root, self.layers["starting_units"])
             if starting_units is None:
                 raise ValueError("Starting_units layer expected but not found in SVG")
-            else:
-                self.layer_data["starting_units"] = starting_units
+            self.layer_data["starting_units"] = starting_units
 
         if "impassibles_layer" in self.layers:
             impassibles_layer = get_svg_element(svg_root, self.layers["impassibles_layer"])
@@ -81,6 +101,44 @@ class Parser:
         self.players: set[Player] = set()
         self.autodetect_players = False
 
+    def verify_svg(self) -> bool:
+        """Checks the SVG to try to find parsing issues."""
+        is_valid = True
+        seen_names: set[str] = set()
+
+        # All provinces should have unique names
+        for layer_name in ["land_layer", "island_borders", "sea_borders"]:
+            layer = self.layer_data[layer_name]
+            for element in layer:
+                name = element.get(f"{NAMESPACE.get('inkscape')}label")
+                if not name:
+                    logger.error(f"[{layer_name}] Element has no name: {etree.tostring(element, encoding='unicode')[:120]}")
+                    is_valid = False
+                    continue
+
+                if name in seen_names:
+                    logger.error(f"[{layer_name}] Duplicate name: '{name}'")
+                    is_valid = False
+                else:
+                    seen_names.add(name)
+
+        # All elements in these layers should have names that reference known provinces
+        for layer_name in ["island_fill_layer", "supply_center_icons", "army", "retreat_army", "fleet", "retreat_fleet"]:
+            layer = self.layer_data[layer_name]
+            for element in layer:
+                name = element.get(f"{NAMESPACE.get('inkscape')}label")
+                if not name:
+                    logger.error(f"[{layer_name}] Element has no name: {etree.tostring(element, encoding='unicode')[:120]}")
+                    is_valid = False
+                    continue
+
+                name = re.sub(r" \(?[ensw]c\)?$", "", name)  # Remove coast names
+                if name not in seen_names:
+                    logger.error(f"[{layer_name}] Name '{name}' not found in any province layer")
+                    is_valid = False
+
+        return is_valid
+
     def parse(self) -> Board:
         logger.debug("map_parser.vector.parse.start")
         start = time.time()
@@ -99,6 +157,7 @@ class Parser:
                 if isinstance(color, dict):
                     color = color["standard"]
                 self.color_to_player[color] = player
+                player.is_active = data.get("active", "true").lower() == "true"
 
             neutral_colors = self.data[SVG_CONFIG_KEY]["neutral"]
             if isinstance(neutral_colors, dict):
@@ -138,7 +197,7 @@ class Parser:
         if (is_chaos := self.data["players"] == "chaos"):
             game_data["players"] = {}
         for player in self.players:
-            if is_chaos:
+            if is_chaos or player.name not in game_data["players"]:
                 game_data["players"][player.name] = {}
             if "iscc" not in game_data["players"][player.name]:
                 game_data["players"][player.name]["iscc"] = \
@@ -567,21 +626,26 @@ class Parser:
 
     def get_element_player(self, element: Element, province_name: str="") -> Player | None:
         color = get_element_color(element)
+        neutral_color = self.data[SVG_CONFIG_KEY]["neutral"]
+        if isinstance(neutral_color, dict):
+            neutral_color = neutral_color["standard"]
         #FIXME: only works if there's one person per province
         if self.autodetect_players:
-            neutral_color = self.data[SVG_CONFIG_KEY]["neutral"]
-            if isinstance(neutral_color, dict):
-                neutral_color = neutral_color["standard"]
             if color is None or color == neutral_color:
                 return None
             player = Player(province_name, color, set(), set())
             self.players.add(player)
             self.color_to_player[color] = player
             return player
-        elif color in self.color_to_player:
+        if color in self.color_to_player:
             return self.color_to_player[color]
-        else:
-            raise Exception(f"Unknown player color: {color} (in object {tostring(element)})")
+        if color is not None and color != neutral_color:
+            player = Player(province_name, color, set(), set(), is_active = False)
+            self.players.add(player)
+            self.color_to_player[color] = player
+            return player
+        if color is None:
+            return None
 
     def _get_unit_type(self, unit_data: Element) -> UnitType:
         if self.data[SVG_CONFIG_KEY]["unit_type_labeled"]:
@@ -620,7 +684,11 @@ def get_parser(name: str, force_refresh: bool=False) -> Parser:
     name = parse_variant_path(name, as_filename=False)
     if force_refresh or name not in parsers:
         logger.info(f"Creating new Parser for board named {name}")
-        parsers[name] = Parser(name)
+        new_parser = Parser(name)
+        if new_parser.verify_svg():
+            parsers[name] = new_parser
+        else:
+            raise ValueError(f"SVG verification failed for {name}")
     return parsers[name]
 
 

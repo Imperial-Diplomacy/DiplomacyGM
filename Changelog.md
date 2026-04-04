@@ -1,7 +1,42 @@
+1.7.2
+=====
+
+Contributors
+- Golden Kumuqat
+
+# New Features
+- Added rudimentary support for DP orders
+  - Implementation follows the basic guidelines as laid out in https://nopunin10did.com/common-ruleset-for-dp-based-variants/
+  - Powers can have "affiliates" that provide double strength DP allocations
+  - DP allocations still need to be tracked manually for now
+- Added Sortie option to Moves, which causes the unit to bounce/cut supports/etc., but does not actually move or dislodge the unit
+- Added `.last_message` to track the last time each player has sent a message in the game's server
+- Implemented non-active powers that are not controlled by a player but can have units that can be ordered (such as via DP)
+  - Provinces in the initial SVG that do not have a power's color or a neutral color are considered part of a non-active power
+  - Non-active powers can also be defined in the config by setting "active" to "false"
+
+# Quality of Life
+- Standarised some of the .help commands, particularly under Game Management
+- Added support for each variant to have a config.json that each version can see and overwrite
+- Added support for per-variant color palettes
+- Upon loading a variant, the Parser now checks to see if there are any mismatching SVG labels before continuing
+
+# Developer Changes
+- Added a `.get_distance` method for Provinces, which is to be used for future development
+- Renamed some ImpDip-specific terminology in the code
+
+# Bugfixes
+- `.adjudicate test` now displays red arrows for failed moves again
+- Fixed a couple more issues regarding score panel generation
+
+# Known Issues
+- Score panel generation does not quite work with matrix transformations yet
+
 1.7.1
 =====
 Contributors
 - notnot
+
 # New Features
 - Added 'forced-disband' and 'free-retreat' arguments to view_orders; view which orders are forced retreats, or hide all forced retreats.
 

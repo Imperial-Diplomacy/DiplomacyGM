@@ -6,7 +6,7 @@ from discord.utils import find as discord_find
 
 from DiploGM import perms
 from DiploGM import utils
-from DiploGM.config import ERROR_COLOUR, IMPDIP_SERVER_ID, PARTIAL_ERROR_COLOUR
+from DiploGM.config import ERROR_COLOUR, HUB_SERVER_ID, PARTIAL_ERROR_COLOUR
 from DiploGM.models.spec_request import SpectatorBan, SpectatorBanRepository
 from DiploGM.utils import send_message_and_file
 from DiploGM.manager import Manager
@@ -274,7 +274,7 @@ class SpectatorCog(commands.Cog):
             return
 
         # server ignore list
-        if guild.id in [IMPDIP_SERVER_ID]:
+        if guild.id in [HUB_SERVER_ID]:
             await interaction.response.send_message(
                 "Can't request to spectate in the Hub server!", ephemeral=True
             )
@@ -350,7 +350,7 @@ class SpectatorCog(commands.Cog):
                 self.ban_repo.delete(requester.id)
 
         # check for membership and verification on the hub Server
-        hub = self.bot.get_guild(IMPDIP_SERVER_ID)
+        hub = self.bot.get_guild(HUB_SERVER_ID)
         if not hub:
             return
         hub_requester = discord.utils.get(hub.members, name=interaction.user.name)

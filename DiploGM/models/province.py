@@ -176,6 +176,23 @@ class Province():
         else:
             self.adjacency_data.adjacent.add(other)
 
+    def get_distance(self, other: Province, max_distance: int = 100) -> int:
+        """Gets the distance between two provinces in number of moves.
+        max_distance is used if we only care if the provinces are within a certain distance."""
+        visited = set()
+        queue: list[tuple[Province, int]] = [(self, 0)]
+        while queue:
+            current, distance = queue.pop(0)
+            if current.name == other.name:
+                return distance
+            if distance >= max_distance:
+                continue
+            visited.add(current)
+            for neighbor in current.adjacency_data.adjacent:
+                if neighbor not in visited:
+                    queue.append((neighbor, distance + 1))
+        return max_distance + 1
+
     def set_coasts(self):
         """After all provinces have been initialised, set sea and island fleet adjacencies.
         This should only be called once all province adjacencies have been set."""

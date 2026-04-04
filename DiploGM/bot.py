@@ -16,8 +16,8 @@ from DiploGM.config import (
     BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID,
     EMBED_STANDARD_COLOUR,
     ERROR_COLOUR,
-    IMPDIP_SERVER_ID,
-    IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID,
+    HUB_SERVER_ID,
+    HUB_SERVER_BOT_STATUS_CHANNEL_ID,
     EXTENSIONS_TO_LOAD_ON_STARTUP,
 )
 from DiploGM.events.eventbus import EventBus
@@ -62,6 +62,7 @@ class DiploGM(commands.Bot):
         # bind command invocation handling methods
         self.before_invoke(self.before_any_command)
         self.after_invoke(self.after_any_command)
+        self.add_listener(self.on_message_listener, 'on_message')
 
         current_servers = [g.id async for g in self.fetch_guilds()]
         self.manager = Manager(board_ids=current_servers)
@@ -173,6 +174,19 @@ class DiploGM(commands.Bot):
 
     # TODO: Functionality to unload/reload listeners
 
+    async def on_message_listener(self, message: discord.Message):
+        if message.author.bot:
+            return
+        server_id = message.guild.id if message.guild else None
+        sender = message.author
+        if isinstance(sender, discord.User) or server_id is None:
+            return
+        is_player = any(r.name.lower() == "player" for r in sender.roles)
+        if is_player:
+            self.manager.update_player_activity(server_id, sender)
+
+
+
     async def on_ready(self):
         now = datetime.datetime.now(datetime.timezone.utc)
         logger.info(f"Setup took {now - self.creation_time}")
@@ -180,17 +194,17 @@ class DiploGM(commands.Bot):
         logger.info(f"Logged in as {self.user}")
 
         # Ensure bot is connected to the correct server
-        guild = self.get_guild(IMPDIP_SERVER_ID)
+        guild = self.get_guild(HUB_SERVER_ID)
         if not guild:
             logger.warning(
-                f"Cannot find Imperial Diplomacy Server [id={IMPDIP_SERVER_ID}]"
+                f"Cannot find Hub Server [id={HUB_SERVER_ID}]"
             )
 
         # Get the specific channel
-        channel = self.get_channel(IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID)
+        channel = self.get_channel(HUB_SERVER_BOT_STATUS_CHANNEL_ID)
         if not channel or not isinstance(channel, discord.TextChannel):
             logger.warning(
-                f"Cannot find Bot Status Channel [id={IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID}]"
+                f"Cannot find Bot Status Channel [id={HUB_SERVER_BOT_STATUS_CHANNEL_ID}]"
             )
         else:
             message = random.choice(WELCOME_MESSAGES)

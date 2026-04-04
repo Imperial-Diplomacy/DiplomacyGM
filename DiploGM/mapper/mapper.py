@@ -124,12 +124,22 @@ class Mapper:
 
             unit_locs = self._get_unit_coordinates(unit, current_turn.is_retreats())
 
+            if unit.order is None and unit.dp_allocations:
+                if self.player_restriction is not None and self.player_restriction.name in unit.dp_allocations:
+                    order = unit.dp_allocations[self.player_restriction.name].order
+                elif self.player_restriction is None:
+                    order = self.board.get_winning_dp_order(unit)
+                else:
+                    order = None
+            else:
+                order = unit.order
+
             # TODO: Maybe there's a better way to handle convoys?
-            if isinstance(unit.order, (RetreatMove, Move, Support)):
+            if isinstance(order, (RetreatMove, Move, Support)):
                 new_locs = []
-                dest_coords = unit.order.destination.all_coordinates
-                if unit.order.destination_coast and unit.order.destination_coast in dest_coords:
-                    e_list = dest_coords[unit.order.destination_coast]
+                dest_coords = order.destination.all_coordinates
+                if order.destination_coast and order.destination_coast in dest_coords:
+                    e_list = dest_coords[order.destination_coast]
                 elif unit.unit_type.name not in dest_coords:
                     e_list = next(iter(dest_coords.values()))
                 else:
@@ -143,7 +153,7 @@ class Mapper:
                 unit_locs = new_locs
             try:
                 for loc in unit_locs:
-                    val = self.order_drawer.draw_order(unit, loc, current_turn)
+                    val = self.order_drawer.draw_order(unit, order, loc, current_turn)
                     if val is None:
                         continue
                     # if something returns, that means it could potentially go across the edge

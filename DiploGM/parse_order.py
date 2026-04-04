@@ -14,7 +14,7 @@ from DiploGM.models.board import Board
 from DiploGM.db.database import get_connection
 from DiploGM.models.player import Player
 from DiploGM.models.province import Province
-from DiploGM.models.unit import Unit, UnitType
+from DiploGM.models.unit import DPAllocation, Unit, UnitType
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,7 @@ class TreeToOrder(Transformer):
         self.board = board
         self.build_options = board.data.get("build_options", "classic")
         self.transform_options = board.data.get("transformation", "disabled")
+        self.dp_options = board.data.get("dp", "disabled")
         self.player_restriction = player_restriction
 
     @v_args(inline=False)
@@ -84,6 +85,23 @@ class TreeToOrder(Transformer):
         if self.transform_options not in ["moves", "all"]:
             raise ValueError("Transforming during moves is disabled in this gamemode")
         return unit, order.Transform(coast)
+
+    def dp_order(self, _, points: str, dp_order: tuple[Unit, order.UnitOrder]) -> tuple[Unit, None]:
+        """DP allocation order, of the form DP [Points] [Unit Order]."""
+        if self.dp_options == "disabled":
+            raise ValueError("DP allocation is disabled in this gamemode")
+        if self.player_restriction is None:
+            raise ValueError("DP allocation orders must be made in a player's orders channel.")
+        unit, unit_order = dp_order
+        if unit.player is not None and unit.player.is_active:
+            raise ValueError(f"{unit.province} has an owner and cannot be assigned DP.")
+        if points.endswith(":"):
+            points = points[:-1]
+        if int(points) <= 0:
+            unit.dp_allocations.pop(self.player_restriction.name, None)
+        else:
+            unit.dp_allocations[self.player_restriction.name] = DPAllocation(int(points), unit_order)
+        return unit, None
 
     def build_unit(self, _,
                    a: str | tuple[Province, str | None],
@@ -296,6 +314,8 @@ class TreeToOrder(Transformer):
         """Processes orders done in Movement phases, taking in a tuple of what was returned by the above."""
         unit, movement_order = unit_order
         if self.player_restriction is not None and unit.player != self.player_restriction:
+            if (unit.player is None or not unit.player.is_active) and movement_order is None:
+                return unit
             raise PermissionError(
                 f"{self.player_restriction.name} does not control the unit in {unit.province.name}, " +
                 f"it belongs to {unit.player.name if unit.player else 'no one'}"
@@ -386,7 +406,13 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                     color = "\u001b[0;33m"
                 else:
                     color = "\u001b[0;32m"
-                orderoutput.append(f"{color}{ordered_unit} {ordered_unit.order}")
+                if (ordered_unit.player is None or not ordered_unit.player.is_active) and player_restriction is not None:
+                    if (dp_order := ordered_unit.dp_allocations.get(player_restriction.name)) is not None:
+                        orderoutput.append(f"{color}DP {dp_order.points}: {ordered_unit} {dp_order.order}")
+                    else:
+                        orderoutput.append(f"{color}Removed DP bid for {ordered_unit}")
+                else:
+                    orderoutput.append(f"{color}{ordered_unit} {ordered_unit.order}")
         except VisitError as e:
             orderoutput.append(f"\u001b[0;31m{current_order}")
             errors.append(f"`{current_order}`: {str(e).splitlines()[-1]}")

@@ -39,6 +39,7 @@ class Player:
         color: str | dict[str, str],
         centers: set[province.Province],
         units: set[unit.Unit],
+        is_active: bool = True
     ):
         self.name: str = name
         self.color_dict: dict | None = None
@@ -63,6 +64,8 @@ class Player:
         self.points: int = 0
         self.liege: Player | None = None
         self.vassals: list[Player] = []
+
+        self.is_active: bool = is_active
 
         # Must be initialised when the board is made
         self.board: Optional[Board] = None
@@ -147,7 +150,7 @@ class Player:
         scs = len(self.centers)
         if scs >= 6:
             return PlayerClass.EMPIRE
-        elif scs >= 3:
+        if scs >= 3:
             return PlayerClass.KINGDOM
         return PlayerClass.DUCHY
 
