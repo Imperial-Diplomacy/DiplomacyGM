@@ -625,7 +625,7 @@ class Parser:
             f = open(f"assets/{self.datafile}_adjacencies.txt", "w", encoding="utf-8")
             # Combinations so that we only have (A, B) and not (B, A) or (A, A)
             for province1, province2 in itertools.combinations(provinces, 2):
-                if shapely.distance(province1.geometry, province2.geometry) < self.layers["border_margin_hint"]:
+                if shapely.dwithin(province1.geometry, province2.geometry, self.layers["border_margin_hint"]):
                     adjacencies.add((province1.name, province2.name))
                     f.write(f"{province1.name},{province2.name}\n")
         else:
