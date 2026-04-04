@@ -204,15 +204,15 @@ def order_is_valid(province: Province, order: Order, strict_coast_movement=True)
     if province.unit is None:
         return OrderValidity.INVALID, f"There is no unit in {province}"
 
-    if isinstance(order, Hold) or isinstance(order, RetreatDisband) or isinstance(order, NMR):
+    if isinstance(order, (Hold, RetreatDisband, NMR)):
         return OrderValidity.VALID, None
-    elif isinstance(order, Core):
+    if isinstance(order, Core):
         if not province.has_supply_center:
             return OrderValidity.INVALID, f"{province} does not have a supply center to core"
         if province.owner != province.unit.player:
             return OrderValidity.INVALID, "Units can only core in owned supply centers"
         return OrderValidity.VALID, None
-    elif isinstance(order, Transform):
+    if isinstance(order, Transform):
         if not province.has_supply_center:
             return OrderValidity.INVALID, "Transformation must be done in a supply center"
         if province.owner != province.unit.player:
@@ -226,15 +226,15 @@ def order_is_valid(province: Province, order: Order, strict_coast_movement=True)
             and order.destination_coast not in province.get_multiple_coasts()):
             return OrderValidity.INVALID, "Unit needs to transform to a valid coast"
         return OrderValidity.VALID, None
-    elif isinstance(order, Move) or isinstance(order, RetreatMove):
+    if isinstance(order, (Move, RetreatMove)):
         valid, reason = _validate_move_order(province, order, strict_coast_movement)
         if valid != OrderValidity.VALID and isinstance(order, Move) and province.unit.unit_type == UnitType.ARMY:
             # Try convoy validation if move is invalid
             return _validate_convoymove_order(province, order)
         return valid, reason
-    elif isinstance(order, ConvoyTransport):
+    if isinstance(order, ConvoyTransport):
         return _validate_convoy_order(province, order)
-    elif isinstance(order, Support):
+    if isinstance(order, Support):
         return _validate_support_order(province, order)
 
     return OrderValidity.INVALID, f"Unknown move type: {order.__class__.__name__}"

@@ -143,22 +143,25 @@ class Mapper:
                     val = self.order_drawer.draw_order(unit, order, loc, current_turn)
                     if val is None:
                         continue
-                    # if something returns, that means it could potentially go across the edge
-                    # copy it 3 times (-1, 0, +1)
-                    lval = copy.deepcopy(val)
-                    rval = copy.deepcopy(val)
-                    lval.attrib["transform"] = f"translate({-self.board.data['svg config']['map_width']}, 0)"
-                    rval.attrib["transform"] = f"translate({self.board.data['svg config']['map_width']}, 0)"
+                    if not isinstance(val, list):
+                        val = [val]
+                    for path in val:
+                        # if something returns, that means it could potentially go across the edge
+                        # copy it 3 times (-1, 0, +1)
+                        lval = copy.deepcopy(path)
+                        rval = copy.deepcopy(path)
+                        lval.attrib["transform"] = f"translate({-self.board.data['svg config']['map_width']}, 0)"
+                        rval.attrib["transform"] = f"translate({self.board.data['svg config']['map_width']}, 0)"
 
-                    arrow_layer.append(lval)
-                    arrow_layer.append(rval)
-                    arrow_layer.append(val)
+                        arrow_layer.append(lval)
+                        arrow_layer.append(rval)
+                        arrow_layer.append(path)
             except Exception as err:
                 logger.error("Drawing move failed for %s", unit, exc_info=err)
 
     def draw_moves_map(self,
                        current_turn: turn.Turn,
-                       player_restriction: str | None,
+                       player_restriction: Player | None,
                        movement_only: bool = False) -> tuple[bytes, str]:
         """Draws the map with orders.
         If player_restriction is not None, then only show orders for that player.
@@ -166,7 +169,8 @@ class Mapper:
         logger.info("mapper.draw_moves_map")
 
         self._reset_moves_map()
-        self.player_restriction = player_restriction
+        self.player_restriction = player_restriction.name if player_restriction else None
+        self.order_drawer.player_restriction = self.player_restriction
         self.current_turn = current_turn
 
         t = self._moves_svg.getroot()
@@ -176,16 +180,25 @@ class Mapper:
             raise ValueError("Arrow layer not found in SVG")
 
         if not current_turn.is_builds():
+            for unit in self.board.units:
+                # Since we draw supports before moves, we need to find convoy routes first
+                # so the supports can know where to draw support arrows
+                if (isinstance(unit.order, Move)
+                    and self.utils.is_moveable(unit, self.adjacent_provinces, self.player_restriction)):
+                    self.order_drawer.find_convoy_path(unit.province, unit.order.destination)
             self.draw_moves_and_retreats(arrow_layer, current_turn, movement_only)
         else:
-            for player in self.board.players if player_restriction is None else {self.board.get_player(player_restriction)}:
-                for build_order in player.build_orders:
-                    if isinstance(build_order, PlayerOrder) and build_order.province.name in self.adjacent_provinces:
-                        self.order_drawer.draw_player_order(build_order)
-                    if isinstance(build_order, Build) and build_order.province.name in self.adjacent_provinces:
-                        self._draw_unit(
-                            Unit(build_order.unit_type, player, build_order.province, build_order.coast),
-                            use_moves_svg=True)
+            if self.player_restriction is None or (current_player := self.board.get_player(self.player_restriction)) is None:
+                build_orders = {(player, order) for player in self.board.players for order in player.build_orders}
+            else:
+                build_orders = {(current_player, order) for order in current_player.build_orders}
+            for player, build_order in build_orders:
+                if isinstance(build_order, PlayerOrder) and build_order.province.name in self.adjacent_provinces:
+                    self.order_drawer.draw_player_order(build_order)
+                if isinstance(build_order, Build) and build_order.province.name in self.adjacent_provinces:
+                    self._draw_unit(
+                        Unit(build_order.unit_type, player, build_order.province, build_order.coast),
+                        use_moves_svg=True)
 
         self.panel_drawer.draw_side_panel(self._moves_svg)
 
@@ -194,9 +207,10 @@ class Mapper:
         svg_file_name = f"{str(self.board.turn).replace(' ', '_')}_moves_map.svg"
         return elementToString(t, encoding="utf-8"), svg_file_name
 
-    def draw_gui_map(self, current_turn: turn.Turn, player_restriction: str | None) -> tuple[bytes, str]:
+    def draw_gui_map(self, current_turn: turn.Turn, player_restriction: Player | None) -> tuple[bytes, str]:
         """Draws the interactive GUI map."""
-        self.player_restriction = player_restriction
+        self.player_restriction = player_restriction.name if player_restriction else None
+        self.order_drawer.player_restriction = self.player_restriction
         self.current_turn = current_turn
         self._reset_moves_map()
         self.clean_layers(self._moves_svg)

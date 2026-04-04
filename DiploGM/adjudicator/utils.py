@@ -1,3 +1,4 @@
+"""Utility functions that handle image conversion."""
 import asyncio
 import logging
 import os
@@ -14,6 +15,9 @@ external_task_limit = asyncio.Semaphore(int(LIMIT))
 
 
 async def svg_to_png(svg: bytes, file_name: str) -> tuple[bytes, str]:
+    """Convert an SVG to a PNG using Inkscape.
+    This is by far the most intensive part of the bot, so if there's any way we could speed this up,
+    it would make a huge difference."""
     async with external_task_limit:
         # https://gitlab.com/inkscape/inkscape/-/issues/4716
         os_env = os.environ.copy()
@@ -34,8 +38,8 @@ async def svg_to_png(svg: bytes, file_name: str) -> tuple[bytes, str]:
         png_start = b"\x89PNG\r\n\x1a\n"
 
         if data[:8] != png_start:
-            logger.critical(f"failed to assert png code: {png_start}")
-            logger.critical(data[:30])
+#            logger.critical(f"failed to assert png code: {png_start}")
+#            logger.critical(data[:30])
 
             data = data[data.find(png_start) :]
 
@@ -48,6 +52,7 @@ async def svg_to_png(svg: bytes, file_name: str) -> tuple[bytes, str]:
 
 
 async def png_to_jpg(png: bytes, file_name: str) -> tuple[bytes, str, bytes]:
+    """Convert a PNG to a JPG using ImageMagick."""
     async with external_task_limit:
         p = await asyncio.create_subprocess_shell(
             "convert png:- jpg:-", stdout=PIPE, stdin=PIPE, stderr=PIPE

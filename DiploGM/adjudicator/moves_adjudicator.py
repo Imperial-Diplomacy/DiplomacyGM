@@ -294,9 +294,12 @@ class MovesAdjudicator(Adjudicator):
 
     def _count_strength(self, order: AdjudicableOrder, attacked_country: Player | None = None) -> int:
         # Your own unit counts, unless it's a difficult adjacency
-        strength = 0 if order.destination_province.name in order.base_unit.province.adjacency_data.difficult_adjacencies else 1
+        strength = 0
+        if order.destination_province.name not in order.base_unit.province.adjacency_data.difficult_adjacencies:
+            strength += 1
         for support in order.supports:
-            if self._resolve_order(support) == Resolution.SUCCEEDS and (support.country is None or attacked_country != support.country):
+            if (self._resolve_order(support) == Resolution.SUCCEEDS
+                and (support.country is None or attacked_country != support.country)):
                 strength += 1
         return strength
 

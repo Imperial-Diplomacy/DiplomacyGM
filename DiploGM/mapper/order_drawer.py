@@ -32,8 +32,13 @@ class OrderDrawer:
         self.board_svg_data = board_svg_data
         self.adjacent_provinces = adjacent_provinces
         self.player_restriction = player_restriction
+        self.convoy_paths: dict[Province, list[list[Province]]] = {}
 
-    def draw_order(self, unit: Unit, order: UnitOrder | None, coordinate: tuple[float, float], current_turn: Turn) -> None:
+    def draw_order(self,
+                   unit: Unit,
+                   order: UnitOrder | None,
+                   coordinate: tuple[float, float],
+                   current_turn: Turn) -> None:
         """Draws a specific order on the map."""
         if isinstance(order, Hold):
             self._draw_hold(coordinate, order.has_failed)
@@ -157,7 +162,7 @@ class OrderDrawer:
 
     def _path_helper(
         self, source: Province, destination: Province, current: Province, already_checked=()
-    ) -> list[tuple[Province, Province]]:
+    ) -> list[list[Province]]:
         if current in already_checked:
             return []
         options = []
@@ -167,23 +172,24 @@ class OrderDrawer:
                 continue
 
             if possibility == destination:
-                return [
-                    (
-                        current,
-                        destination,
-                    )
-                ]
-            if (
+                options += [[destination]]
+                continue
+            if (unit := possibility.unit) is None:
+                continue
+            is_convoying_fleet = (
                 possibility.can_convoy
-                and possibility.unit is not None
-                and (self.player_restriction is None or possibility.unit.player.name == self.player_restriction)
-                and possibility.unit.unit_type == UnitType.FLEET
-                and isinstance(possibility.unit.order, ConvoyTransport)
-                and possibility.unit.order.source is source
-                and possibility.unit.order.destination is destination
-            ):
+                and unit is not None
+                and unit.unit_type == UnitType.FLEET
+                and isinstance(unit.order, ConvoyTransport)
+                and unit.order.source == source
+                and unit.order.destination == destination
+            )
+            if (self.player_restriction is not None
+                and (unit.player is None or unit.player.name != self.player_restriction)):
+                continue # Don't draw if the player doesn't know that fleet is convoying
+            if is_convoying_fleet:
                 options += self._path_helper(source, destination, possibility, new_checked)
-        return list(map((lambda t: (current,) + t), options))
+        return list(map((lambda t: [current] + t), options))
 
     def _draw_path(self, d: str, marker_end="arrow", stroke_color="black"):
         order_path = self.utils.create_element(
@@ -199,22 +205,22 @@ class OrderDrawer:
         )
         return order_path
 
-    def _get_all_paths(self, source: Province, order: Move) -> list[tuple[Province, Province]]:
-        assert order.destination is not None
-        paths = self._path_helper(source, order.destination, source)
-        if not paths:
-            return [(source, order.destination)]
-        return paths
-
-    # removes unnecessary convoys, for instance [A->B->C & A->C] -> [A->C]
-    def _get_shortest_paths(self, args: list[tuple]) -> list[tuple]:
-        args.sort(key=len)
-        min_subsets = []
-        for s in args:
-            if not any(set(min_subset).issubset(s) for min_subset in min_subsets):
-                min_subsets.append(s)
-
-        return min_subsets
+    def find_convoy_path(self, start: Province, end: Province) -> list[list[Province]]:
+        """Finds convoy paths between two provinces, if they exist. Caches results.
+        We need to do this before drawing anything, as otherwise supports won't know where to draw to."""
+        valid_convoys = self._path_helper(start, end, start)
+        if valid_convoys:
+            if len(valid_convoys) > 1 and [start, end] in valid_convoys:
+                valid_convoys.remove([start, end])
+        else:
+            valid_convoys = [[start, end]]
+        valid_convoys.sort(key = len)
+        shortest_convoys: list[list[Province]] = []
+        for convoy in valid_convoys:
+            if not any(set(shortest).issubset(convoy) for shortest in shortest_convoys):
+                shortest_convoys.append(convoy)
+        self.convoy_paths[start] = shortest_convoys
+        return shortest_convoys
 
     def _draw_convoyed_move(self, unit: Unit, order: Move, coordinate: tuple[float, float], has_failed: bool):
         def f(point: tuple[float, float]):
@@ -223,12 +229,8 @@ class OrderDrawer:
         def norm(point: tuple[float, float]) -> tuple[float, float]:
             return point / ((np.sum(np.array(point)**2)) ** 0.5)
 
-        valid_convoys = self._get_all_paths(unit.province, order)
-        # TODO: make this a setting
-        if False:
-            if len(valid_convoys):
-                valid_convoys = valid_convoys[0:1]
-        valid_convoys = self._get_shortest_paths(valid_convoys)
+        valid_convoys = self.convoy_paths.get(unit.province, [[unit.province, order.destination]])
+        latest_paths = []
         for path in valid_convoys:
             p = [coordinate]
             start = coordinate
@@ -258,7 +260,8 @@ class OrderDrawer:
             s += f"{f(p[-2])}, {f(p[-1])}"
             stroke_color = "red" if has_failed else "black"
             marker_color = "redarrow" if has_failed else "arrow"
-            return self._draw_path(s, marker_end = marker_color, stroke_color = stroke_color)
+            latest_paths.append(self._draw_path(s, marker_end = marker_color, stroke_color = stroke_color))
+        return latest_paths
 
     def _draw_support(self, unit: Unit, order: Support, coordinate: tuple[float, float], has_failed: bool) -> None:
         source: Province = order.source
@@ -270,6 +273,10 @@ class OrderDrawer:
             and (not order.destination_coast
                  or source.unit.order.destination_coast == order.destination_coast)):
             dest_coast = source.unit.order.destination_coast
+            # If the supported move is a convoy, draw the support arrow from the last fleet instead
+            if source in self.convoy_paths:
+                source_coord = self.utils.loc_to_point(self.convoy_paths[source][0][-2],
+                                                       UnitType.FLEET, None, coordinate)
         else:
             dest_coast = order.destination_coast
         dest_coord = self.utils.loc_to_point(order.destination, source.unit.unit_type, dest_coast, source_coord)

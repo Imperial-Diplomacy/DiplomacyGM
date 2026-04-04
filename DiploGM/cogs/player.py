@@ -325,7 +325,6 @@ class PlayerCog(commands.Cog):
             )
             await send_error(ctx.channel, ErrorMessage.UNKNOWN_ERROR)
             raise err
-            return
         log_command(
             logger,
             ctx,

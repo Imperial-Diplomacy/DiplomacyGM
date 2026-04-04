@@ -240,8 +240,8 @@ class ScheduleCog(commands.Cog):
                 for id, task in self.scheduled_tasks.items()
                 if task["guild_id"] == gid
             ]
-            for id in ids:
-                del self.scheduled_tasks[id]
+            for task_id in ids:
+                del self.scheduled_tasks[task_id]
                 await self.save_scheduled_tasks()
 
             await send_message_and_file(
