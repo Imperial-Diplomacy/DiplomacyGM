@@ -53,7 +53,7 @@ class Unit:
             self.retreat_options = set()
         if self.unit_type == UnitType.ARMY:
             for province in self.province.adjacency_data.adjacent:
-                if province.type != ProvinceType.SEA:
+                if province.type in (ProvinceType.LAND, ProvinceType.ISLAND):
                     self.retreat_options.add((province, None))
         else:
             for province in self.province.get_coastal_adjacent(self.coast):
