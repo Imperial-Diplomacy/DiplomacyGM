@@ -327,21 +327,14 @@ class GameManagementCog(commands.Cog):
         user_str = ''.join([u.mention for u in users])
 
         count = len(player.centers) - len(player.units)
-        current = player.waived_orders
-        has_disbands = False
-        has_builds = player.waived_orders > 0
-        for order in player.build_orders:
-            if isinstance(order, Disband):
-                current -= 1
-                has_disbands = True
-            elif isinstance(order, Build):
-                current += 1
-                has_builds = True
+        num_builds = len([o for o in player.build_orders if isinstance(o, Build)])
+        num_disbands = len([o for o in player.build_orders if isinstance(o, Disband)])
+        current = player.waived_orders + num_builds - num_disbands
 
         difference = abs(current - count)
         order_text = f"order{'s' if difference != 1 else ''}"
 
-        if has_builds and has_disbands:
+        if (player.waived_orders + num_builds) > 0 and num_disbands > 0:
             return f"Hey {user_str}, you have both build and disband orders. Please get this looked at."
 
         if count < 0:
@@ -360,8 +353,39 @@ class GameManagementCog(commands.Cog):
                 "Please get this looked at."
         if current < available:
             return f"Hey {user_str}, you have {difference} less build {order_text} than necessary. " + \
-                "Make sure that you want to waive."
+                   f"Please use `.order waive {difference}` if you wish to waive."
         return ""
+
+    def _ping_player_moves(self,
+                           board: Board,
+                           player: Player,
+                           users: set[discord.Member | discord.Role]) -> str:
+        missing = [
+            unit
+            for unit in player.units
+            if unit.order is None and
+                (board.turn.is_moves() or (unit == unit.province.dislodged_unit and unit.retreat_options))
+        ]
+        missing_dp = 0
+        if board.data.get("dp", "False").lower() in ("true", "enabled"):
+            missing_dp = player.dp_max - board.get_dp_spent(player)
+
+        if not missing and missing_dp == 0:
+            return ""
+
+        unit_text = f"unit{'s' if len(missing) != 1 else ''}"
+        response = f"Hey **{''.join([u.mention for u in users])}**, "
+        if missing:
+            response += f"you are missing moves for the following {len(missing)} {unit_text}:"
+            for unit in sorted(
+                missing, key=lambda _unit: _unit.province.name
+            ):
+                response += f"\n{unit}"
+        if missing_dp > 0:
+            response += ('\nY' if missing else 'y') + f"ou have {missing_dp} unspent DP."
+        elif missing_dp < 0:
+            response += ('\nY' if missing else 'y') + f"ou have spent {-missing_dp} too much DP."
+        return response
 
     @commands.command(
         brief="Pings players who don't have the expected number of orders.",
@@ -391,26 +415,17 @@ class GameManagementCog(commands.Cog):
         timestamp = board.data.get("deadline")
 
         # extract deadline argument
-        parsed_timestamp = re.match(r"<t:(\d+):[a-zA-Z]>", remove_prefix(ctx))
-        if parsed_timestamp:
+        if (parsed_timestamp := re.match(r"<t:(\d+):[a-zA-Z]>", remove_prefix(ctx))):
             timestamp = parsed_timestamp.group(1)
 
         # get abstract player information
-        player_roles: set[Role] = set()
-        for r in guild.roles:
-            if config.is_player_role(r):
-                player_roles.add(r)
-
+        player_roles: set[Role] = {r for r in guild.roles if config.is_player_role(r)}
         if len(player_roles) == 0:
             log_command(logger, ctx, message="No player role found")
             await send_error(ctx.channel, ErrorMessage.NO_PLAYER_ROLE)
             return
 
-        player_categories: list[CategoryChannel] = []
-        for c in guild.categories:
-            if config.is_player_category(c):
-                player_categories.append(c)
-
+        player_categories = [c for c in guild.categories if config.is_player_category(c)]
         if len(player_categories) == 0:
             log_command(logger, ctx, message="No player category found")
             await send_error(ctx.channel, ErrorMessage.NO_PLAYER_CATEGORY)
@@ -420,72 +435,39 @@ class GameManagementCog(commands.Cog):
         pinged_players = 0
         failed_players = []
         response = ""
-        for category in player_categories:
-            for channel in category.text_channels:
-                player = board.get_player_by_channel(channel)
-                if player is None:
-                    continue
+        for channel in [ch for category in player_categories for ch in category.text_channels]:
+            if (player := board.get_player_by_channel(channel)) is None:
+                await ctx.send(f"No Player for {channel.name}")
+                continue
 
-                # player is completely dead, not worth pinging
-                if len(player.centers) + len(player.units) == 0:
-                    continue
+            if (role := player.find_discord_role(guild.roles)) is None:
+                await ctx.send(f"No Role for {player.get_name()}")
+                continue
 
-                role = player.find_discord_role(guild.roles)
-                if role is None:
-                    await ctx.send(f"No Role for {player.get_name()}")
-                    continue
+            if not board.is_chaos():
+                # Find users which have a player role to not ping spectators
+                users: set[Member | Role] = {m for m in role.members if set(m.roles) & player_roles}
+            else:
+                users = {overwritter for overwritter, permission
+                            in channel.overwrites.items()
+                            if isinstance(overwritter, Member) and permission.view_channel}
 
-                if not board.is_chaos():
-                    # Find users which have a player role to not ping spectators
-                    users: set[Member | Role] = {
-                        m for m in role.members if set(m.roles) & player_roles
-                    }
-                else:
-                    users = {overwritter for overwritter, permission
-                             in channel.overwrites.items()
-                             if isinstance(overwritter, Member) and permission.view_channel}
+            if len(users) == 0:
+                failed_players.append(player)
+                # Ping role in case of no players
+                users.add(role)
 
-                if len(users) == 0:
-                    failed_players.append(player)
+            if board.turn.is_builds():
+                response = self._ping_player_builds(player, users, board.data.get("build_options", "classic"))
+            else:
+                response = self._ping_player_moves(board, player, users)
 
-                    # HACK: ping role in case of no players
-                    users.add(role)
-
-                if board.turn.is_builds():
-                    response = self._ping_player_builds(player, users, board.data.get("build_options", "classic"))
-                else:
-                    missing = [
-                        unit
-                        for unit in player.units
-                        if unit.order is None and
-                            (board.turn.is_moves() or (unit == unit.province.dislodged_unit and unit.retreat_options))
-                    ]
-                    missing_dp = 0
-                    if board.data.get("dp", "False").lower() in ("true", "enabled"):
-                        missing_dp = player.dp_max - board.get_dp_spent(player)
-
-                    if not missing and missing_dp == 0:
-                        continue
-
-                    unit_text = f"unit{'s' if len(missing) != 1 else ''}"
-                    response = f"Hey **{''.join([u.mention for u in users])}**, "
-                    if missing:
-                        response += f"you are missing moves for the following {len(missing)} {unit_text}:"
-                        for unit in sorted(
-                            missing, key=lambda _unit: _unit.province.name
-                        ):
-                            response += f"\n{unit}"
-                    if missing_dp > 0:
-                        response += '\nY' if missing else 'y' + f"ou have {missing_dp} unspent DP."
-                    elif missing_dp < 0:
-                        response += '\nY' if missing else 'y' + f"ou have spent {-missing_dp} too much DP."
-
-                if response:
-                    pinged_players += 1
-                    if timestamp:
-                        response += f"\n The orders deadline is <t:{timestamp}:R>."
-                    await channel.send(response)
-                    response = None
+            if response:
+                pinged_players += 1
+                if timestamp:
+                    response += f"\n The orders deadline is <t:{timestamp}:R>."
+                await channel.send(response)
+                response = None
 
         log_command(logger, ctx, message=f"Pinged {pinged_players} players")
         await send_message_and_file(
@@ -879,6 +861,76 @@ class GameManagementCog(commands.Cog):
                     return True
         return False
 
+    async def _upload_maps(self, ctx: commands.Context, args: dict, title: str, board: Board, is_orders: bool) -> None:
+        assert ctx.guild is not None
+        file, file_name = manager.draw_map_for_board(
+            board,
+            draw_moves=is_orders,
+            color_mode=args["color"],
+        )
+        converted_file: bytes | None = None
+        converted_file_name: str | None = None
+        needs_png = args["return_svg"] or (args["full"] and _get_maps_channel(ctx.guild))
+        if needs_png:
+            converted_file, converted_file_name = await svg_to_png(file, file_name)
+        await send_message_and_file(
+            channel=ctx.channel,
+            title=f"{title} {'Orders' if is_orders else 'Results'} Map",
+            message=f"Test adjudication{ ' results' if not is_orders else ''}" if args["test"] else "",
+            file=converted_file if args["return_svg"] else file,
+            file_name=converted_file_name if args["return_svg"] else file_name,
+        )
+        if args["full"] and (map_channel := _get_maps_channel(ctx.guild)):
+            map_message = await send_message_and_file(
+                channel=map_channel,
+                title=f"{title} {'Orders' if is_orders else 'Results'} Map",
+                file=converted_file,
+                file_name=converted_file_name,
+            )
+            try:
+                await map_message.publish()
+            except discord.Forbidden:
+                pass
+
+    async def _adjudication_utils(self,
+                                  ctx: commands.Context,
+                                  guild: discord.Guild,
+                                  new_board: Board,
+                                  test_adjudicate: bool) -> None:
+        # NOTE: Temporary for Meme's Severence Diplomacy Event
+        if guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
+            seva = self.bot.get_guild(SEVERENCE_A_ID)
+            sevb = self.bot.get_guild(SEVERENCE_B_ID)
+
+            aperms = discord.utils.find(lambda r: r.name == "Player", seva.roles).permissions
+            bperms = discord.utils.find(lambda r: r.name == "Player", sevb.roles).permissions
+
+            a_allowed = ("Spring" in new_board.turn.get_phase()
+                        or ("Winter" in new_board.turn.get_phase()
+                            and random.choice([0, 1]) == 0))
+            await send_message_and_file(channel=ctx.channel,
+                                        message=f"Game {'A' if a_allowed else 'B'} is permitted to play.")
+            aperms.update(send_messages = a_allowed)
+            bperms.update(send_messages = not a_allowed)
+
+        # AUTOMATIC SCOREBOARD OUTPUT FOR DATA SPREADSHEET
+        if (new_board.turn.is_builds()
+            and (guild.id != config.BOT_DEV_SERVER_ID and guild.name.startswith("Imperial Diplomacy"))
+            and not test_adjudicate):
+            channel = self.bot.get_channel(config.HUB_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID)
+            if not channel:
+                await send_message_and_file(channel=ctx.channel,
+                                            message="Couldn't automatically send off the Winter Scoreboard data",
+                                            embed_colour=config.ERROR_COLOUR)
+                return
+            title = f"### {guild.name} Centre Counts (alphabetical order) | {new_board.turn}"
+
+            players = sorted(new_board.get_players(), key=lambda p: p.get_name())
+            counts = "\n".join(map(lambda p: str(len(p.centers)), players))
+
+            await channel.send(title)
+            await channel.send(counts)
+
     @commands.command(
         brief="Adjudicates the game",
         description="Adjudicates the game and uploads maps.",
@@ -912,15 +964,14 @@ class GameManagementCog(commands.Cog):
         color_options = board.data["svg config"].get("color_options", {"standard"})
 
         arguments = remove_prefix(ctx).lower().split()
-        return_svg = not ({"true", "t", "svg", "s"} & set(arguments))
-        color_arguments = list(set(color_options) & set(arguments))
-        color_mode = color_arguments[0] if color_arguments else None
-        test_adjudicate = "test" in arguments
-        full_adjudicate = "full" in arguments and not test_adjudicate
-        movement_adjudicate = "movement" in arguments
-        force_adjudicate = ({"force", "confirm"} & set(arguments)) and not test_adjudicate
+        args = {"return_svg": not ({"true", "t", "svg", "s"} & set(arguments)),
+                "color": (list(set(color_options) & set(arguments)) + [None])[0],
+                "test": "test" in arguments,
+                "full": "full" in arguments and not "test" in arguments,
+                "movement": "movement" in arguments,
+                "force": ({"force", "confirm"} & set(arguments)) and not "test" in arguments}
 
-        if not force_adjudicate and not test_adjudicate and await self._is_missing_orders(board):
+        if not args["force"] and not args["test"] and await self._is_missing_orders(board):
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Missing Orders",
@@ -930,11 +981,11 @@ class GameManagementCog(commands.Cog):
             )
             return
 
-        if full_adjudicate:
+        if args["full"]:
             await self.lock_orders(ctx)
 
         old_turn = board.turn
-        new_board = manager.adjudicate(guild.id, test=test_adjudicate)
+        new_board = manager.adjudicate(guild.id, test=args["test"])
 
         log_command(
             logger,
@@ -945,120 +996,33 @@ class GameManagementCog(commands.Cog):
         # We draw the board from the DB to apply failed and DP orders that we want to hide from players
         draw_board = manager.get_board_from_db(guild.id, old_turn)
         manager.apply_adjudication_results(guild.id, draw_board)
-        file, file_name = manager.draw_map_for_board(
-            draw_board,
-            draw_moves=True,
-            color_mode=color_mode,
-        )
-        title = f"{board.name} — " if board.name else ""
-        title += f"{old_turn}"
+        title = (f"{board.name} — " if board.name else "") + f"{old_turn}"
 
-        converted_file: bytes | None = None
-        converted_file_name: str | None = None
-        needs_png = return_svg or (full_adjudicate and _get_maps_channel(guild))
-        if needs_png:
-            converted_file, converted_file_name = await svg_to_png(file, file_name)
-        await send_message_and_file(
-            channel=ctx.channel,
-            title=f"{title} Orders Map",
-            message="Test adjudication" if test_adjudicate else "",
-            file=converted_file if return_svg else file,
-            file_name=converted_file_name if return_svg else file_name,
-        )
-        if full_adjudicate and (map_channel := _get_maps_channel(guild)):
-            map_message = await send_message_and_file(
-                channel=map_channel,
-                title=f"{title} Orders Map",
-                file=converted_file,
-                file_name=converted_file_name,
-            )
-            try:
-                await map_message.publish()
-            except discord.Forbidden:
-                pass
+        await self._upload_maps(ctx, args, title, draw_board, True)
 
-        if movement_adjudicate:
+        if args["movement"]:
             file, file_name = manager.draw_map_for_board(
                 draw_board,
                 draw_moves=True,
-                color_mode=color_mode,
+                color_mode=args["color"],
                 movement_only=True,
             )
-            title = f"{board.name} — " if board.name else ""
-            title += f"{old_turn}"
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"{title} Movement Map",
-                message="Test adjudication" if test_adjudicate else "",
+                message="Test adjudication" if args["test"] else "",
                 file=file,
                 file_name=file_name,
-                convert_svg=return_svg,
+                convert_svg=args["return_svg"],
             )
 
-        file, file_name = manager.draw_map_for_board(new_board, color_mode=color_mode)
+        await self._upload_maps(ctx, args, title, new_board, False)
 
-        needs_png = return_svg or (full_adjudicate and _get_maps_channel(guild))
-        if needs_png:
-            converted_file, converted_file_name = await svg_to_png(file, file_name)
-        await send_message_and_file(
-            channel=ctx.channel,
-            title=f"{title} Results Map",
-            message="Test adjudication results" if test_adjudicate else "",
-            file=converted_file if return_svg else file,
-            file_name=converted_file_name if return_svg else file_name,
-        )
-
-        if full_adjudicate and (map_channel := _get_maps_channel(guild)):
-            map_message = await send_message_and_file(
-                channel=map_channel,
-                title=f"{title} Results Map",
-                file=converted_file,
-                file_name=converted_file_name,
-            )
-            try:
-                await map_message.publish()
-            except discord.Forbidden:
-                pass
-
-        if full_adjudicate:
+        if args["full"]:
             await self.publish_orders(ctx)
             await self.unlock_orders(ctx)
 
-        # NOTE: Temporary for Meme's Severence Diplomacy Event
-        if guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]:
-            seva = self.bot.get_guild(SEVERENCE_A_ID)
-            sevb = self.bot.get_guild(SEVERENCE_B_ID)
-
-            seva_player = discord.utils.find(lambda r: r.name == "Player", seva.roles)
-            aperms = seva_player.permissions
-            sevb_player = discord.utils.find(lambda r: r.name == "Player", sevb.roles)
-            bperms = sevb_player.permissions
-
-            a_allowed = ("Spring" in new_board.turn.get_phase()
-                        or ("Winter" in new_board.turn.get_phase()
-                            and random.choice([0, 1]) == 0))
-            await send_message_and_file(channel=ctx.channel,
-                                        message=f"Game {'A' if a_allowed else 'B'} is permitted to play.")
-            aperms.update(send_messages = a_allowed)
-            bperms.update(send_messages = not a_allowed)
-
-        # AUTOMATIC SCOREBOARD OUTPUT FOR DATA SPREADSHEET
-        if (new_board.turn.is_builds()
-            and (guild.id != config.BOT_DEV_SERVER_ID and guild.name.startswith("Imperial Diplomacy"))
-            and not test_adjudicate):
-            channel = self.bot.get_channel(config.HUB_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID)
-            if not channel:
-                await send_message_and_file(channel=ctx.channel,
-                                            message="Couldn't automatically send off the Winter Scoreboard data",
-                                            embed_colour=config.ERROR_COLOUR)
-                return
-            title = f"### {guild.name} Centre Counts (alphabetical order) | {new_board.turn}"
-
-            players = sorted(new_board.get_players(), key=lambda p: p.get_name())
-            counts = "\n".join(map(lambda p: str(len(p.centers)), players))
-
-            await channel.send(title)
-            await channel.send(counts)
+        await self._adjudication_utils(ctx, guild, new_board, args["test"])
 
     @commands.command(brief="Rolls back the game to the previous turn")
     @perms.gm_only("rollback")
