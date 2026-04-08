@@ -1,0 +1,73 @@
+{
+    "name": "Modern",
+    "file": "modern.svg",
+    "svg config": {
+		"year": 1994,
+		
+		"power_sc_index": -1,
+		"power_iscc_index": -1,
+		"power_vscc_index": -1,
+
+        "detect_starting_units": true,
+        "unit_type_labeled": false,
+
+        "unit_labels": true,
+        "province_labels": true,
+        "center_labels": true,
+
+        "default_sea_color": "00b3d2",
+        "border_margin_hint": 0.3,
+
+        "map_width": 1920,
+        "unit_radius": 10,
+        "order_stroke_width": 2,
+        "neutral": "e2c69e",
+        "neutral_sc": "ffffff",
+        "impassable": "a69f8f",
+        "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
+    },
+    "build_options": "classic",
+	"victory_conditions": "classic",
+    "players": {
+        "Britain": {
+            "color": "79afc6",
+			"iscc": 4
+        },
+        "Egypt": {
+            "color": "729267",
+			"iscc": 3
+        },
+        "France": {
+            "color": "79afc6",
+			"iscc": 4
+        },
+        "Germany": {
+            "color": "a08a75",
+			"iscc": 4
+        },
+        "Italy": {
+            "color": "a4c499",
+			"iscc": 4
+        },
+        "Poland": {
+            "color": "c48f85",
+			"iscc": 3
+        },
+        "Russia": {
+            "color": "a87e9f",
+			"iscc": 5
+        },
+        "Spain": {
+            "color": "ce9967",
+			"iscc": 3
+        },
+        "Turkey": {
+            "color": "eaeaaf",
+			"iscc": 4
+        },
+        "Ukraine": {
+            "color": "787878",
+			"iscc": 3
+        }
+    }
+}

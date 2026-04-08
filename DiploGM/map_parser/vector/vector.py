@@ -298,7 +298,7 @@ class Parser:
 
     def json_cheats(self, provinces: set[Province]) -> set[Province]:
         if "overrides" not in self.data:
-            return set()
+            return provinces
         if HIGH_PROVINCES_KEY in self.data["overrides"]:
             provinces = self.add_high_provinces(provinces)
 
