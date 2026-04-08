@@ -12,9 +12,9 @@ from DiploGM.models.order import (
 from DiploGM.models.unit import UnitType
 
 if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
     from DiploGM.models.province import Province
     from DiploGM.models.unit import Unit
-    from DiploGM.models.player import Player
     from DiploGM.models.turn import Turn
     from DiploGM.models.order import UnitOrder, PlayerOrder
     from DiploGM.mapper.utils import MapperUtils
@@ -38,33 +38,28 @@ class OrderDrawer:
                    unit: Unit,
                    order: UnitOrder | None,
                    coordinate: tuple[float, float],
-                   current_turn: Turn) -> None:
-        """Draws a specific order on the map."""
-        if isinstance(order, Hold):
-            self._draw_hold(coordinate, order.has_failed)
-        elif isinstance(order, Core):
-            self._draw_core(coordinate, order.has_failed)
-        elif isinstance(order, Transform):
-            self._draw_transform(coordinate, order.has_failed)
-        elif isinstance(order, Move):
-            # moves are just convoyed moves that have no convoys
-            return self._draw_convoyed_move(unit, order, coordinate, order.has_failed)
-        elif isinstance(order, Support):
-            return self._draw_support(unit, order, coordinate, order.has_failed)
-        elif isinstance(order, ConvoyTransport):
-            self._draw_convoy(order, coordinate, order.has_failed)
-        elif isinstance(order, RetreatMove):
-            return self.draw_retreat_move(order, unit.unit_type, coordinate)
-        elif isinstance(order, RetreatDisband):
-            self.draw_force_disband(coordinate, self.moves_svg)
-        else:
-            if current_turn.is_moves():
-                self._draw_hold(coordinate, False)
-            else:
-                self.draw_force_disband(coordinate, self.moves_svg)
-            logger.debug("None order found: hold drawn. Coordinates: %s", coordinate)
+                   current_turn: Turn) -> list[Element] | None:
+        """Draws a specific order on the map.
+        If the order can potentially go off-board (i.e. move/support),
+        return a list of elements to be copied across the board."""
+        function_list = {Hold: self._draw_hold,
+                         Core: self._draw_core,
+                         Transform: self._draw_transform,
+                         Move: self._draw_convoyed_move,
+                         Support: self._draw_support,
+                         ConvoyTransport: self._draw_convoy,
+                         RetreatMove: self.draw_retreat_move,
+                         RetreatDisband: self.draw_force_disband}
 
-    def draw_player_order(self, order: PlayerOrder):
+        order_function = function_list.get(type(order), None)
+        if order_function is None:
+            logger.debug("None order found: %s drawn. Coordinates: %s",
+                         'hold' if current_turn.is_moves() else 'disband', coordinate)
+            order_function = self._draw_hold if current_turn.is_moves() else self.draw_force_disband
+        # Unit and order are optional and are _ or __ in the definitions of functions that don't need them
+        return order_function(unit, order, coordinate, order.has_failed if order else False)
+
+    def draw_player_order(self, order: PlayerOrder) -> None:
         """Draws a Player Order (e.g. build, disband, etc.) on the map."""
         if isinstance(order, Build):
             self._draw_build(order)
@@ -76,7 +71,7 @@ class OrderDrawer:
             else:
                 coord_list = order.province.all_coordinates[disbanding_unit.unit_type.name]
             for coord in coord_list:
-                self.draw_force_disband(coord.primary_coordinate, self.moves_svg)
+                self.draw_force_disband(None, None, coord.primary_coordinate, self.moves_svg)
         elif isinstance(order, TransformBuild):
             assert order.province.unit is not None
             transforming_unit: Unit = order.province.unit
@@ -85,11 +80,11 @@ class OrderDrawer:
             else:
                 coord_list = order.province.all_coordinates[transforming_unit.unit_type.name]
             for coord in coord_list:
-                self._draw_transform(coord.primary_coordinate, False)
+                self._draw_transform(None, None, coord.primary_coordinate, False)
         else:
             logger.error("Could not draw player order %s", order)
 
-    def _draw_hold(self, coordinate: tuple[float, float], has_failed: bool) -> None:
+    def _draw_hold(self, _, __, coordinate: tuple[float, float], has_failed: bool) -> None:
         element = self.moves_svg.getroot()
         assert element is not None
         drawn_order = self.utils.create_element(
@@ -105,7 +100,7 @@ class OrderDrawer:
         )
         element.append(drawn_order)
 
-    def _draw_core(self, coordinate: tuple[float, float], has_failed: bool) -> None:
+    def _draw_core(self, _, __, coordinate: tuple[float, float], has_failed: bool) -> None:
         element = self.moves_svg.getroot()
         assert element is not None
         drawn_order = self.utils.create_element(
@@ -123,7 +118,7 @@ class OrderDrawer:
         )
         element.append(drawn_order)
 
-    def _draw_transform(self, coordinate: tuple[float, float], has_failed: bool) -> None:
+    def _draw_transform(self, _, __, coordinate: tuple[float, float], has_failed: bool) -> None:
         element = self.moves_svg.getroot()
         assert element is not None
         drawn_order = self.utils.create_element(
@@ -140,10 +135,12 @@ class OrderDrawer:
         )
         element.append(drawn_order)
 
-    def draw_retreat_move(self,
+    def draw_retreat_move(self, _,
                           order: RetreatMove,
                           unit_type: UnitType,
-                          coordinate: tuple[float, float]) -> None:
+                          coordinate: tuple[float, float]) -> list[Element]:
+        """Draws a retreat move on the map, returning the elements to be copied across the board if necessary.
+        This is a public method since we need to draw potential retreats on the current map."""
         destination = self.utils.loc_to_point(order.destination, unit_type, order.destination_coast, coordinate)
         if order.destination.unit:
             destination = self.utils.pull_coordinate(coordinate, destination)
@@ -158,7 +155,7 @@ class OrderDrawer:
                 "marker-end": "url(#redarrow)",
             },
         )
-        return order_path
+        return [order_path]
 
     def _path_helper(
         self, source: Province, destination: Province, current: Province, already_checked=()
@@ -191,7 +188,7 @@ class OrderDrawer:
                 options += self._path_helper(source, destination, possibility, new_checked)
         return list(map((lambda t: [current] + t), options))
 
-    def _draw_path(self, d: str, marker_end="arrow", stroke_color="black"):
+    def _draw_path(self, d: str, marker_end="arrow", stroke_color="black") -> Element:
         order_path = self.utils.create_element(
             "path",
             {
@@ -222,7 +219,11 @@ class OrderDrawer:
         self.convoy_paths[start] = shortest_convoys
         return shortest_convoys
 
-    def _draw_convoyed_move(self, unit: Unit, order: Move, coordinate: tuple[float, float], has_failed: bool):
+    def _draw_convoyed_move(self,
+                            unit: Unit,
+                            order: Move,
+                            coordinate: tuple[float, float],
+                            has_failed: bool) -> list[Element]:
         def f(point: tuple[float, float]):
             return " ".join(map(str, point))
 
@@ -263,7 +264,11 @@ class OrderDrawer:
             latest_paths.append(self._draw_path(s, marker_end = marker_color, stroke_color = stroke_color))
         return latest_paths
 
-    def _draw_support(self, unit: Unit, order: Support, coordinate: tuple[float, float], has_failed: bool) -> None:
+    def _draw_support(self,
+                      unit: Unit,
+                      order: Support,
+                      coordinate: tuple[float, float],
+                      has_failed: bool) -> list[Element]:
         source: Province = order.source
         if source.unit is None:
             raise ValueError("Support order has no source unit")
@@ -293,7 +298,7 @@ class OrderDrawer:
                 and isinstance(source.unit.order, (ConvoyTransport, Support))
                 and self.utils.is_moveable(source.unit, self.adjacent_provinces, self.player_restriction)):
                 for coord in source.all_coordinates[source.unit.coast if source.unit.coast else source.unit.unit_type.name]:
-                    self._draw_hold(coord.primary_coordinate, False)
+                    self._draw_hold(None, None, coord.primary_coordinate, False)
 
             # if two units are support-holding each other
             destorder = order.destination.unit.order
@@ -308,7 +313,7 @@ class OrderDrawer:
                 # This check is so we only do it once, so it doesn't overlay
                 # it doesn't matter which one is the origin & which is the dest
                 if id(order.destination.unit) < id(unit):
-                    return
+                    return []
                 marker_start = f"url(#{ball_type})"
                 # doesn't matter that v3 has been pulled, as it's still collinear
                 coordinate = source_coord = self.utils.pull_coordinate(
@@ -331,9 +336,9 @@ class OrderDrawer:
                 "marker-end": f"url(#{ball_type if order.source == order.destination else arrow_type})",
             },
         )
-        return drawn_order
+        return [drawn_order]
 
-    def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float], has_failed: bool) -> None:
+    def _draw_convoy(self, _, __, coordinate: tuple[float, float], has_failed: bool) -> None:
         element = self.moves_svg.getroot()
         assert element is not None
         drawn_order = self.utils.create_element(
@@ -381,7 +386,9 @@ class OrderDrawer:
         )
         element.append(drawn_order)
 
-    def draw_force_disband(self, coordinate: tuple[float, float], svg) -> None:
+    def draw_force_disband(self, _, __, coordinate: tuple[float, float], svg) -> None:
+        """Draws a disband order on the map.
+        This method is public since we need to forced disbands on the current map."""
         element = svg.getroot()
         cross_width = self.board_svg_data["order_stroke_width"] / (2**0.5)
         square_rad = self.board_svg_data["unit_radius"] / (2**0.5)
