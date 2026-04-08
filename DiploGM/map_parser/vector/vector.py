@@ -104,6 +104,8 @@ class Parser:
         """Checks the SVG to try to find parsing issues."""
         is_valid = True
         seen_names: set[str] = set()
+        for province, data in self.data.get("overrides", {}).get("high provinces", {}).items():
+            seen_names.update(f"{province}{i}" for i in range(1, data["num"] + 1))
 
         # All provinces should have unique names
         for layer_name in ["land_layer", "island_borders", "sea_borders"]:
@@ -190,9 +192,6 @@ class Parser:
         #         for subpoly in poly.geoms:
         #             plt.plot(*subpoly.exterior.xy)
         # plt.show()
-
-        for province in provinces:
-            self._warn_missing_coordinates(province)
 
         initial_turn = Turn(self.year_offset, PhaseName.SPRING_MOVES, self.year_offset)
         if self.data.get("first_season") == "winter":
@@ -387,6 +386,9 @@ class Parser:
         self._set_phantom_unit_coordinates()
 
         for province in provinces:
+            center = shapely.centroid(province.geometry)
+            province.unit_coordinates["default"] = UnitLocation(primary_coordinate=(center.x, center.y),
+                                                                retreat_coordinate=(center.x, center.y))
             for unit in province.unit_coordinates.keys():
                 province.all_coordinates.setdefault(unit, set()).add(province.unit_coordinates[unit])
 
@@ -688,6 +690,50 @@ class Parser:
         else:
             return UnitType.ARMY
             raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
+
+    def generate_layers(self) -> bytes:
+        """Using sample SVG elements in the Army, Fleet, and Title layers,
+        give each province a name, army and fleet locations, and retreat locations, then return the SVG as bytes."""
+        svg_root = etree.parse(self.data["file"])
+        layers = {}
+        # First, we get a sample element from each layer, and then clear the layers
+        # We need to find out the coordinate of the sample element and then apply appropriate translations
+        for layer_name in {"army", "fleet", "retreat_army", "retreat_fleet", "titles"}:
+            layer = find_svg_element(svg_root, layer_name, self.layers)
+            if layer is None:
+                continue
+            sample_element = copy.deepcopy(layer[0])
+            if layer_name != "titles":
+                coordinate = TransGL3(sample_element).transform(get_unit_coordinates(sample_element))
+            else:
+                coordinate = (float(sample_element.get("x", "0")), float(sample_element.get("y", "0")))
+                sample_element.set("text-anchor", "middle")
+            layers[layer_name] = {"layer": layer, "sample_element": sample_element, "coordinate": coordinate}
+            for element in layer:
+                layer.remove(element)
+
+        # For each province, we add an element to each layer. We'll add a translation to put each element in the centroid of the province
+        for province in self.name_to_province.values():
+            for layer_name, layer_info in layers.items():
+                if province.type == ProvinceType.SEA and layer_name in {"army", "retreat_army"}:
+                    continue
+                if not province.adjacency_data.fleet_adjacent and layer_name in {"fleet", "retreat_fleet"}:
+                    continue
+                copied_element = copy.deepcopy(layer_info["sample_element"])
+                copied_element.set(f"{NAMESPACE.get('inkscape')}label", province.name)
+                if layer_name == "titles":
+                    copied_element.text = province.name
+                center = shapely.centroid(province.geometry)
+                dx = center.x - layer_info["coordinate"][0]
+                dy = center.y - layer_info["coordinate"][1]
+                if layer_name in {"retreat_army", "retreat_fleet"}:
+                    dx -= self.data[SVG_CONFIG_KEY].get("unit_radius", 20) / 2
+                    dy -= self.data[SVG_CONFIG_KEY].get("unit_radius", 20) / 2
+                trans = TransGL3(copied_element) * TransGL3().init(x_c = dx, y_c = dy)
+                copied_element.set("transform", str(trans))
+                layer_info["layer"].append(copied_element)
+
+        return etree.tostring(svg_root)
 
 
 parsers = {}

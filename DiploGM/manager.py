@@ -157,6 +157,13 @@ class Manager(metaclass=SingletonMeta):
             visited_provinces.add(province)
         return "\n".join(warnings) if warnings else "No adjacency issues found"
 
+    def generate_layers(self, variant: str) -> tuple[bytes, str]:
+        """Generates the SVG layers for a variant and returns them as bytes."""
+        if not os.path.isdir(parse_variant_path(variant)):
+            raise ValueError(f"Game {variant} does not exist.")
+        board: Board = get_parser(variant).parse()
+        return get_parser(variant).generate_layers(), f"{board.data['name']}.svg"
+
     def get_spec_request(self, server_id: int, user_id: int) -> SpecRequest | None:
         """Gets a spec request for a user in a server, if it exists."""
         if server_id not in self._spec_requests:

@@ -293,6 +293,17 @@ class AdminCog(commands.Cog):
         await send_message_and_file(channel=ctx.channel, message=message)
 
     @commands.command(hidden=True)
+    @perms.superuser_only("Generates the titles, army and fleet locations for a variant based on the map SVG")
+    async def generate_layers(self, ctx: commands.Context, arg) -> None:
+        """Generates the titles, army and fleet locations for a variant based on the map SVG."""
+        assert ctx.guild is not None
+        gametype = arg if arg else "classic"
+
+        file, filename = manager.generate_layers(gametype)
+        log_command(logger, ctx, message=f"Generated SVG layers for variant {gametype}")
+        await send_message_and_file(channel=ctx.channel, message=f"Generated SVG layers for variant {gametype}", file=file, file_name=filename)
+
+    @commands.command(hidden=True)
     @perms.superuser_only("Reloads the map parser for a given variant. Useful if a map has been updated.")
     async def reload_variant(self, ctx: commands.Context, arg) -> None:
         """Reloads the map parser for a given variant. Useful if a map has been updated."""

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import logging
 
 from shapely import Polygon, MultiPolygon
+import shapely
 
 logger = logging.getLogger(__name__)
 
@@ -100,8 +101,10 @@ class Province():
         """Gets the coordinates of a unit given its type, coast, and whether it's retreating."""
         index = coast if coast in self.unit_coordinates else unit_type.name
         if is_retreat:
-            return self.unit_coordinates[index].retreat_coordinate if index in self.unit_coordinates else (0, 0)
-        return self.unit_coordinates[index].primary_coordinate if index in self.unit_coordinates else (0, 0)
+            return (self.unit_coordinates[index].retreat_coordinate if index in self.unit_coordinates
+                    else self.unit_coordinates.get("default", UnitLocation((0, 0), (0, 0))).retreat_coordinate)
+        return (self.unit_coordinates[index].primary_coordinate if index in self.unit_coordinates
+                else self.unit_coordinates.get("default", UnitLocation((0, 0), (0, 0))).primary_coordinate)
 
     def set_unit_coordinate(self,
                             coord: tuple[float, float] | None,
@@ -110,20 +113,22 @@ class Province():
                             coast: str | None = None):
         """Sets the coordinates of a unit given its type, coast, and whether it's retreating."""
         # Set default cooordinate if none are found
-        coord = coord if coord else (0, 0)
+        center = shapely.centroid(self.geometry)
+        center_coord = (center.x, center.y)
+        coord = coord if coord else center_coord
         index = coast if coast else unit_type.name
 
         if is_retreat:
             self.unit_coordinates[index] = UnitLocation(
                 primary_coordinate = (self.unit_coordinates[index].primary_coordinate
-                                      if index in self.unit_coordinates else (0, 0)),
+                                      if index in self.unit_coordinates else center_coord),
                 retreat_coordinate = coord
             )
         else:
             self.unit_coordinates[index] = UnitLocation(
                 primary_coordinate = coord,
                 retreat_coordinate = (self.unit_coordinates[index].retreat_coordinate
-                                      if index in self.unit_coordinates else (0, 0))
+                                      if index in self.unit_coordinates else center_coord)
             )
 
     def can_build(self, build_options) -> bool:

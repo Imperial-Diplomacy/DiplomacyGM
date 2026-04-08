@@ -16,6 +16,7 @@ LAYER_DICTIONARY = {
     "sea_borders": {"Sea Adjacencies"},
     "province_names": {"Titles"},
     "supply_center_icons": {"SC Markers", "SC markers"},
+    "titles": {"Titles"},
     "army": {"Army Locations"},
     "retreat_army": {"Army Locations (Retreats)"},
     "fleet": {"Fleet Locations"},

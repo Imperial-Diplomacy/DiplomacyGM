@@ -476,9 +476,9 @@ class GameManagementCog(commands.Cog):
                         ):
                             response += f"\n{unit}"
                     if missing_dp > 0:
-                        response += f"{'\nY' if missing else 'y'}ou have {missing_dp} unspent DP."
+                        response += '\nY' if missing else 'y' + f"ou have {missing_dp} unspent DP."
                     elif missing_dp < 0:
-                        response += f"{'\nY' if missing else 'y'}ou have spent {-missing_dp} too much DP."
+                        response += '\nY' if missing else 'y' + f"ou have spent {-missing_dp} too much DP."
 
                 if response:
                     pinged_players += 1
@@ -1450,12 +1450,12 @@ class GameManagementCog(commands.Cog):
         if order_channel:
             await order_channel.edit(name = new_name.lower().replace(" ", "-") + PLAYER_CHANNEL_SUFFIX)
             message += f"\nUpdated order channel {order_channel_name} to " + \
-                       f"{new_name.lower().replace(" ", "-") + PLAYER_CHANNEL_SUFFIX}."
+                       f"{new_name.lower().replace(' ', '-')}{PLAYER_CHANNEL_SUFFIX}."
 
         void_channel = discord.utils.find(lambda c: c.name == void_channel_name, ctx.guild.text_channels)
         if void_channel:
             await void_channel.edit(name = new_name.lower().replace(" ", "-") + "-void")
-            message += f"\nUpdated void channel {void_channel_name} to {new_name.lower().replace(" ", "-") + "-void"}."
+            message += f"\nUpdated void channel {void_channel_name} to {new_name.lower().replace(' ', '-')}-void."
 
         log_command(logger, ctx, message=message)
         await send_message_and_file(
