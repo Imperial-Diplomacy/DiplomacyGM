@@ -407,7 +407,7 @@ def _load_state(keywords: list[str], board: Board) -> None:
     turn = parse_season(keywords[1:], board.turn)
 
     year = int(keywords[2])
-    epoch_year = board.year_offset - turn.year
+    epoch_year = board.data["year"] - turn.year
 
     if other := manager._boards.get(server, None):
         if other.datafile != board.datafile:
@@ -439,7 +439,6 @@ def _load_state(keywords: list[str], board: Board) -> None:
         other.turn,
         other.data,
         other.datafile,
-        fow=board.fow,
     )
     new_board.board_id = curr_board_id
 

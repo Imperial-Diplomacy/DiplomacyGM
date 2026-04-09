@@ -34,15 +34,12 @@ class Board:
         units: set[Unit],
         turn: Turn,
         data: dict,
-        datafile: str,
-        fow: bool = False,
-        year_offset: int = 1901
+        datafile: str
     ):
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
         self.units: set[Unit] = units
         self.turn: Turn = turn
-        self.year_offset = year_offset
         self.board_id = 0
         self.fish_pop = {
             "fish_pop": float(700),
@@ -53,7 +50,6 @@ class Board:
         self.data["fish"] = int(self.data.get("fish", 0))
         self.custom_data: dict = {}
         self.datafile = datafile
-        self.fow = fow
 
         # store as lower case for user input purposes
         self.name_to_player: Dict[str, Player] = {player.name.lower(): player for player in self.players}

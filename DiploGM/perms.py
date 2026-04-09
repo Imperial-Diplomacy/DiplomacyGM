@@ -25,7 +25,7 @@ def get_player_by_context(ctx: commands.Context) -> Player | None:
     board = manager.get_board(ctx.guild.id)
     # return if in order channel
     weak_channel_checking = "weak channel checking" in board.data.get("flags", [])
-    if board.fow or weak_channel_checking:
+    if board.data.get("fow", "disabled") == "enabled" or weak_channel_checking:
         return board.get_player_by_channel(
             ctx.channel, ignore_category=weak_channel_checking
         )
@@ -52,7 +52,7 @@ def require_player_by_context(ctx: commands.Context, description: str) -> Player
     board = manager.get_board(ctx.guild.id)
     # return if in order channel
     weak_channel_checking = "weak channel checking" in board.data.get("flags", [])
-    if board.fow or weak_channel_checking:
+    if board.data.get("fow", "disabled") == "enabled" or weak_channel_checking:
         player = board.get_player_by_channel(
             ctx.channel, ignore_category=weak_channel_checking
         )

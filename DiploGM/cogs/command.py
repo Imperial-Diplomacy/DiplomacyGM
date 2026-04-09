@@ -156,7 +156,7 @@ class CommandCog(commands.Cog):
 
         board = manager.get_board(ctx.guild.id)
 
-        if board.fow:
+        if board.data.get("fow", "disabled") == "enabled":
             perms.assert_gm_only(ctx, "get scoreboard")
 
         if csv and not board.is_chaos():
@@ -203,7 +203,7 @@ class CommandCog(commands.Cog):
             message += f"Deadline: <t:{board.data['deadline']}:f>\n"
         if board.is_chaos():
             message += "Chaos: :white_check_mark:\n"
-        if board.fow:
+        if board.data.get("fow", "disabled") == "enabled":
             message += "Fog of War: :white_check_mark:\n"
         await send_message_and_file(
             channel=ctx.channel,
@@ -311,7 +311,7 @@ class CommandCog(commands.Cog):
             return
 
         # FOW permissions
-        if board.fow:
+        if board.data.get("fow", "disabled") == "enabled":
             player = perms.require_player_by_context(ctx, "get province info")
             if player and not province in board.get_visible_provinces(player):
                 log_command(
@@ -410,7 +410,7 @@ class CommandCog(commands.Cog):
             province, _ = board.get_province_and_coast(player_name)
             player = board.get_player(province.name.lower())
 
-        elif board.fow:
+        elif board.data.get("fow", "disabled") == "enabled":
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Gametype Error!",

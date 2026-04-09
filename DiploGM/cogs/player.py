@@ -207,7 +207,7 @@ class PlayerCog(commands.Cog):
             return
 
         try:
-            if not board.fow:
+            if board.data.get("fow", "disabled") != "enabled":
                 file, file_name = manager.draw_map(
                     ctx.guild.id,
                     draw_moves = show_moves,
@@ -309,7 +309,7 @@ class PlayerCog(commands.Cog):
             return
 
         try:
-            if not board.fow:
+            if board.data.get("fow", "disabled") != "enabled":
                 file, file_name = manager.draw_gui_map(
                     ctx.guild.id, color_mode=color_mode
                 )
@@ -349,7 +349,7 @@ class PlayerCog(commands.Cog):
         assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
 
-        if not player or not board.fow:
+        if not player or board.data.get("fow", "disabled") != "enabled":
             log_command(logger, ctx, message="No fog of war game")
             await send_message_and_file(
                 channel=ctx.channel,

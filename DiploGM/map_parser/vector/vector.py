@@ -45,9 +45,6 @@ class Parser:
         self.layers = self.data[SVG_CONFIG_KEY]
         self.layer_data = self._load_layer_data(svg_root)
 
-        self.fow = self.layers.get("fow", False)
-        self.year_offset = self.data.get("year", 1901)
-
         self.impassable_color = self.data[SVG_CONFIG_KEY].get("impassable", "000000")
         if isinstance(self.impassable_color, dict):
             self.impassable_color = self.impassable_color.get("standard", "000000")
@@ -192,7 +189,7 @@ class Parser:
         elapsed = time.time() - start
         logger.info(f"map_parser.vector.parse: {elapsed}s")
 
-        initial_turn = Turn(self.year_offset, PhaseName.SPRING_MOVES, self.year_offset)
+        initial_turn = Turn(self.data.get("year", 1901), PhaseName.SPRING_MOVES, self.data.get("year", 1901))
         if self.data.get("first_season") == "winter":
             initial_turn = initial_turn.get_previous_turn()
 
@@ -212,7 +209,7 @@ class Parser:
             if "vscc" not in game_data["players"][player.name]:
                 game_data["players"][player.name]["vscc"] = game_data["victory_count"]
 
-        return Board(self.players, provinces, units, initial_turn, game_data, self.datafile, self.fow, self.year_offset)
+        return Board(self.players, provinces, units, initial_turn, game_data, self.datafile)
 
     def _read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
         """Reads the SVG, gets provinces information and coordinates,

@@ -50,7 +50,7 @@ class FogOfWarCog(commands.Cog):
         assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
 
-        if not board.fow:
+        if board.data.get("fow", "disabled") != "enabled":
             raise ValueError("This is not a fog of war game")
 
         filter_player = board.get_player(remove_prefix(ctx))
@@ -78,7 +78,7 @@ class FogOfWarCog(commands.Cog):
         guild_id = guild.id
         board = manager.get_board(guild_id)
 
-        if not board.fow:
+        if board.data.get("fow", "disabled") != "enabled":
             raise ValueError("This is not a fog of war game")
 
         filter_player = board.get_player(remove_prefix(ctx))

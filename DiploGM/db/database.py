@@ -70,9 +70,9 @@ class _DatabaseConnection:
             if fish is None:
                 fish = 0
 
-            board = self._get_board(
-                board_id, current_turn, fish, name, data_file, cursor, year_offset=True
-            )
+            board = self._get_board(board_id, current_turn, fish, name, data_file, cursor)
+            # Boards are saved in the DB as 0-indexed years, annoyingly
+            board.turn = Turn(board.data["year"] + board.turn.year, board.turn.phase, board.data["year"])
 
             boards[board_id] = board
 
@@ -290,14 +290,14 @@ class _DatabaseConnection:
         data_file: str,
         cursor,
         clear_status: bool = False,
-        year_offset: bool = False,
     ) -> Board:
         logger.info(f"Loading board with ID {board_id}")
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
         board = get_parser(data_file).parse()
-        board.turn = Turn(board.year_offset + turn.year, turn.phase, board.year_offset) if year_offset else turn
+        board.turn = turn
         board.data["fish"] = fish
+        # TODO: Move name out of here in the next patch
         board.data["name"] = name
         board.board_id = board_id
 
