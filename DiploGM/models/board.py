@@ -44,16 +44,15 @@ class Board:
         self.turn: Turn = turn
         self.year_offset = year_offset
         self.board_id = 0
-        self.fish = 0
         self.fish_pop = {
             "fish_pop": float(700),
             "time": time.time()
         }
         self.orders_enabled: bool = True
         self.data: dict = data
+        self.data["fish"] = int(self.data.get("fish", 0))
         self.custom_data: dict = {}
         self.datafile = datafile
-        self.name: str | None = None
         self.fow = fow
 
         # store as lower case for user input purposes
@@ -209,22 +208,21 @@ class Board:
 
         if name in self.name_to_coast:
             return self.name_to_coast[name]
-        elif name in self.name_to_province:
+        if name in self.name_to_province:
             return self.name_to_province[name], None
 
         # failed to match, try to get possible locations
         potential_locations = self._get_possible_locations(name)
         if len(potential_locations) > 5:
             raise ValueError(f"The location {name} is ambiguous. Please type out the full name.")
-        elif len(potential_locations) > 1:
+        if len(potential_locations) > 1:
             raise ValueError(
                 f'The location {name} is ambiguous. Possible matches: ' +
                 f'{", ".join([loc[0].name for loc in potential_locations])}.'
             )
-        elif len(potential_locations) == 0:
+        if len(potential_locations) == 0:
             raise ValueError(f"The location {name} does not match any known provinces.")
-        else:
-            return potential_locations[0]
+        return potential_locations[0]
 
     def get_visible_provinces(self, player: Player) -> set[Province]:
         """Gets a set of provinces that a player can see in Fog of War games."""
@@ -527,7 +525,7 @@ class Board:
                 self.turn = new_turn
 
         if "fish" in data:
-            self.fish = data["fish"]
+            self.data["fish"] = int(data["fish"])
 
         # Update player data
         for player_data in data.get("players", []):

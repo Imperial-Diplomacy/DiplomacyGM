@@ -82,7 +82,7 @@ class _DatabaseConnection:
 
     def get_old_board(self, board: Board, turn: Turn) -> Board | None:
         """Finds an older board from that same game"""
-        return self.get_board(board.board_id, turn, board.fish, board.name, board.datafile)
+        return self.get_board(board.board_id, turn, board.data.get("fish", 0), board.data.get("name"), board.datafile)
 
     def get_board(
         self,
@@ -297,8 +297,8 @@ class _DatabaseConnection:
         #  so we don't have to reparse the whole board each time
         board = get_parser(data_file).parse()
         board.turn = Turn(board.year_offset + turn.year, turn.phase, board.year_offset) if year_offset else turn
-        board.fish = fish
-        board.name = name
+        board.data["fish"] = fish
+        board.data["name"] = name
         board.board_id = board_id
 
         board_params = cursor.execute(
@@ -415,7 +415,7 @@ class _DatabaseConnection:
 
         cursor.execute(
             "INSERT INTO boards (board_id, phase, data_file, fish, name) VALUES (?, ?, ?, ?, ?)",
-            (board_id, board.turn.get_indexed_name(), board.datafile, board.fish, board.name),
+            (board_id, board.turn.get_indexed_name(), board.datafile, board.data.get("fish", 0), board.data.get("name")),
         )
         cursor.executemany(
             "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT "

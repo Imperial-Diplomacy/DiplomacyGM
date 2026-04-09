@@ -511,19 +511,7 @@ class Mapper:
             else:
                 core_color = self.player_colors[province.core_data.core.name] if province.core_data.core else "#ffffff"
                 half_color = self.player_colors[province.core_data.half_core.name] if province.core_data.half_core else core_color
-            # color = "#ffffff"
-            # if province.core:
-            #     color = province.core.color
-            # elif province.half_core:
-            #     # TODO: I tried to put "repeating-linear-gradient(white, {province.half_core.color})" here but that
-            #     #  doesn't work. Doing this in SVG requires making a new pattern in defs which means doing a separate
-            #     #  pattern for every single color, which would suck
-            #     #  https://stackoverflow.com/questions/27511153/fill-svg-element-with-a-repeating-linear-gradient-color
-            #     # ...it doesn't have to be stripes, that was just my first idea. We could figure something else out.
-            #     pass
-            # for path in center_element.getchildren():
-            #     print(f"\t{path}")
-            #     self.color_element(path, color)
+
             for elem in center_element:
                 if elem.attrib["id"].startswith("Capital_Marker"):
                     continue

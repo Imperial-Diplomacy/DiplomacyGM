@@ -459,11 +459,10 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             "messages": output,
             "embed_colour": embed_colour,
         }
-    else:
-        return {
-                "title": "**Orders validated successfully.**",
-                "messages": output,
-        }
+    return {
+            "title": "**Orders validated successfully.**",
+            "messages": output,
+    }
 
 def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, Any]:
     """Parses the .remove_order command and removes the specified orders."""
@@ -491,19 +490,19 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
             (board.board_id, board.turn.get_indexed_name(), province),
         )
 
-    if invalid:
-        response = "The following order removals were invalid:"
-        response_colour = ERROR_COLOUR
-        for command in invalid:
-            response += f"\n- {command[0]} - {command[1]}"
-        if updated_units:
-            response += "\nOrders for the following units were removed:"
-            response_colour = PARTIAL_ERROR_COLOUR
-            for unit in updated_units:
-                response += f"\n- {unit.province}"
-        return {"message": response, "embed_colour": response_colour}
-    else:
+    if not invalid:
         return {"message": "Orders removed successfully."}
+    response = "The following order removals were invalid:"
+    response_colour = ERROR_COLOUR
+    for command in invalid:
+        response += f"\n- {command[0]} - {command[1]}"
+    if updated_units:
+        response += "\nOrders for the following units were removed:"
+        response_colour = PARTIAL_ERROR_COLOUR
+        for unit in updated_units:
+            response += f"\n- {unit.province}"
+    return {"message": response, "embed_colour": response_colour}
+        
 
 def _parse_remove_order(command: str, player_restriction: Player | None, board: Board) -> Player | Unit | str:
     command = command.lower().strip()
@@ -527,7 +526,7 @@ def _parse_remove_order(command: str, player_restriction: Player | None, board: 
         remove_relationship_order(board, player_restriction.vassal_orders[target_player], player_restriction)
         return target_player
 
-    elif board.turn.is_builds():
+    if board.turn.is_builds():
         # remove build order
         player = province.owner
         if player is None or (player_restriction is not None and player != player_restriction):
@@ -539,20 +538,20 @@ def _parse_remove_order(command: str, player_restriction: Player | None, board: 
         remove_player_order_for_province(board, player, province)
 
         return province.get_name()
-    else:
-        # remove unit's order
-        # assert that the command user is authorized to order this unit
-        unit = province.unit
-        if (unit is not None
-            and (player_restriction is None or unit.player == player_restriction)):
-            unit.order = None
-            return unit
-        unit = province.dislodged_unit
-        if (unit is not None
-            and (player_restriction is None or unit.player == player_restriction)):
-            unit.order = None
-            return unit
-        raise ValueError(f"You control neither a unit nor a dislodged unit in {province.name}")
+
+    # remove unit's order
+    # assert that the command user is authorized to order this unit
+    unit = province.unit
+    if (unit is not None
+        and (player_restriction is None or unit.player == player_restriction)):
+        unit.order = None
+        return unit
+    unit = province.dislodged_unit
+    if (unit is not None
+        and (player_restriction is None or unit.player == player_restriction)):
+        unit.order = None
+        return unit
+    raise ValueError(f"You control neither a unit nor a dislodged unit in {province.name}")
 
 def remove_player_order_for_province(board: Board, player: Player, province: Province) -> bool:
     """Removes a player order (build/disband/transform) for a province."""

@@ -133,7 +133,7 @@ class PanelDrawer:
         date = find_svg_element(svg, "season", self.board_svg_data)
         if date is None:
             return
-        game_name = self.board.name
+        game_name = self.board.data.get("name")
         name_text = "" if game_name is None else f"{game_name} — "
         # TODO: this is hacky; I don't know a better way
         date[0][0].text = name_text + str(self.board.turn)

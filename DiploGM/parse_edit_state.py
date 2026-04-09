@@ -387,9 +387,11 @@ def _remove_player_vassal(keywords: list[str], board: Board) -> None:
 
 def _set_game_name(parameter_str: str, board: Board) -> None:
     newname = None if parameter_str == "None" else parameter_str
-    board.name = newname
+    board.data["name"] = newname
+    board.custom_data["name"] = newname
     get_connection().execute_arbitrary_sql(
-        "UPDATE boards SET name=? WHERE board_id=?", (newname, board.board_id)
+        "INSERT OR REPLACE INTO board_parameters (board_id, key, value) VALUES (?, ?, ?)",
+        (board.board_id, "name", newname)
     )
 
 
@@ -421,8 +423,8 @@ def _load_state(keywords: list[str], board: Board) -> None:
     other = manager._database.get_board(
         server,
         turn,
-        board.fish,
-        name=board.name,
+        board.data,
+        name=board.data.get("name"),
         data_file=board.datafile,
     )
     if not other:

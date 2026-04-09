@@ -996,7 +996,7 @@ class GameManagementCog(commands.Cog):
         # We draw the board from the DB to apply failed and DP orders that we want to hide from players
         draw_board = manager.get_board_from_db(guild.id, old_turn)
         manager.apply_adjudication_results(guild.id, draw_board)
-        title = (f"{board.name} — " if board.name else "") + f"{old_turn}"
+        title = (f"{board.data.get('name')} — " if board.data.get("name") else "") + f"{old_turn}"
 
         await self._upload_maps(ctx, args, title, draw_board, True)
 

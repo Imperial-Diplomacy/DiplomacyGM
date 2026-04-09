@@ -231,5 +231,4 @@ async def send_message_and_file(
 
     if discord_file is not None:
         return await channel.send(embeds=embeds, file=discord_file)
-    else:
-        return await channel.send(embeds=embeds)
+    return await channel.send(embeds=embeds)

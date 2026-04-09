@@ -1,10 +1,9 @@
 import logging
 import re
-import numpy as np
 from typing import Callable
-
-from shapely.geometry import Point
 from xml.etree.ElementTree import Element, ElementTree
+import numpy as np
+from shapely.geometry import Point
 
 from DiploGM.map_parser.vector.transform import TransGL3
 from DiploGM.models.province import Province
@@ -70,6 +69,7 @@ def get_element_color(element: Element, prefix="fill:") -> str | None:
             if value.startswith("#"):
                 value = value[1:]
             return value
+    return None
 
 def get_unit_coordinates(
     unit_data: Element,

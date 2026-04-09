@@ -178,7 +178,7 @@ class PartyCog(commands.Cog):
             word_of_bumble = "elbmub nesohc eht era uoY"
 
         board = manager.get_board(ctx.guild.id)
-        board.fish -= 1
+        board.data["fish"] -= 1
         await send_message_and_file(channel=ctx.channel, title=word_of_bumble)
 
     @commands.command(hidden=True)
@@ -429,12 +429,12 @@ class PartyCog(commands.Cog):
                 ":sloth:",
                 ":hippopotamus:",
             ]
-            board.fish += 10
+            board.data["fish"] += 10
             board.fish_pop["fish_pop"] -= 10
             fish_message = f"**Caught a rare fish!** {random.choice(rare_fish_options)}"
         elif fish_num < 16:
             fish_num = (fish_num + 1) // 2
-            board.fish += fish_num
+            board.data["fish"] += fish_num
             board.fish_pop["fish_pop"] -= fish_num
             fish_emoji_options = [
                 ":fish:",
@@ -460,17 +460,22 @@ class PartyCog(commands.Cog):
                     # Bumbles that lose fish lose a lot of them
                     fish_num *= random.randrange(3, 10)
 
-            board.fish -= fish_num
+            board.data["fish"] -= fish_num
             board.fish_pop["fish_pop"] += fish_num
-            fish_kind = "captured" if board.fish >= 0 else "future"
+            fish_kind = "captured" if board.data["fish"] >= 0 else "future"
             fish_message = f"Accidentally let {fish_num} {fish_kind} fish sneak away :("
         else:
             fish_message = "You find nothing but barren water and overfished seas, maybe let the population recover?"
-        fish_message += f"\nIn total, {board.fish} fish have been caught!"
+        fish_message += f"\nIn total, {board.data['fish']} fish have been caught!"
+        # TODO: Next patch, finihs migrating fish to parameters and remove it from the board SQL
         if random.randrange(0, 5) == 0:
             get_connection().execute_arbitrary_sql(
                 """UPDATE boards SET fish=? WHERE board_id=? AND phase=?""",
-                (board.fish, board.board_id, board.turn.get_indexed_name()),
+                (board.data["fish"], board.board_id, board.turn.get_indexed_name()),
+            )
+            get_connection().execute_arbitrary_sql(
+                """INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)""",
+                (board.board_id, "fish", board.data["fish"]),
             )
 
         if debumblify:
@@ -503,7 +508,7 @@ class PartyCog(commands.Cog):
 
         assert ctx.guild is not None
         sorted_boards = sorted(
-            manager._boards.items(), key=lambda board: board[1].fish, reverse=True
+            manager._boards.items(), key=lambda board: board[1].data.get("fish", 0), reverse=True
         )
         raw_boards = tuple(map(lambda b: b[1], sorted_boards))
         try:
@@ -517,16 +522,16 @@ class PartyCog(commands.Cog):
         else:
             index = "NaN"
 
-        max_fishes = len(str(sorted_boards[0][1].fish))
+        max_fishes = len(str(sorted_boards[0][1].data.get("fish", 0)))
 
         for i, board in enumerate(sorted_boards):
             bold = "**" if this_board == board[1] else ""
             guild = ctx.bot.get_guild(board[0])
             if guild:
-                text += f"\\#{i + 1: >{len(index)}} | {board[1].fish: <{max_fishes}} | {bold}{guild.name}{bold}\n"
+                text += f"\\#{i + 1: >{len(index)}} | {board[1].data.get('fish', 0): <{max_fishes}} | {bold}{guild.name}{bold}\n"
         if this_board is not None and this_board not in raw_boards[:9]:
             text += (
-                f"\n\\#{index} | {this_board.fish: <{max_fishes}} | {ctx.guild.name}"
+                f"\n\\#{index} | {this_board.data.get('fish', 0): <{max_fishes}} | {ctx.guild.name}"
             )
 
         await send_message_and_file(

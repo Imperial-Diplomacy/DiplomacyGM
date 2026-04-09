@@ -105,8 +105,8 @@ class CommandCog(commands.Cog):
         old_board = manager._database.get_board(
             board.board_id,
             parse_season(["Fall"], board.turn.get_previous_turn()),
-            board.fish,
-            board.name,
+            board.data.get("fish", 0),
+            board.data.get("name"),
             board.datafile,
         )
         player_list = (

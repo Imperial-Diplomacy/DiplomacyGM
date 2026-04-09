@@ -1,8 +1,8 @@
 """Module to draw orders (moves, support, etc.) on the map."""
 from __future__ import annotations
-import numpy as np
 from typing import TYPE_CHECKING, Any
 from xml.etree.ElementTree import ElementTree
+import numpy as np
 
 from DiploGM.db.database import logger
 from DiploGM.models.order import (
