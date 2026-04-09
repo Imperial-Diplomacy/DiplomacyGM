@@ -100,64 +100,62 @@ async def send_message_and_file(
         messages = [message]
 
     embeds = []
-    if messages:
-        while messages:
-            message = messages.pop()
-            while message:
-                cutoff = -1
-                if len(message) <= DISCORD_EMBED_DESCRIPTION_LIMIT:
-                    cutoff = len(message)
-                # Try to find an even line break to split the long messages on
-                if cutoff == -1:
-                    cutoff = message.rfind("\n", 0, DISCORD_EMBED_DESCRIPTION_LIMIT)
-                if cutoff == -1:
-                    cutoff = message.rfind(" ", 0, DISCORD_EMBED_DESCRIPTION_LIMIT)
-                # otherwise split at limit
-                if cutoff == -1:
-                    cutoff = DISCORD_EMBED_DESCRIPTION_LIMIT
+    while messages:
+        message = messages.pop()
+        while message:
+            cutoff = -1
+            if len(message) <= DISCORD_EMBED_DESCRIPTION_LIMIT:
+                cutoff = len(message)
+            # Try to find an even line break to split the long messages on
+            if cutoff == -1:
+                cutoff = message.rfind("\n", 0, DISCORD_EMBED_DESCRIPTION_LIMIT)
+            if cutoff == -1:
+                cutoff = message.rfind(" ", 0, DISCORD_EMBED_DESCRIPTION_LIMIT)
+            # otherwise split at limit
+            if cutoff == -1:
+                cutoff = DISCORD_EMBED_DESCRIPTION_LIMIT
 
-                embed = Embed(
-                    title=title,
-                    description=message[:cutoff],
-                    colour=Colour.from_str(embed_colour),
-                )
-                # ensure only first embed has title
-                title = None
+            embed = Embed(
+                title=title,
+                description=message[:cutoff],
+                colour=Colour.from_str(embed_colour),
+            )
+            # ensure only first embed has title
+            title = None
 
-                # check that embed totals aren't over the total message embed character limit.
-                if (
-                    sum(map(len, embeds)) + len(embed) > DISCORD_EMBED_TOTAL_LIMIT
-                    or len(embeds) == 10
-                ):
-                    await channel.send(embeds=embeds)
-                    embeds = []
+            # check that embed totals aren't over the total message embed character limit.
+            if (
+                sum(map(len, embeds)) + len(embed) > DISCORD_EMBED_TOTAL_LIMIT
+                or len(embeds) == 10
+            ):
+                await channel.send(embeds=embeds)
+                embeds = []
 
-                embeds.append(embed)
+            embeds.append(embed)
 
-                message = message[cutoff:].strip()
+            message = message[cutoff:].strip()
 
     if not embeds:
         embeds = [Embed(title=title, colour=Colour.from_str(embed_colour))]
         title = ""
 
-    if fields:
-        for field in fields:
-            if (
-                len(embeds[-1].fields) == 25
-                or sum(map(len, embeds)) + sum(map(len, field))
-                > DISCORD_EMBED_TOTAL_LIMIT
-                or len(embeds) == 10
-            ):
-                await channel.send(embeds=embeds)
-                embeds = [
-                    Embed(
-                        title=title,
-                        colour=Colour.from_str(embed_colour),
-                    )
-                ]
-                title = ""
+    for field in fields or []:
+        if (
+            len(embeds[-1].fields) == 25
+            or sum(map(len, embeds)) + sum(map(len, field))
+            > DISCORD_EMBED_TOTAL_LIMIT
+            or len(embeds) == 10
+        ):
+            await channel.send(embeds=embeds)
+            embeds = [
+                Embed(
+                    title=title,
+                    colour=Colour.from_str(embed_colour),
+                )
+            ]
+            title = ""
 
-            embeds[-1].add_field(name=field[0], value=field[1], inline=True)
+        embeds[-1].add_field(name=field[0], value=field[1], inline=True)
 
     discord_file = None
     if file is not None and file_name is not None:

@@ -85,7 +85,7 @@ class TreeToOrder(Transformer):
         """Transform order, of the form [Unit] Transform [Coast?]."""
         if self.transform_options not in ["moves", "all"]:
             raise ValueError("Transforming during moves is disabled in this gamemode")
-        return unit, order.Transform(coast)
+        return unit, order.Transform(destination_coast=coast)
 
     def dp_order(self, _, points: str, dp_order: tuple[Unit, order.UnitOrder]) -> tuple[Unit, None]:
         """DP allocation order, of the form DP [Points] [Unit Order]."""
@@ -274,15 +274,15 @@ class TreeToOrder(Transformer):
                      province: Province, _,
                      destination: tuple[Province, str | None]) -> tuple[Province, order.Move]:
         """Move order, of the form [Province] Move [Destination]."""
-        return province, order.Move(destination[0], destination[1])
+        return province, order.Move(destination=destination[0], destination_coast=destination[1])
 
     def move_order(self, unit: Unit, _, destination: tuple[Province, str | None]) -> tuple[Unit, order.Move]:
         """Move order, of the form [Unit] Move [Destination]."""
-        return unit, order.Move(destination[0], destination[1])
+        return unit, order.Move(destination=destination[0], destination_coast=destination[1])
 
     def convoy_order(self, unit: Unit, _, move: tuple[Province, order.Move]) -> tuple[Unit, order.ConvoyTransport]:
         """Convoy order, of the form [Unit] Convoy [Move]."""
-        return unit, order.ConvoyTransport(move[0], move[1].destination)
+        return unit, order.ConvoyTransport(source=move[0], destination=move[1].destination)
 
     def support_order(self,
                       unit: Unit, _,
@@ -296,14 +296,16 @@ class TreeToOrder(Transformer):
             unit_order = target[1]
 
         if isinstance(unit_order, order.Move):
-            return unit, order.Support(loc, unit_order.destination, unit_order.destination_coast)
+            return unit, order.Support(source=loc,
+                                       destination=unit_order.destination,
+                                       destination_coast=unit_order.destination_coast)
         if isinstance(unit_order, order.Hold):
-            return unit, order.Support(loc, loc)
+            return unit, order.Support(source=loc, destination=loc)
         raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 
     def retreat_order(self, unit: Unit, _, destination: tuple[Province, str | None]) -> tuple[Unit, order.RetreatMove]:
         """Retreat order, of the form [Unit] Retreat [Destination]."""
-        return unit, order.RetreatMove(destination[0], destination[1])
+        return unit, order.RetreatMove(destination=destination[0], destination_coast=destination[1])
 
     def disband_order(self, unit: Unit, _) -> tuple[Unit, order.RetreatDisband]:
         """Disband order, of the form [Unit] Disband."""

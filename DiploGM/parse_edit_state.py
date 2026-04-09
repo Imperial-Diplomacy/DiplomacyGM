@@ -394,59 +394,6 @@ def _set_game_name(parameter_str: str, board: Board) -> None:
         (board.board_id, "name", newname)
     )
 
-
-# FIXME: issues with board structure (board_id/phase is tied everywhere)
-# need a custom way to deepcopy to avoid recursion limits
-def _load_state(keywords: list[str], board: Board) -> None:
-    raise NotImplementedError()
-
-    curr_board_id = copy.deepcopy(board.board_id)
-
-    logger.error(keywords)
-    server = int(keywords[0])
-    turn = parse_season(keywords[1:], board.turn)
-
-    year = int(keywords[2])
-    epoch_year = board.data["year"] - turn.year
-
-    if other := manager._boards.get(server, None):
-        if other.datafile != board.datafile:
-            raise ValueError(
-                f"This game state does not share the same datafile as your game: '{other.datafile}' vs. '{board.datafile}'"
-            )
-        else:
-            # trailing elses are pain
-            pass
-    else:
-        raise ValueError(f"Could not find any game state for this server: '{server}'")
-
-    other = manager._database.get_board(
-        server,
-        turn,
-        board.data,
-        name=board.data.get("name"),
-        data_file=board.datafile,
-    )
-    if not other:
-        raise KeyError(
-            f"Could not find a board for server '{server}' in phase: {turn}"
-        )
-
-    new_board = Board(
-        other.players,
-        other.provinces,
-        other.units,
-        other.turn,
-        other.data,
-        other.datafile,
-    )
-    new_board.board_id = curr_board_id
-
-    manager._boards[curr_board_id] = new_board
-    manager._database.delete_board(board)
-    manager._database.save_board(curr_board_id, new_board)
-
-
 def _apocalypse(keywords: list[str], board: Board) -> None:
     """
     Keywords:

@@ -53,10 +53,8 @@ class Board:
 
         # store as lower case for user input purposes
         self.name_to_player: Dict[str, Player] = {player.name.lower(): player for player in self.players}
-        # remove periods and apostrophes
-        cleaned_names: Dict[str, Player] = {sanitise_name(player.name.lower()): player for player in self.players}
-        simple_names: Dict[str, Player] = {simple_player_name(player.name): player for player in self.players}
-        self.name_to_player = self.name_to_player | cleaned_names | simple_names
+        self.name_to_player |= {sanitise_name(player.name.lower()): player for player in self.players}
+        self.name_to_player |= {simple_player_name(player.name): player for player in self.players}
         self.name_to_province: Dict[str, Province] = {}
         self.name_to_coast: Dict[str, tuple[Province, str | None]] = {}
         for location in self.provinces:
@@ -467,110 +465,13 @@ class Board:
             source_province = self.get_province(source)
         if order_class == NMR:
             return None
-        if order_class in [Hold, Core, RetreatDisband]:
-            return order_class()
-        if order_class in [Transform]:
-            return order_class(destination_coast=destination_coast)
-        if order_class in [Move, RetreatMove]:
-            return order_class(destination=destination_province, destination_coast=destination_coast)
-        if order_class in [ConvoyTransport]:
-            if destination_province is None or source_province is None:
-                raise ValueError("Invalid source or destination for ConvoyTransport order")
-            return order_class(destination=destination_province, source=source_province)
-        if order_class in [Support]:
-            if destination_province is None or source_province is None:
-                raise ValueError("Invalid source or destination for Support order")
+        if order_class in order_classes:
             return order_class(
-                destination=destination_province, source=source_province, destination_coast=destination_coast
+                source=source_province,
+                destination=destination_province,
+                destination_coast=destination_coast
             )
         raise ValueError(f"Could not parse {order_class}")
-
-    def import_game(self, data: dict) -> str:
-        """Applies a game state from an export JSON dict or string."""\
-
-        def parse_unit(province: Province, unit_data: dict, is_dislodged: bool = False) -> None:
-            retreat_options = ({self.get_province_and_coast(loc)
-                                for loc in unit_data.get("retreat_options", [])}
-                                if is_dislodged else None)
-            unit = self.create_unit(UnitType(unit_data["type"]),
-                                    self.get_player(unit_data.get("owner", "None")),
-                                    province,
-                                    unit_data.get("coast"),
-                                    retreat_options)
-            if "order" in unit_data:
-                order_data = unit_data["order"]
-                try:
-                    unit.order = self.parse_order(order_data["type"],
-                                                    order_data.get("destination"),
-                                                    order_data.get("source"))
-                except (ValueError, KeyError) as e:
-                    logger.warning("Could not parse order for %s: %s", province.name, e)
-            for player_name, dp_data in unit_data.get("dp_allocations", {}).items():
-                try:
-                    dp_order = self.parse_order(dp_data["order"]["type"],
-                                                dp_data["order"].get("destination"),
-                                                dp_data["order"].get("source"))
-                    if dp_order is not None:
-                        unit.dp_allocations[player_name] = DPAllocation(dp_data["points"], dp_order)
-                except (ValueError, KeyError) as e:
-                    logger.warning("Could not parse DP order for %s: %s", province.name, e)
-
-        if "turn" in data:
-            new_turn = Turn.turn_from_string(data["turn"])
-            if new_turn is not None:
-                self.turn = new_turn
-
-        if "fish" in data:
-            self.data["fish"] = int(data["fish"])
-
-        # Update player data
-        for player_data in data.get("players", []):
-            if player_data["name"].lower() not in self.name_to_player:
-                self.add_new_player(player_data["name"], player_data.get("color", "00FF00"))
-            player = self.get_player(player_data["name"])
-            if player is None:
-                continue
-            player.render_color = player_data.get("color", player.render_color)
-            player.is_active = player_data.get("is_active", player.is_active)
-
-        # Clear all units
-        self.delete_all_units()
-        self.delete_dislodged_units()
-
-        # Apply province data
-        province_data_by_name = {p["name"]: p for p in data.get("provinces", [])}
-        for province in self.provinces:
-            if province.name not in province_data_by_name:
-                continue
-            pdata = province_data_by_name[province.name]
-
-            # Impassable
-            if pdata.get("is_impassable", False) is True:
-                province.is_impassable = True
-
-            # Owner
-            if (owner_name := pdata.get("owner")) is not None:
-                self.change_owner(province, self.get_player(owner_name))
-            if (core_power := pdata.get("core")) is not None:
-                province.core_data.core = self.get_player(core_power)
-            if (half_core_power := pdata.get("half_core")) is not None:
-                province.core_data.half_core = self.get_player(half_core_power)
-
-            # Unit
-            if "unit" in pdata:
-                parse_unit(province, pdata["unit"])
-
-            # Dislodged unit
-            if "dislodged_unit" in pdata:
-                parse_unit(province, pdata["dislodged_unit"], is_dislodged=True)
-
-        # Apply custom parameters
-        if "parameters" in data:
-            for key, value in data["parameters"].items():
-                self.data[key] = value
-            self.custom_data = data["parameters"]
-
-        return "Successfully imported board."
 
     def export_game(self) -> str:
         """Returns a JSON string representing the current game state."""
@@ -641,12 +542,12 @@ class Board:
         export = {
             "turn": str(self.turn),
             "datafile": self.datafile,
-            "fish": self.fish,
+            "fish": self.data.get("fish", 0),
             "players": players,
             "provinces": provinces,
             "parameters": params,
         }
-        if self.name:
-            export["name"] = self.name
+        if self.data.get("name"):
+            export["name"] = self.data["name"]
 
         return json.dumps(export, indent=2)

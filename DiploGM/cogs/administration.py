@@ -277,7 +277,7 @@ class AdminCog(commands.Cog):
         file, _ = manager.draw_map(
             server_id,
             draw_moves=True,
-            turn=season,
+            args={"turn": season},
         )
         await upload_map_to_archive(ctx, server_id, board, file, season)
 

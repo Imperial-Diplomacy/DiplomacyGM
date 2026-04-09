@@ -639,6 +639,6 @@ class Mapper:
             for loc in new_locs:
                 root.append(
                     self.order_drawer.draw_retreat_move(
-                        None, RetreatMove(retreat_province, retreat_coast), unit.unit_type, loc
+                        None, RetreatMove(destination=retreat_province, destination_coast=retreat_coast), unit.unit_type, loc
                     )
                 )

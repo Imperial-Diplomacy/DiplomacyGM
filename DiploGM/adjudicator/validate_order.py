@@ -155,7 +155,7 @@ def _validate_convoy_order(province: Province, order: ConvoyTransport) -> tuple[
     if not isinstance(source_unit.order, Move) or source_unit.order.destination != order.destination:
         return OrderValidity.MISMATCHED_ORDER, f"Convoyed unit {order.source} did not make corresponding order"
     valid_move, reason = order_is_valid(
-        order.source, Move(order.destination), strict_coast_movement=False
+        order.source, Move(destination=order.destination), strict_coast_movement=False
     )
     if not is_valid_result(valid_move):
         return valid_move, reason
@@ -170,7 +170,7 @@ def _validate_support_order(province: Province, order: Support) -> tuple[OrderVa
     if not isinstance(source_unit, Unit):
         return OrderValidity.INVALID, "There is no unit to support"
 
-    move_valid, _ = order_is_valid(province, Move(order.destination), strict_coast_movement=False)
+    move_valid, _ = order_is_valid(province, Move(destination=order.destination), strict_coast_movement=False)
     if move_valid != OrderValidity.VALID:
         return OrderValidity.INVALID, "Cannot support somewhere you can't move to"
     if order.destination.name in province.adjacency_data.difficult_adjacencies:
@@ -179,7 +179,7 @@ def _validate_support_order(province: Province, order: Support) -> tuple[OrderVa
     is_support_hold = order.source == order.destination
     source_to_destination_valid = (
         is_support_hold
-        or is_valid_result(order_is_valid(order.source, Move(order.destination), strict_coast_movement=False))
+        or is_valid_result(order_is_valid(order.source, Move(destination=order.destination), strict_coast_movement=False))
     )
 
     if not source_to_destination_valid:

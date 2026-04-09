@@ -143,3 +143,10 @@ def parse_variant_path(variant: str, as_filename: bool = True, return_parent: bo
 def remove_prefix(ctx: commands.Context) -> str:
     """Removes the command prefix from the message content."""
     return ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").strip()
+
+def get_colour_option(board, args) -> str | None:
+    """Gets the colour option from the arguments, defaulting to None."""
+    color_options = board.data["svg config"].get("color_options", {"standard"})
+    if (color_arguments := list(set(color_options) & set(args))):
+        return color_arguments[0]
+    return None

@@ -73,9 +73,9 @@ SUPERUSERS = all_config["permissions"]["superusers"]
 EXTENSIONS_TO_LOAD_ON_STARTUP = all_config["extensions"]["load_on_startup"]
 
 # COLOURS
-EMBED_STANDARD_COLOUR = all_config["colours"]["embed_standard"]
-PARTIAL_ERROR_COLOUR = all_config["colours"]["embed_partial_success"]
-ERROR_COLOUR = all_config["colours"]["embed_error"]
+EMBED_STANDARD_COLOUR: str = all_config["colours"]["embed_standard"]
+PARTIAL_ERROR_COLOUR: str = all_config["colours"]["embed_partial_success"]
+ERROR_COLOUR: str = all_config["colours"]["embed_error"]
 
 # INKSCAPE
 SIMULATRANEOUS_SVG_EXPORT_LIMIT = all_config["inkscape"]["simultaneous_svg_exports_limit"]

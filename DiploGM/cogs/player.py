@@ -9,7 +9,7 @@ from DiploGM import perms
 from DiploGM.db.database import get_connection
 from DiploGM.parse_order import parse_order, parse_remove_order
 from DiploGM.utils import get_orders, log_command, parse_season, send_message_and_file
-from DiploGM.utils.sanitise import remove_prefix
+from DiploGM.utils.sanitise import get_colour_option, remove_prefix
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
 from DiploGM.models.player import ForcedDisbandOption, Player, ViewOrdersTags, OrdersSubsetOption
 from DiploGM.utils.send_message import ErrorMessage, send_error, send_orders_locked_error
@@ -192,14 +192,12 @@ class PlayerCog(commands.Cog):
         arguments = remove_prefix(ctx).lower().split()
         convert_svg = (player is not None) or not (
             {"true", "t", "svg", "s"} & set(arguments)
-        )
+        )   
         board = manager.get_board(ctx.guild.id)
-        color_options = set(board.data["svg config"].get("color_options", {"standard"}))
-        color_options.add("custom")
-        color_arguments = list(color_options & set(arguments))
-        color_mode = color_arguments[0] if color_arguments else None
-        movement_only = "movement" in arguments
-        turn = parse_season(arguments, board.turn)
+        args = {"color_mode": get_colour_option(board, arguments),
+                "movement_only": "movement" in arguments,
+                "turn": parse_season(arguments, board.turn),
+                "is_severance": ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]}
 
         if player and show_moves and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
@@ -212,18 +210,15 @@ class PlayerCog(commands.Cog):
                     ctx.guild.id,
                     draw_moves = show_moves,
                     player_restriction = player,
-                    color_mode = color_mode,
-                    turn = turn,
-                    movement_only = movement_only and show_moves,
-                    is_severance = ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID],
+                    args = args,
                 )
             elif show_moves:
                 file, file_name = manager.draw_fow_players_moves_map(
-                    ctx.guild.id, player, color_mode
+                    ctx.guild.id, player, args=args
                 )
             else:
                 file, file_name = manager.draw_fow_current_map(
-                    ctx.guild.id, player, color_mode
+                    ctx.guild.id, player, args=args
                 )
         except Exception as err:
             logger.error(err, exc_info=True)
@@ -244,11 +239,11 @@ class PlayerCog(commands.Cog):
         log_command(
             logger,
             ctx,
-            message=f"Generated {'moves' if show_moves else 'current'} map for {turn}",
+            message=f"Generated {'moves' if show_moves else 'current'} map for {args.get('turn', board.turn)}",
         )
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{turn} {'Orders' if show_moves else 'Current'} Map",
+            title=f"{args.get('turn', board.turn)} {'Orders' if show_moves else 'Current'} Map",
             message=message,
             file=file,
             file_name=file_name,
@@ -299,9 +294,7 @@ class PlayerCog(commands.Cog):
         assert ctx.guild is not None
         arguments = remove_prefix(ctx).lower().split()
         board = manager.get_board(ctx.guild.id)
-        color_options = board.data["svg config"].get("color_options", {"standard"})
-        color_arguments = list(set(color_options) & set(arguments))
-        color_mode = color_arguments[0] if color_arguments else None
+        color_mode = get_colour_option(board, arguments)
 
         if player and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")

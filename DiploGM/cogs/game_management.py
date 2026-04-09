@@ -28,6 +28,7 @@ from DiploGM.parse_board_params import parse_board_params
 from DiploGM import perms
 from DiploGM.utils import (
     get_orders,
+    import_game,
     log_command,
     send_message_and_file,
     upload_map_to_archive,
@@ -38,7 +39,7 @@ from DiploGM.models.extension import ExtensionEvent, SQLiteExtensionEventReposit
 from DiploGM.models.order import Disband, Build
 from DiploGM.models.player import Player
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
-from DiploGM.utils.sanitise import remove_prefix, sanitise_name
+from DiploGM.utils.sanitise import get_colour_option, remove_prefix, sanitise_name
 from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
@@ -168,7 +169,7 @@ class GameManagementCog(commands.Cog):
             await send_message_and_file(channel=ctx.channel, message=message)
             return
         board = manager.get_board(ctx.guild.id)
-        message = board.import_game(decoded_file)
+        message = import_game.import_game(board, decoded_file)
         get_connection().save_board(ctx.guild.id, board)
         log_command(logger, ctx, message=message)
         await send_message_and_file(channel=ctx.channel, message=message)
@@ -866,7 +867,7 @@ class GameManagementCog(commands.Cog):
         file, file_name = manager.draw_map_for_board(
             board,
             draw_moves=is_orders,
-            color_mode=args["color"],
+            args={"color": args["color"]},
         )
         converted_file: bytes | None = None
         converted_file_name: str | None = None
@@ -961,11 +962,10 @@ class GameManagementCog(commands.Cog):
         assert guild is not None
 
         board = manager.get_board(guild.id)
-        color_options = board.data["svg config"].get("color_options", {"standard"})
 
         arguments = remove_prefix(ctx).lower().split()
         args = {"return_svg": not ({"true", "t", "svg", "s"} & set(arguments)),
-                "color": (list(set(color_options) & set(arguments)) + [None])[0],
+                "color": get_colour_option(board, arguments),
                 "test": "test" in arguments,
                 "full": "full" in arguments and not "test" in arguments,
                 "movement": "movement" in arguments,
@@ -1004,8 +1004,7 @@ class GameManagementCog(commands.Cog):
             file, file_name = manager.draw_map_for_board(
                 draw_board,
                 draw_moves=True,
-                color_mode=args["color"],
-                movement_only=True,
+                args={"color": args["color"], "movement_only": True},
             )
             await send_message_and_file(
                 channel=ctx.channel,

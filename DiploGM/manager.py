@@ -265,10 +265,7 @@ class Manager(metaclass=SingletonMeta):
         server_id: int,
         draw_moves: bool = False,
         player_restriction: Player | None = None,
-        color_mode: str | None = None,
-        turn: Turn | None = None,
-        movement_only: bool = False,
-        is_severance: bool = False,
+        args: dict = {},
     ) -> tuple[bytes, str]:
         """Gets the map for a server.
         draw_moves: whether to draw the moves on the map
@@ -277,7 +274,7 @@ class Manager(metaclass=SingletonMeta):
         turn: whether to draw the map for a previous turn (defaults to current turn)
         movement_only: whether to only draw succcessful moves (used mainly for Carnage)"""
         cur_board = self.get_board(server_id)
-        if turn is None:
+        if (turn := args.get("turn")) is None:
             board = cur_board
         else:
             board = self._database.get_board(
@@ -296,7 +293,7 @@ class Manager(metaclass=SingletonMeta):
                 or (board.turn.year == cur_board.turn.year
                     and board.turn.phase.value < cur_board.turn.phase.value)
             ):
-                if is_severance:
+                if (is_severance := args.get("is_severance")):
                     board = cur_board
                 else:
                     player_restriction = None
@@ -304,8 +301,7 @@ class Manager(metaclass=SingletonMeta):
             board,
             player_restriction=player_restriction,
             draw_moves=draw_moves,
-            color_mode=color_mode,
-            movement_only=movement_only,
+            args=args,
         )
         return svg, file_name
 
@@ -314,20 +310,19 @@ class Manager(metaclass=SingletonMeta):
         board: Board,
         player_restriction: Player | None = None,
         draw_moves: bool = False,
-        color_mode: str | None = None,
-        movement_only: bool = False,
+        args: dict = {},
     ) -> tuple[bytes, str]:
         """Gets the current map for a board."""
         start = time.time()
 
         if draw_moves:
-            svg, file_name = Mapper(board, color_mode=color_mode).draw_moves_map(
+            svg, file_name = Mapper(board, color_mode=args.get("color_mode")).draw_moves_map(
                 board.turn,
                 player_restriction=player_restriction,
-                movement_only=movement_only,
+                movement_only=args.get("movement_only", False),
             )
         else:
-            svg, file_name = Mapper(board, color_mode=color_mode).draw_current_map()
+            svg, file_name = Mapper(board, color_mode=args.get("color_mode")).draw_current_map()
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_map_for_board took {elapsed}s")
@@ -366,14 +361,14 @@ class Manager(metaclass=SingletonMeta):
         self,
         server_id: int,
         player_restriction: Player | None,
-        color_mode: str | None = None,
+        args: dict = {},
     ) -> tuple[bytes, str]:
         """Draws the current map for a board with fog of war.
         Should probably be updated."""
         start = time.time()
 
         svg, file_name = Mapper(
-            self._boards[server_id], player_restriction, color_mode
+            self._boards[server_id], player_restriction, args.get("color_mode")
         ).draw_current_map()
 
         elapsed = time.time() - start
@@ -384,7 +379,7 @@ class Manager(metaclass=SingletonMeta):
         self,
         server_id: int,
         player_restriction: Player | None,
-        color_mode: str | None = None,
+        args: dict = {},
     ) -> tuple[bytes, str]:
         """Draws the moves map for a board with fog of war for a specific player.
         Should probably be updated."""
@@ -392,7 +387,7 @@ class Manager(metaclass=SingletonMeta):
 
         if player_restriction:
             svg, file_name = Mapper(
-                self._boards[server_id], player_restriction, color_mode=color_mode
+                self._boards[server_id], player_restriction, args.get("color_mode")
             ).draw_moves_map(self._boards[server_id].turn, player_restriction)
         else:
             svg, file_name = Mapper(self._boards[server_id], None).draw_moves_map(
