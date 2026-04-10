@@ -144,6 +144,8 @@ class Parser:
                                  layer_name, etree.tostring(element, encoding='unicode')[:120])
                     is_valid = False
                     continue
+                if name == "Capital Marker":
+                    continue
 
                 name = re.sub(r" \(?[ensw]c\)?$", "", name)  # Remove coast names
                 if name not in seen_names:
@@ -439,6 +441,8 @@ class Parser:
     def _initialize_supply_centers_assisted(self) -> None:
         for center_data in self.layer_data["supply_center_icons"]:
             name = self.get_province_name(center_data)
+            if name == "Capital Marker":
+                continue
             province = self.name_to_province[name]
 
             if province.has_supply_center:

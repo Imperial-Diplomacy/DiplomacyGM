@@ -436,13 +436,13 @@ class Mapper:
         island_layer = find_svg_element(self.board_svg, "island_borders", self.board_svg_data)
         if sea_layer is None or province_layer is None:
             raise ValueError("Missing a layer in SVG!")
-        island_fill_layer = island_fill_layer or []
-        island_layer = island_layer or []
-        island_ring_layer = island_ring_layer or []
+        island_fill_layer = island_fill_layer if island_fill_layer is not None else []
+        island_layer = island_layer if island_layer is not None else []
+        island_ring_layer = island_ring_layer if island_ring_layer is not None else []
 
         visited_provinces: set[str] = set()
 
-        for province_element in itertools.chain(province_layer or [], island_fill_layer or []):
+        for province_element in itertools.chain(province_layer, island_fill_layer):
             try:
                 province = self._get_province_from_element_by_label(province_element)
             except ValueError as ex:
@@ -494,6 +494,14 @@ class Mapper:
         if centers_layer is None:
             raise ValueError("Supply Center layer not found in SVG")
 
+        capital_provinces = {self.board.data["players"][player_name]["capital"]
+                             for player_name in self.board.data["players"]
+                             if "capital" in self.board.data["players"][player_name]}
+        capital_marker = centers_layer.find('*[@inkscape:label="Capital Marker"]',
+            namespaces={"inkscape": "http://www.inkscape.org/namespaces/inkscape"})
+        if capital_marker is not None:
+            capital_marker.set("transform", "")
+
         for center_element in centers_layer:
             try:
                 province = self._get_province_from_element_by_label(center_element)
@@ -512,22 +520,20 @@ class Mapper:
                 core_color = self.player_colors[province.core_data.core.name] if province.core_data.core else "#ffffff"
                 half_color = self.player_colors[province.core_data.half_core.name] if province.core_data.half_core else core_color
 
+            corename = "None" if not province.core_data.core else province.core_data.core.name
+            halfname = "None" if not province.core_data.half_core else province.core_data.half_core.name
+            element_color = f"url(#{halfname}_{corename})" if half_color != core_color else core_color
+
             for elem in center_element:
-                if elem.attrib["id"].startswith("Capital_Marker"):
-                    continue
-                if (f"{NAMESPACE['inkscape']}label" in elem.attrib
-                      and elem.attrib[f"{NAMESPACE['inkscape']}label"] in ["Halfcore Marker", "Core Marker"]):
-                    # Handling capitals is easy bc it's all marked
-                    if elem.attrib[f"{NAMESPACE['inkscape']}label"] == "Halfcore Marker":
-                        self.utils.color_element(elem, half_color)
-                    elif elem.attrib[f"{NAMESPACE['inkscape']}label"] == "Core Marker":
-                        self.utils.color_element(elem, core_color)
-                elif half_color != core_color:
-                    corename = "None" if not province.core_data.core else province.core_data.core.name
-                    halfname = "None" if not province.core_data.half_core else province.core_data.half_core.name
-                    self.utils.color_element(elem, f"url(#{halfname}_{corename})")
-                else:
-                    self.utils.color_element(elem, core_color)
+                self.utils.color_element(elem, element_color)
+            if province.name in capital_provinces and capital_marker is not None:
+                capital_copy = copy.deepcopy(capital_marker)
+                for elem in capital_copy:
+                    if get_element_color(elem) != "000000":
+                        self.utils.color_element(elem, element_color)
+                center_element.append(capital_copy)
+        if capital_marker is not None:
+            centers_layer.remove(capital_marker)
 
     def _get_province_from_element_by_label(self, element: Element) -> Province:
         province_name = element.get(f"{NAMESPACE['inkscape']}label")

@@ -524,7 +524,6 @@ function_list = {
     "remove relationship": _remove_player_vassal,
     "set game name": _set_game_name,
     "delete player": _delete_player,
-    "load state": _load_state,
     "bulk create units": _bulk_create_units,
     "apocalypse": _apocalypse,
     "set player points": _set_player_points

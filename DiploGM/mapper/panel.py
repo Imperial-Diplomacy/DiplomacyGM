@@ -112,7 +112,7 @@ class PanelDrawer:
         if all_power_banners_element is None:
             return
 
-        if self.board.fow and self.restriction is not None:
+        if self.board.data.get("fow", "disabled") == "enabled" and self.restriction is not None:
             # don't get info
             players = sorted(self.board.get_players(), key=lambda sort_player: sort_player.name)
         else:
