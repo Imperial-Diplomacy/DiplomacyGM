@@ -138,6 +138,15 @@ def _set_vscc(keywords: list[str], board: Board) -> tuple[str | None, str | None
     board.custom_data.setdefault("players", {}).setdefault(player.name, {})["vscc"] = new_vscc
     return key_name, new_vscc
 
+def _set_capital(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+    player_name, new_capital = (keywords[0].lower(), keywords[1])
+    if not (player := board.get_player(player_name)):
+        raise ValueError(f"{player_name} was not found in the board")
+    key_name = f"players/{player.name}/capital"
+    board.get_province(new_capital)
+    board.data["players"][player.name]["capital"] = new_capital
+    return key_name, new_capital
+
 def _set_player_name(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     player_name, new_name = (keywords[0].lower(), ' '.join(keywords[1:]))
     if not (player := board.get_player(player_name)):
@@ -186,6 +195,7 @@ function_list = {
     "victory count": _set_victory_count,
     "iscc": _set_iscc,
     "vscc": _set_vscc,
+    "capital": _set_capital,
     "player name": _set_player_name,
     "hide player": _hide_player,
     "add player": _add_player
