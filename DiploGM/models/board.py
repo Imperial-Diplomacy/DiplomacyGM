@@ -413,35 +413,6 @@ class Board:
         """Checks to see if this is a Chaos game."""
         return self.data["players"] == "chaos"
 
-    def get_player_by_channel(
-            self,
-            channel: Messageable,
-            ignore_category=False,
-    ) -> Player | None:
-        """Given a Discord channel, tries to find a matching Player."""
-        # thread -> main channel
-        if isinstance(channel, Thread):
-            assert isinstance(channel.parent, TextChannel)
-            channel = channel.parent
-        assert isinstance(channel, TextChannel)
-
-        name = channel.name
-        if (not ignore_category) and not is_player_category(channel.category):
-            return None
-
-        if self.is_chaos() and name.endswith("-void"):
-            name = name[:-5]
-        else:
-            if not name.endswith(PLAYER_CHANNEL_SUFFIX):
-                return None
-
-            name = name[: -(len(PLAYER_CHANNEL_SUFFIX))]
-
-        try:
-            return self.get_player(name)
-        except ValueError:
-            return None
-
     def parse_order(self, order_type: str, destination: Optional[str], source: Optional[str]) -> Optional[UnitOrder]:
         """Given an order type and source/destination strings, attempts to parse it into an Order object."""
         order_classes = [

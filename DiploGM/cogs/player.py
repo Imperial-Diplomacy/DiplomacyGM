@@ -197,7 +197,8 @@ class PlayerCog(commands.Cog):
         args = {"color_mode": get_colour_option(board, arguments),
                 "movement_only": "movement" in arguments,
                 "turn": parse_season(arguments, board.turn),
-                "is_severance": ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID]}
+                "is_severance": ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID],
+                "fow_player": player if board.data.get("fow", "disabled") == "enabled" else None}
 
         if player and show_moves and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
@@ -205,21 +206,12 @@ class PlayerCog(commands.Cog):
             return
 
         try:
-            if board.data.get("fow", "disabled") != "enabled":
-                file, file_name = manager.draw_map(
-                    ctx.guild.id,
-                    draw_moves = show_moves,
-                    player_restriction = player,
-                    args = args,
-                )
-            elif show_moves:
-                file, file_name = manager.draw_fow_players_moves_map(
-                    ctx.guild.id, player, args=args
-                )
-            else:
-                file, file_name = manager.draw_fow_current_map(
-                    ctx.guild.id, player, args=args
-                )
+            file, file_name = manager.draw_map(
+                ctx.guild.id,
+                draw_moves = show_moves,
+                player_restriction = player,
+                args = args,
+            )
         except Exception as err:
             logger.error(err, exc_info=True)
             log_command(
@@ -295,6 +287,7 @@ class PlayerCog(commands.Cog):
         arguments = remove_prefix(ctx).lower().split()
         board = manager.get_board(ctx.guild.id)
         color_mode = get_colour_option(board, arguments)
+        fow_player = player if board.data.get("fow", "disabled") == "enabled" else None
 
         if player and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
@@ -302,14 +295,9 @@ class PlayerCog(commands.Cog):
             return
 
         try:
-            if board.data.get("fow", "disabled") != "enabled":
-                file, file_name = manager.draw_gui_map(
-                    ctx.guild.id, color_mode=color_mode
-                )
-            else:
-                file, file_name = manager.draw_fow_gui_map(
-                    ctx.guild.id, player_restriction=player, color_mode=color_mode
-                )
+            file, file_name = manager.draw_gui_map(
+                ctx.guild.id, color_mode=color_mode, fow_player=fow_player
+            )
         except Exception as err:
             log_command(
                 logger,
@@ -414,7 +402,7 @@ class PlayerCog(commands.Cog):
 
         overwrites = {
             ctx.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            player.find_discord_role(ctx.guild.roles): discord.PermissionOverwrite(view_channel=True)
+            perms.find_discord_role(player, ctx.guild.roles): discord.PermissionOverwrite(view_channel=True)
         }
         for role in roles:
             overwrites[role] = discord.PermissionOverwrite(view_channel=True)
@@ -447,7 +435,7 @@ class PlayerCog(commands.Cog):
             perms.assert_gm_only(ctx, "use a gm argument for .press_directory")
 
         board = manager.get_board(ctx.guild.id)
-        power_roles = set(map(lambda p: p.find_discord_role(guild.roles), board.get_players()))
+        power_roles = set(map(lambda p: perms.find_discord_role(p, guild.roles), board.get_players()))
 
         if player is None:
             if "global" in arguments:
@@ -493,7 +481,7 @@ class PlayerCog(commands.Cog):
         direct_channels = [] # channels where the only perms are the calling country +1
         group_channels = [] # channels where the only perms are the calling country + >1
 
-        player_role = player.find_discord_role(ctx.guild.roles)
+        player_role = perms.find_discord_role(player, ctx.guild.roles)
         if player_role is None:
             await send_message_and_file(
                 channel=ctx.channel,

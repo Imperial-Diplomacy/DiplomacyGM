@@ -9,6 +9,7 @@ from discord.utils import find as discord_find
 from DiploGM import config
 from DiploGM import perms
 from DiploGM.config import MAP_ARCHIVE_SAS_TOKEN
+from DiploGM.map_parser.adjacencies import verify_adjacencies
 from DiploGM.utils import log_command, parse_season, send_message_and_file, upload_map_to_archive
 from DiploGM.manager import Manager
 from DiploGM.utils.sanitise import remove_prefix
@@ -288,7 +289,7 @@ class AdminCog(commands.Cog):
         assert ctx.guild is not None
         gametype = arg if arg else "classic"
 
-        message = manager.verify_adjacencies(gametype)
+        message = verify_adjacencies(gametype)
         log_command(logger, ctx, message=message)
         await send_message_and_file(channel=ctx.channel, message=message)
 

@@ -1,12 +1,10 @@
 import logging
 import time
 import os
-from itertools import combinations
 from typing import Optional
 
 from discord import Member, User
 
-from DiploGM.models.province import Province
 from DiploGM.utils import SingletonMeta
 from DiploGM.adjudicator.make_adjudicator import make_adjudicator
 from DiploGM.adjudicator.defs import Resolution
@@ -61,101 +59,6 @@ class Manager(metaclass=SingletonMeta):
         self._database.save_board(server_id, self._boards[server_id])
 
         return True, f"{self._boards[server_id].data['name']} game created"
-
-    # Gets adjacent provinces, but with High Seas combined into one for the purpose of finding adjacency issues
-    def _get_adjacent_geom(self, province: Province) -> set[Province]:
-        return {a for a in province.adjacency_data.adjacent if a.name[-1] not in "23456789"}
-
-    # A recursive function to find loops of provinces with no internal adjacencies
-    # Generally, two adjacent provinces should share exactly two adjacencies on either side
-    # If there's only one, that typeically means there's a "hole" or the edge of the board
-    # We try to trace a chain of such provinces, and if we reach the start, we have a loop
-    def _find_province_loop(self,
-                            province: Province,
-                            destination: Province,
-                            visited: list[Province],
-                            ignored_provinces: set[Province]) -> Optional[list[Province]]:
-        if province == destination:
-            return None if len(visited) == 2 else visited # A -> B -> A shouldn't count
-        visited.append(province)
-        for adj in self._get_adjacent_geom(province):
-            # ignored_provinces prevents us finding the same loop multiple times
-            if adj in visited[1:] or adj in ignored_provinces:
-                continue
-            if len(self._get_adjacent_geom(province) & self._get_adjacent_geom(adj)) > 1:
-                continue
-            loop = self._find_province_loop(adj, destination, visited, ignored_provinces)
-            if loop is not None:
-                return loop
-        visited.pop()
-        return None
-
-    # This is a function that goes through a map and attempts to find adjacency issues
-    # It will not be fool-proof, but it should detect the majority of potential errors
-    # The list of warnings it generates include the following:
-    # - High Seas provinces in the same region that have different adjacencies
-    #   (e.g. Cape Khoe bordering SAO1 but not SAO2)
-    # - Provinces with zero adjacencies
-    # - Adjacent provinces that have no common adjacencies
-    # - Loops of provinces that have no internal connections (note that this does detect the board edges)
-    # - Groups of four provinces that all border each other
-    # TODO: Potentially simplify this function's complexity
-    def verify_adjacencies(self, variant: str) -> str:
-        """Checks for potential adjacency issues in a variant.
-        This is not guaranteed to find all issues, but should find the majority of them.
-        Returns a string listing any warnings found."""
-        if not os.path.isdir(parse_variant_path(variant)):
-            return f"Game {variant} does not exist."
-        board: Board = get_parser(variant).parse()
-        warnings = []
-        visited_provinces = set()
-
-        # High Seas
-        for province in [p for p in board.provinces if p.name[-1] in "23456789"]:
-            try:
-                comp_province = board.get_province(province.name[:-1] + "1")
-                # Two high seas' adjacencies should differ by only each other
-                if (comp_province.adjacency_data.adjacent ^ province.adjacency_data.adjacent
-                    != {province, comp_province}):
-                    warnings.append(f"Province {province.name} and {comp_province.name} have different adjacencies")
-                visited_provinces.add(province)
-            except ValueError:
-                warnings.append(f"Province {province.name} is named like a high seas province " +
-                                f"but {province.name[:-1]}1 was not found")
-
-        for province in board.provinces - visited_provinces:
-            if len(province.adjacency_data.adjacent) == 0:
-                warnings.append(f"Province {province.name} has no adjacencies")
-            visited_adjacent = set()
-            for adj in self._get_adjacent_geom(province) - visited_provinces:
-                common_adj = self._get_adjacent_geom(province) & self._get_adjacent_geom(adj)
-                if len(common_adj) == 0:
-                    warnings.append(f"Provinces {province.name} and {adj.name} are adjacent " +
-                                    "but have no common adjacencies")
-                    continue
-                # Finding loops of provinces
-                if len(common_adj) == 1:
-                    loop = self._find_province_loop(adj, province, [province], visited_provinces)
-                    # Comparing names of the first and last provinces in the loop so we only report it once
-                    if loop is not None and loop[1].name > loop[-1].name:
-                        warnings.append(f"Found a loop of provinces {', '.join(p.name for p in loop)}. " +
-                                        "If they surround an impassable province or the board edge, this is expected")
-
-                # Searching for groups of four provinces that all share a border
-                for third, fourth in combinations(common_adj - visited_provinces - visited_adjacent, 2):
-                    if fourth not in self._get_adjacent_geom(third):
-                        continue
-                    if min(len(self._get_adjacent_geom(province)),
-                           len(self._get_adjacent_geom(adj)),
-                           len(self._get_adjacent_geom(third)),
-                           len(self._get_adjacent_geom(fourth))) == 3:
-                        # Skips provinces that only border the other three, as that's geometrically possible
-                        continue
-                    warnings.append(f"Provinces {province.name}, {adj.name}, {third.name}, " +
-                                    f"and {fourth.name} all border each other")
-                visited_adjacent.add(adj)
-            visited_provinces.add(province)
-        return "\n".join(warnings) if warnings else "No adjacency issues found"
 
     def generate_layers(self, variant: str) -> tuple[bytes, str]:
         """Generates the SVG layers for a variant and returns them as bytes."""
@@ -310,19 +213,20 @@ class Manager(metaclass=SingletonMeta):
         board: Board,
         player_restriction: Player | None = None,
         draw_moves: bool = False,
-        args: dict = {},
+        args: dict | None = None,
     ) -> tuple[bytes, str]:
         """Gets the current map for a board."""
         start = time.time()
+        args = args or {}
+        mapper = Mapper(board, restriction=args.get("fow_player"), color_mode=args.get("color_mode"))
 
         if draw_moves:
-            svg, file_name = Mapper(board, color_mode=args.get("color_mode")).draw_moves_map(
-                board.turn,
-                player_restriction=player_restriction,
-                movement_only=args.get("movement_only", False),
+            svg, file_name = mapper.draw_moves_map(board.turn,
+                                                   player_restriction=player_restriction,
+                                                   movement_only=args.get("movement_only", False),
             )
         else:
-            svg, file_name = Mapper(board, color_mode=args.get("color_mode")).draw_current_map()
+            svg, file_name = mapper.draw_current_map()
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_map_for_board took {elapsed}s")
@@ -357,91 +261,18 @@ class Manager(metaclass=SingletonMeta):
         logger.info(f"manager.adjudicate.{server_id}.{elapsed}s")
         return new_board
 
-    def draw_fow_current_map(
-        self,
-        server_id: int,
-        player_restriction: Player | None,
-        args: dict = {},
-    ) -> tuple[bytes, str]:
-        """Draws the current map for a board with fog of war.
-        Should probably be updated."""
-        start = time.time()
-
-        svg, file_name = Mapper(
-            self._boards[server_id], player_restriction, args.get("color_mode")
-        ).draw_current_map()
-
-        elapsed = time.time() - start
-        logger.info(f"manager.draw_fow_current_map.{server_id}.{elapsed}s")
-        return svg, file_name
-
-    def draw_fow_players_moves_map(
-        self,
-        server_id: int,
-        player_restriction: Player | None,
-        args: dict = {},
-    ) -> tuple[bytes, str]:
-        """Draws the moves map for a board with fog of war for a specific player.
-        Should probably be updated."""
-        start = time.time()
-
-        if player_restriction:
-            svg, file_name = Mapper(
-                self._boards[server_id], player_restriction, args.get("color_mode")
-            ).draw_moves_map(self._boards[server_id].turn, player_restriction)
-        else:
-            svg, file_name = Mapper(self._boards[server_id], None).draw_moves_map(
-                self._boards[server_id].turn, None
-            )
-
-        elapsed = time.time() - start
-        logger.info(f"manager.draw_fow_players_moves_map.{server_id}.{elapsed}s")
-        return svg, file_name
-
-    def draw_fow_moves_map(
-        self, server_id: int, player_restriction: Player | None
-    ) -> tuple[bytes, str]:
-        """Draws the moves map for a board with fog of war.
-        Should probably be updated."""
-        start = time.time()
-
-        svg, file_name = Mapper(
-            self._boards[server_id], player_restriction
-        ).draw_moves_map(self._boards[server_id].turn, None)
-
-        elapsed = time.time() - start
-        logger.info(f"manager.draw_fow_moves_map.{server_id}.{elapsed}s")
-        return svg, file_name
-
-    def draw_fow_gui_map(
-        self,
-        server_id: int,
-        player_restriction: Player | None = None,
-        color_mode: str | None = None,
-    ) -> tuple[bytes, str]:
-        """Draws the GUI map for a board with fog of war.
-        Should probably be updated."""
-        start = time.time()
-
-        svg, file_name = Mapper(
-            self._boards[server_id], player_restriction, color_mode=color_mode
-        ).draw_gui_map(self._boards[server_id].turn, None)
-
-        elapsed = time.time() - start
-        logger.info(f"manager.draw_fow_moves_map.{server_id}.{elapsed}s")
-        return svg, file_name
-
     def draw_gui_map(
         self,
         server_id: int,
         player_restriction: Player | None = None,
         color_mode: str | None = None,
+        fow_player: Player | None = None,
     ) -> tuple[bytes, str]:
         """Draws an GUI map for a board."""
         start = time.time()
 
         svg, file_name = Mapper(
-            self._boards[server_id], color_mode=color_mode
+            self._boards[server_id], fow_player, color_mode=color_mode
         ).draw_gui_map(self._boards[server_id].turn, player_restriction)
 
         elapsed = time.time() - start

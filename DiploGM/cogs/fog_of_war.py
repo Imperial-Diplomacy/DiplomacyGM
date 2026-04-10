@@ -11,7 +11,7 @@ from DiploGM.utils import (
     get_filtered_orders,
     send_message_and_file,
 )
-from DiploGM.adjudicator.utils import svg_to_png
+from DiploGM.utils.image import svg_to_png
 from DiploGM.manager import Manager
 from DiploGM.models.player import Player
 from DiploGM.utils.sanitise import remove_prefix
@@ -32,7 +32,7 @@ class FogOfWarCog(commands.Cog):
     # for fog of war
     async def publish_fow_current(self, ctx: commands.Context):
         await publish_map(
-            ctx, manager, "starting map", lambda m, s, p: m.draw_fow_current_map(s, p)
+            ctx, manager, "starting map", lambda m, s, p: m.draw_map(s, False, p, {"fow_player": p})
         )
 
     @commands.command(
@@ -59,7 +59,7 @@ class FogOfWarCog(commands.Cog):
             ctx,
             manager,
             "moves map",
-            lambda m, s, p: m.draw_fow_moves_map(s, p),
+            lambda m, s, p: m.draw_map(s, True, None, {"fow_player": p}),
             filter_player,
         )
 
@@ -98,7 +98,7 @@ class FogOfWarCog(commands.Cog):
         for channel in player_category.channels:
             if not isinstance(channel, TextChannel):
                 continue
-            player = board.get_player_by_channel(channel)
+            player = perms.get_player_by_channel(board, channel)
 
             if not player or (filter_player and player != filter_player):
                 continue
@@ -148,7 +148,7 @@ async def publish_map(
     for channel in player_category.channels:
         if not isinstance(channel, TextChannel):
             continue
-        player = board.get_player_by_channel(channel)
+        player = perms.get_player_by_channel(board, channel)
 
         if not player or (filter_player and player != filter_player):
             continue

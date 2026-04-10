@@ -504,7 +504,6 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
         for unit in updated_units:
             response += f"\n- {unit.province}"
     return {"message": response, "embed_colour": response_colour}
-        
 
 def _parse_remove_order(command: str, player_restriction: Player | None, board: Board) -> Player | Unit | str:
     command = command.lower().strip()

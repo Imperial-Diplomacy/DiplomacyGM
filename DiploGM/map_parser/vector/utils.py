@@ -126,7 +126,7 @@ def _parse_path_command(
             coordlist[index] = 0
         coordlist[index] += args[0]
         return (coordlist[0], coordlist[1])
-    raise RuntimeError(f"Unknown SVG path command: {command}")
+    raise ValueError(f"Unknown SVG path command: {command}")
 
 def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float, float]]]:
     """Parses an SVG path string into a list of coordinates."""
@@ -149,7 +149,7 @@ def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float
             command = path[current_index]
             if command.lower() == "z":
                 if start is None:
-                    raise Exception("Invalid geometry: got 'z' on first element in a subgeometry")
+                    raise ValueError("Invalid geometry: got 'z' on first element in a subgeometry")
                 province_coordinates[-1].append(translation.transform(start))
                 start = None
                 current_index += 1
@@ -157,12 +157,9 @@ def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float
                     # If we are closing, and there is more, there must be a second polygon (Chukchi Sea)
                     province_coordinates += [[]]
                     continue
-                else:
-                    break
+                break
 
-            elif command.lower() in arguments_by_command:
-                expected_arguments = arguments_by_command[command.lower()]
-            else:
+            if (expected_arguments := arguments_by_command.get(command.lower())) is None:
                 raise RuntimeError(f"Unknown SVG path command {command}")
 
             current_index += 1
@@ -170,7 +167,7 @@ def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float
         if command is None:
             raise RuntimeError("Path string does not start with a command")
         if command.lower() == "z":
-            raise Exception("Invalid path, 'z' was followed by arguments")
+            raise ValueError("Invalid path, 'z' was followed by arguments")
 
         final_index = current_index + expected_arguments
         if len(path) < final_index:

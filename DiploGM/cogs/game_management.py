@@ -33,7 +33,7 @@ from DiploGM.utils import (
     send_message_and_file,
     upload_map_to_archive,
 )
-from DiploGM.adjudicator.utils import svg_to_png
+from DiploGM.utils.image import svg_to_png
 
 from DiploGM.models.extension import ExtensionEvent, SQLiteExtensionEventRepository
 from DiploGM.models.order import Disband, Build
@@ -110,7 +110,7 @@ class GameManagementCog(commands.Cog):
             board = manager.get_board(ctx.guild.id)
             for c in [cat for cat in ctx.guild.categories if config.is_player_category(cat)]:
                 for ch in c.text_channels:
-                    player = board.get_player_by_channel(ch)
+                    player = perms.get_player_by_channel(board, ch)
                     if not player:
                         continue
                     await send_message_and_file(
@@ -437,11 +437,11 @@ class GameManagementCog(commands.Cog):
         failed_players = []
         response = ""
         for channel in [ch for category in player_categories for ch in category.text_channels]:
-            if (player := board.get_player_by_channel(channel)) is None:
+            if (player := perms.get_player_by_channel(board, channel)) is None:
                 await ctx.send(f"No Player for {channel.name}")
                 continue
 
-            if (role := player.find_discord_role(guild.roles)) is None:
+            if (role := perms.find_discord_role(player, guild.roles)) is None:
                 await ctx.send(f"No Role for {player.get_name()}")
                 continue
 
@@ -762,7 +762,7 @@ class GameManagementCog(commands.Cog):
 
         for c in [cat for cat in guild.categories if config.is_player_category(cat)]:
             for ch in c.text_channels:
-                player = board.get_player_by_channel(ch)
+                player = perms.get_player_by_channel(board, ch)
                 if not player or (len(player.units) + len(player.centers) == 0):
                     continue
 
@@ -1256,9 +1256,7 @@ class GameManagementCog(commands.Cog):
                 embed_colour=config.ERROR_COLOUR,
             )
 
-        player = board.get_player_by_channel(
-            channel, ignore_category=True
-        )
+        player = perms.get_player_by_channel(board, channel, ignore_category=True)
 
         # TODO hacky
         users = []
@@ -1383,8 +1381,8 @@ class GameManagementCog(commands.Cog):
             )
             return
 
-        old_role = player.find_discord_role(ctx.guild.roles)
-        old_order_role = player.find_discord_role(ctx.guild.roles, get_order_role=True)
+        old_role = perms.find_discord_role(player, ctx.guild.roles)
+        old_order_role = perms.find_discord_role(player, ctx.guild.roles, get_order_role=True)
         order_channel_name = player.get_name().lower().replace(" ", "-") + PLAYER_CHANNEL_SUFFIX
         void_channel_name = player.get_name().lower().replace(" ", "-") + "-void"
 

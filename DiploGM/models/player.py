@@ -84,18 +84,6 @@ class Player:
     def dp_max(self, value: int):
         self._dp_max = value
 
-    def find_discord_role(self, roles: Sequence[discord.Role], get_order_role: bool = False) -> Optional[discord.Role]:
-        """Gets the Discord role associated with this player, if it exists."""
-        suffix = config.PLAYER_CHANNEL_SUFFIX if get_order_role else ""
-        for role in roles:
-            if simple_player_name(role.name) == simple_player_name(self.get_name()) + suffix:
-                return role
-        for role in roles:
-            if simple_player_name(role.name) == simple_player_name(self.name) + suffix:
-                return role
-        return None
-
-
     def __str__(self):
         return self.name
 

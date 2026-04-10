@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import List, Tuple, TYPE_CHECKING
 from discord.ext.commands import Context
 
+from DiploGM import perms
 from DiploGM.models.order import PlayerOrder
 from DiploGM.models.player import ForcedDisbandOption, Player, ViewOrdersTags, OrdersSubsetOption
 
@@ -35,7 +36,7 @@ def get_build_orders(player: Player,
         and player.waived_orders == 0):
         return None, None
 
-    if (player_role := player.find_discord_role(ctx.guild.roles)) is not None:
+    if (player_role := perms.find_discord_role(player, ctx.guild.roles)) is not None:
         player_name = player_role.mention
     else:
         player_name = player.get_name()
@@ -89,7 +90,7 @@ def _get_move_orders(board: Board,
             if not ordered and not dp_orders:
                 return (None, None)
 
-    if (player_role := player.find_discord_role(ctx.guild.roles)) is not None:
+    if (player_role := perms.find_discord_role(player, ctx.guild.roles)) is not None:
         player_name = player_role.mention
     else:
         player_name = player.get_name()
