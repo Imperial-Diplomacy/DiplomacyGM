@@ -549,6 +549,87 @@ class _DatabaseConnection:
         cursor.close()
         self._connection.commit()
 
+    def save_board_state(self, board_id: int, board: Board):
+        """Atomically persists the current in-memory board state
+        for players, provinces, units, and retreat options.
+        Used to save the board after .edit commands
+        """
+        cursor = self._connection.cursor()
+        phase = board.turn.get_indexed_name()
+
+        # We delete and re-create units and retreat options, since some might be removed via command
+        cursor.execute("DELETE FROM retreat_options WHERE board_id=? AND phase=?", (board_id, phase))
+        cursor.execute("DELETE FROM units WHERE board_id=? AND phase=?", (board_id, phase))
+
+        cursor.executemany(
+            "UPDATE players SET color=?, liege=?, points=? WHERE board_id=? AND player_name=?",
+            [
+                (
+                    player.render_color,
+                    (None if player.liege is None else str(player.liege)),
+                    player.points,
+                    board_id,
+                    player.name,
+                )
+                for player in board.players
+            ],
+        )
+
+        cursor.executemany(
+            "UPDATE provinces SET owner=?, core=?, half_core=? "
+            "WHERE board_id=? AND phase=? AND province_name=?",
+            [
+                (
+                    province.get_owner_name(),
+                    province.core_data.core.name if province.core_data.core else None,
+                    province.core_data.half_core.name if province.core_data.half_core else None,
+                    board_id,
+                    phase,
+                    province.name,
+                )
+                for province in board.provinces
+            ],
+        )
+
+        cursor.executemany(
+            "INSERT INTO units (board_id, phase, location, is_dislodged, owner, "
+            "is_army, order_type, order_destination, order_source, failed_order) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                (
+                    board_id,
+                    phase,
+                    unit.province.get_name(unit.coast),
+                    unit == unit.province.dislodged_unit,
+                    unit.player.name if unit.player else None,
+                    unit.unit_type == UnitType.ARMY,
+                    unit.order.__class__.__name__ if unit.order is not None else None,
+                    unit.order.get_destination_str() if unit.order is not None else None,
+                    unit.order.get_source_str() if unit.order is not None else None,
+                    unit.order.has_failed if unit.order is not None else False,
+                )
+                for unit in board.units
+            ],
+        )
+
+        cursor.executemany(
+            "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
+            [
+                (
+                    board_id,
+                    phase,
+                    unit.province.get_name(unit.coast),
+                    retreat_option[0].get_name(retreat_option[1]),
+                )
+                for unit in board.units
+                if unit.retreat_options is not None
+                for retreat_option in unit.retreat_options
+            ],
+        )
+
+        cursor.close()
+        self._connection.commit()
+
     def save_order_for_units(self, board: Board, units: Iterable[Unit]):
         """Saves orders for the given units."""
         cursor = self._connection.cursor()

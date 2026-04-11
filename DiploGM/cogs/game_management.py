@@ -1091,7 +1091,10 @@ class GameManagementCog(commands.Cog):
         """
         assert ctx.guild is not None
         edit_commands = remove_prefix(ctx)
-        title, message, file, file_name, embed_colour = parse_edit_state(edit_commands, manager.get_board(ctx.guild.id))
+        board = manager.get_board(ctx.guild.id)
+        title, message, file, file_name, embed_colour = parse_edit_state(edit_commands, board)
+        if file is not None:
+            get_connection().save_board_state(ctx.guild.id, board)
         log_command(logger, ctx, message=title)
         await send_message_and_file(channel=ctx.channel,
                                     title=title,

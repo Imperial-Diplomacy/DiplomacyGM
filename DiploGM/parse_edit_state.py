@@ -1,5 +1,4 @@
 """Module to parse commands to edit the game state."""
-import copy
 import logging
 import string
 
@@ -8,12 +7,9 @@ from DiploGM.utils import get_unit_type, get_keywords, parse_season
 from DiploGM.mapper.mapper import Mapper
 from DiploGM.models.board import Board
 from DiploGM.db.database import get_connection
-from DiploGM.manager import Manager
-from DiploGM.models.province import Province
-from DiploGM.models.unit import Unit, UnitType
+from DiploGM.models.unit import UnitType
 
 logger = logging.getLogger(__name__)
-manager = Manager()
 
 
 def parse_edit_state(message: str, board: Board) -> tuple[str, str, bytes | None, str | None, str | None]:
@@ -79,30 +75,12 @@ def _set_province_core(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
     player = board.get_player(keywords[1])
     province.core_data.core = player
-    get_connection().execute_arbitrary_sql(
-        "UPDATE provinces SET core=? WHERE board_id=? and phase=? and province_name=?",
-        (
-            player.name if player is not None else None,
-            board.board_id,
-            board.turn.get_indexed_name(),
-            province.name,
-        ),
-    )
 
 
 def _set_province_half_core(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
     player = board.get_player(keywords[1])
     province.core_data.half_core = player
-    get_connection().execute_arbitrary_sql(
-        "UPDATE provinces SET half_core=? WHERE board_id=? and phase=? and province_name=?",
-        (
-            player.name if player is not None else None,
-            board.board_id,
-            board.turn.get_indexed_name(),
-            province.name,
-        ),
-    )
 
 
 def _set_player_color(keywords: list[str], board: Board) -> None:
@@ -114,10 +92,6 @@ def _set_player_color(keywords: list[str], board: Board) -> None:
         raise ValueError(f"Unknown hexadecimal color: {color}")
 
     player.render_color = color
-    get_connection().execute_arbitrary_sql(
-        "UPDATE players SET color=? WHERE board_id=? and player_name=?",
-        (color, board.board_id, player.name),
-    )
 
 
 def _set_province_owner(keywords: list[str], board: Board) -> None:
@@ -129,15 +103,6 @@ def _set_province_owner(keywords: list[str], board: Board) -> None:
         province.is_impassable = False
         player = board.get_player(keywords[1])
     board.change_owner(province, player)
-    get_connection().execute_arbitrary_sql(
-        "UPDATE provinces SET owner=? WHERE board_id=? and phase=? and province_name=?",
-        (
-            province.get_owner_name(),
-            board.board_id,
-            board.turn.get_indexed_name(),
-            province.name,
-        ),
-    )
 
 
 def _set_total_owner(keywords: list[str], board: Board) -> None:
@@ -150,16 +115,6 @@ def _set_total_owner(keywords: list[str], board: Board) -> None:
         player = board.get_player(keywords[1])
     board.change_owner(province, player)
     province.core_data.core = player
-    get_connection().execute_arbitrary_sql(
-        "UPDATE provinces SET owner=?, core=? WHERE board_id=? and phase=? and province_name=?",
-        (
-            province.get_owner_name(),
-            player.name if player is not None else None,
-            board.board_id,
-            board.turn.get_indexed_name(),
-            province.name,
-        ),
-    )
 
 
 def _create_unit(keywords: list[str], board: Board) -> None:
@@ -174,22 +129,7 @@ def _create_unit(keywords: list[str], board: Board) -> None:
     if not province.get_multiple_coasts():
         coast = None
 
-    unit = board.create_unit(unit_type, player, province, coast, None)
-    get_connection().execute_arbitrary_sql(
-        "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army) "
-        "VALUES (?, ?, ?, ?, ?, ?) "
-        "ON CONFLICT (board_id, phase, location, is_dislodged) DO UPDATE SET owner=?, is_army=?",
-        (
-            board.board_id,
-            board.turn.get_indexed_name(),
-            unit.province.get_name(coast),
-            False,
-            player.name if player is not None else None,
-            unit_type == UnitType.ARMY,
-            player.name if player is not None else None,
-            unit_type == UnitType.ARMY,
-        ),
-    )
+    board.create_unit(unit_type, player, province, coast, None)
 
 
 def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
@@ -208,34 +148,7 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
             raise ValueError(
                 "Could not find at least one province in retreat options."
             )
-        unit = board.create_unit(unit_type, player, province, coast, retreat_options)
-        get_connection().execute_arbitrary_sql(
-            "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army) "
-            "VALUES (?, ?, ?, ?, ?, ?) "
-            "ON CONFLICT (board_id, phase, location, is_dislodged) DO UPDATE SET owner=?, is_army=?",
-            (
-                board.board_id,
-                board.turn.get_indexed_name(),
-                unit.province.get_name(coast),
-                True,
-                player.name if player is not None else None,
-                unit_type == UnitType.ARMY,
-                player.name if player is not None else None,
-                unit_type == UnitType.ARMY,
-            ),
-        )
-        get_connection().executemany_arbitrary_sql(
-            "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
-            [
-                (
-                    board.board_id,
-                    board.turn.get_indexed_name(),
-                    unit.province.get_name(coast),
-                    option[0].get_name(option[1]),
-                )
-                for option in retreat_options
-            ],
-        )
+        board.create_unit(unit_type, player, province, coast, retreat_options)
     else:
         raise RuntimeError("Cannot create a dislodged unit in move phase")
 
@@ -245,15 +158,6 @@ def _delete_unit(keywords: list[str], board: Board) -> None:
     unit = board.delete_unit(province)
     if not unit:
         raise RuntimeError(f"No unit to delete in {province}")
-    get_connection().execute_arbitrary_sql(
-        "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
-        (
-            board.board_id,
-            board.turn.get_indexed_name(),
-            unit.province.get_name(unit.coast),
-            False,
-        ),
-    )
 
 
 def _delete_dislodged_unit(keywords: list[str], board: Board) -> None:
@@ -261,14 +165,6 @@ def _delete_dislodged_unit(keywords: list[str], board: Board) -> None:
     unit = board.delete_unit(province, is_dislodged=True)
     if not unit:
         raise RuntimeError(f"No dislodged unit to delete in {province}")
-    get_connection().execute_arbitrary_sql(
-        "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
-        (board.board_id, board.turn.get_indexed_name(), unit.province.get_name(unit.coast), True),
-    )
-    get_connection().execute_arbitrary_sql(
-        "DELETE FROM retreat_options WHERE board_id=? and phase=? and origin=?",
-        (board.board_id, board.turn.get_indexed_name(), unit.province.get_name(unit.coast)),
-    )
 
 
 def _move_unit(keywords: list[str], board: Board) -> None:
@@ -282,21 +178,6 @@ def _move_unit(keywords: list[str], board: Board) -> None:
     if not new_province.get_multiple_coasts():
         new_coast = None
     board.move_unit(unit, new_province, new_coast)
-    get_connection().execute_arbitrary_sql(
-        "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
-        (board.board_id, board.turn.get_indexed_name(), old_province.get_name(unit.coast), False),
-    )
-    get_connection().execute_arbitrary_sql(
-        "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army) VALUES (?, ?, ?, ?, ?, ?)",
-        (
-            board.board_id,
-            board.turn.get_indexed_name(),
-            new_province.get_name(new_coast),
-            False,
-            unit.player.name if unit.player is not None else None,
-            unit.unit_type == UnitType.ARMY,
-        ),
-    )
 
 
 def _dislodge_unit(keywords: list[str], board: Board) -> None:
@@ -316,10 +197,6 @@ def _dislodge_unit(keywords: list[str], board: Board) -> None:
             unit.unit_type, unit.player, unit.province, unit.coast, retreat_options
         )
         board.delete_unit(province)
-        get_connection().execute_arbitrary_sql(
-            "UPDATE units SET is_dislodged = True where board_id=? and phase=? and location=?",
-            (board.board_id, board.turn.get_indexed_name(), province.name),
-        )
     else:
         raise RuntimeError("Cannot create a dislodged unit in move phase")
 
@@ -331,15 +208,6 @@ def _make_units_claim_provinces(keywords: list[str], board: Board) -> None:
     for unit in board.units:
         if claim_centers or not unit.province.has_supply_center:
             board.change_owner(unit.province, unit.player)
-            get_connection().execute_arbitrary_sql(
-                "UPDATE provinces SET owner=? WHERE board_id=? and phase=? and province_name=?",
-                (
-                    unit.player.name if unit.player is not None else None,
-                    board.board_id,
-                    board.turn.get_indexed_name(),
-                    unit.province.name,
-                ),
-            )
 
 
 def _set_player_points(keywords: list[str], board: Board) -> None:
@@ -351,10 +219,6 @@ def _set_player_points(keywords: list[str], board: Board) -> None:
         raise ValueError("Can't have a negative number of points!")
 
     player.points = points
-    get_connection().execute_arbitrary_sql(
-        "UPDATE players SET points=? WHERE board_id=? and player_name=?",
-        (points, board.board_id, player.name),
-    )
 
 
 def _set_player_vassal(keywords: list[str], board: Board) -> None:
@@ -364,10 +228,6 @@ def _set_player_vassal(keywords: list[str], board: Board) -> None:
         raise ValueError("Unknown player specified")
     vassal.liege = liege
     liege.vassals.append(vassal)
-    get_connection().execute_arbitrary_sql(
-        "UPDATE players SET liege=? WHERE board_id=? and player_name=?",
-        (liege.name, board.board_id, vassal.name),
-    )
 
 
 def _remove_player_vassal(keywords: list[str], board: Board) -> None:
@@ -379,10 +239,6 @@ def _remove_player_vassal(keywords: list[str], board: Board) -> None:
         if vassal.liege == liege:
             vassal.liege = None
             liege.vassals.remove(vassal)
-            get_connection().execute_arbitrary_sql(
-                "UPDATE players SET liege=? WHERE board_id=? and player_name=?",
-                (None, board.board_id, vassal.name),
-            )
 
 
 def _set_game_name(parameter_str: str, board: Board) -> None:
@@ -411,27 +267,11 @@ def _apocalypse(keywords: list[str], board: Board) -> None:
         for player in board.players:
             player.units -= armies
 
-        get_connection().execute_arbitrary_sql(
-            "DELETE FROM units WHERE board_id=? AND phase=? AND is_army=1",
-            (
-                board.board_id,
-                board.turn.get_indexed_name(),
-            ),
-        )
-
     if all or "fleet" in keywords:
         fleets = set(filter(lambda u: u.unit_type == UnitType.FLEET, board.units))
         board.units -= fleets
         for player in board.players:
             player.units -= fleets
-
-        get_connection().execute_arbitrary_sql(
-            "DELETE FROM units WHERE board_id=? AND phase=? AND is_army=0",
-            (
-                board.board_id,
-                board.turn.get_indexed_name(),
-            ),
-        )
 
     if all or "province" in keywords:
         for province in board.provinces:
@@ -440,20 +280,10 @@ def _apocalypse(keywords: list[str], board: Board) -> None:
         for player in board.players:
             player.centers = set()
 
-        get_connection().execute_arbitrary_sql(
-            "UPDATE provinces SET owner=? WHERE board_id=? AND phase=?",
-            (None, board.board_id, board.turn.get_indexed_name()),
-        )
-
     if all or "core" in keywords:
         for province in board.provinces:
             province.core_data.core = None
             province.core_data.half_core = None
-
-        get_connection().execute_arbitrary_sql(
-            "UPDATE provinces SET core=?, half_core=? WHERE board_id=? AND phase=?",
-            (None, None, board.board_id, board.turn.get_indexed_name()),
-        )
 
 
 def _bulk_create_units(keywords: list[str], board: Board) -> None:
@@ -461,50 +291,6 @@ def _bulk_create_units(keywords: list[str], board: Board) -> None:
     unit_type = keywords[1]
     for i in keywords[2:]:
         _create_unit([unit_type, player, i], board)
-
-def _delete_player(keywords: list[str], board: Board) -> None:
-    name = keywords[0]
-    player = board.get_player(name)
-    if not player:
-        raise ValueError(f"There is no player named: {name}")
-
-    units: set[Unit] = set(filter(lambda u: u.player == player, board.units))
-    player.units = set()
-    board.units -= units
-    get_connection().execute_arbitrary_sql(
-        "DELETE FROM units WHERE board_id=? AND phase=? AND owner=?",
-        (board.board_id, board.turn.get_indexed_name(), player.name),
-    )
-
-    provinces: set[Province] = set(filter(lambda u: u.owner == player, board.provinces))
-    player.centers = set()
-    for p in provinces:
-        p.owner = None
-        if p.core_data.core == player:
-            p.core_data.core = None
-        if p.core_data.half_core == player:
-            p.core_data.half_core = None
-    get_connection().execute_arbitrary_sql(
-        "UPDATE provinces SET owner=? WHERE board_id=? and phase=?",
-        (None, board.board_id, board.turn.get_indexed_name()),
-    )
-    get_connection().execute_arbitrary_sql(
-        "UPDATE provinces SET core=? WHERE board_id=? and phase=? AND core=?",
-        (None, board.board_id, board.turn.get_indexed_name(), player.name),
-    )
-    get_connection().execute_arbitrary_sql(
-        "UPDATE provinces SET half_core=? WHERE board_id=? and phase=? AND half_core=?",
-        (None, board.board_id, board.turn.get_indexed_name(), player.name),
-    )
-
-    # NOTE: Players are not tied to individual Phase boards, but the server as a whole
-
-    # board.players.remove(player)
-    # get_connection().execute_arbitrary_sql(
-    #     "DELETE FROM units WHERE board_id=? AND phase=? AND owner=?",
-    #     (board.board_id, board.turn.get_indexed_name(), player.name),
-    # )
-
 
 function_list = {
     "set phase": _set_phase,
@@ -523,7 +309,6 @@ function_list = {
     "set vassal": _set_player_vassal,
     "remove relationship": _remove_player_vassal,
     "set game name": _set_game_name,
-    "delete player": _delete_player,
     "bulk create units": _bulk_create_units,
     "apocalypse": _apocalypse,
     "set player points": _set_player_points
