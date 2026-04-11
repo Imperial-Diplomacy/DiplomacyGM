@@ -12,7 +12,6 @@ from DiploGM.config import ERROR_COLOUR, PARTIAL_ERROR_COLOUR
 from DiploGM.utils import get_unit_type, _manage_coast_signature
 from DiploGM.models import order
 from DiploGM.models.board import Board
-from DiploGM.db.database import get_connection
 from DiploGM.models.player import Player
 from DiploGM.models.province import Province
 from DiploGM.models.unit import DPAllocation, Unit, UnitType
@@ -246,10 +245,10 @@ class TreeToOrder(Transformer):
         if isinstance(player_order, order.Waive):
             player.waived_orders = player_order.quantity
         elif isinstance(player_order, order.PlayerOrder) and isinstance(target, Province):
-            remove_player_order_for_province(self.board, player, target)
+            remove_player_order_for_province(player, target)
             player.build_orders.add(player_order)
         elif isinstance(player_order, order.RelationshipOrder) and isinstance(target, Player):
-            remove_relationship_order(self.board, player_order, player)
+            remove_relationship_order(player_order, player)
             player.vassal_orders[target] = player_order
         else:
             raise ValueError("Invalid build order data")
@@ -426,12 +425,6 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             orderoutput.append(f"\u001b[0;31m{current_order}")
             errors.append(f"`{current_order}`: Please fix this order and try again")
 
-    database = get_connection()
-    if board.turn.is_builds():
-        database.save_build_orders_for_players(board, player_restriction)
-    else:
-        database.save_order_for_units(board, movement)
-
     if board.turn.is_moves() and player_restriction is not None:
         if (spent_dp := board.get_dp_spent(player_restriction)) > player_restriction.dp_max:
             errors.append(f"You have allocated {spent_dp} DP but only have {player_restriction.dp_max} DP. " +
@@ -451,20 +444,21 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         paginator.add_line(line)
 
     output = paginator.pages
+    return_dict = {
+        "messages": output,
+        "player": player_restriction,
+        "units": movement,
+    }
     if warnings:
         output[-1] += "\n**Warnings (Orders validated, but might fail):**\n" + "\n".join(warnings)
         output[-1] += "\n" if errors else ""
     if errors:
         output[-1] += "\n**Unable to validate the following orders:**\n" + "\n".join(errors)
         embed_colour = PARTIAL_ERROR_COLOUR if len(movement) > 0 else ERROR_COLOUR
-        return {
-            "messages": output,
-            "embed_colour": embed_colour,
-        }
-    return {
-            "title": "**Orders validated successfully.**",
-            "messages": output,
-    }
+        return_dict["embed_colour"] = embed_colour
+    else:
+        return_dict["title"] = "Orders validated successfully"
+    return return_dict
 
 def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, Any]:
     """Parses the .remove_order command and removes the specified orders."""
@@ -484,16 +478,8 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
         except Exception as error:
             invalid.append((command, error))
 
-    database = get_connection()
-    database.save_order_for_units(board, list(updated_units))
-    for province in provinces_with_removed_builds:
-        database.execute_arbitrary_sql(
-            "DELETE FROM builds WHERE board_id=? and phase=? and location=?",
-            (board.board_id, board.turn.get_indexed_name(), province),
-        )
-
     if not invalid:
-        return {"message": "Orders removed successfully."}
+        return {"message": "Orders removed successfully.", "units": list(updated_units)}
     response = "The following order removals were invalid:"
     response_colour = ERROR_COLOUR
     for command in invalid:
@@ -503,7 +489,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
         response_colour = PARTIAL_ERROR_COLOUR
         for unit in updated_units:
             response += f"\n- {unit.province}"
-    return {"message": response, "embed_colour": response_colour}
+    return {"message": response, "embed_colour": response_colour, "units": list(updated_units)}
 
 def _parse_remove_order(command: str, player_restriction: Player | None, board: Board) -> Player | Unit | str:
     command = command.lower().strip()
@@ -524,7 +510,7 @@ def _parse_remove_order(command: str, player_restriction: Player | None, board: 
             raise RuntimeError(f"No such player: {command}")
         if target_player not in player_restriction.vassal_orders:
             raise RuntimeError(f"No relationship order with {target_player}")
-        remove_relationship_order(board, player_restriction.vassal_orders[target_player], player_restriction)
+        remove_relationship_order(player_restriction.vassal_orders[target_player], player_restriction)
         return target_player
 
     if board.turn.is_builds():
@@ -536,7 +522,7 @@ def _parse_remove_order(command: str, player_restriction: Player | None, board: 
                 f"does not control the unit in {command} which belongs to {player.name if player else 'no one'}"
             )
 
-        remove_player_order_for_province(board, player, province)
+        remove_player_order_for_province(player, province)
 
         return province.get_name()
 
@@ -554,7 +540,7 @@ def _parse_remove_order(command: str, player_restriction: Player | None, board: 
         return unit
     raise ValueError(f"You control neither a unit nor a dislodged unit in {province.name}")
 
-def remove_player_order_for_province(board: Board, player: Player, province: Province) -> bool:
+def remove_player_order_for_province(player: Player, province: Province):
     """Removes a player order (build/disband/transform) for a province."""
     if province is None:
         return False
@@ -563,20 +549,10 @@ def remove_player_order_for_province(board: Board, player: Player, province: Pro
             continue
         if player_order.province == province:
             player.build_orders.remove(player_order)
-            database = get_connection()
-            database.execute_arbitrary_sql(
-                "DELETE FROM builds WHERE board_id=? and phase=? and location=?",
-                (board.board_id, board.turn.get_indexed_name(), player_order.province.name),
-            )
             return True
     return False
 
-def remove_relationship_order(board: Board, old_order: order.RelationshipOrder, player: Player):
+def remove_relationship_order(old_order: order.RelationshipOrder, player: Player):
     """Removes a relationship order (vassal/liege/monarchy/disown) for a player."""
     if old_order.player in player.vassal_orders:
         del player.vassal_orders[old_order.player]
-    database = get_connection()
-    database.execute_arbitrary_sql(
-        "DELETE FROM vassal_orders WHERE board_id=? and phase=? and player=? and target_player=?",
-        (board.board_id, board.turn.get_indexed_name(), player.name, old_order.player.name)
-    )

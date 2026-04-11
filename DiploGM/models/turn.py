@@ -89,7 +89,7 @@ class Turn:
         split_index = turn_str.index(" ")
         year = int(turn_str[:split_index])
         phase_name = turn_str[split_index:].strip()
-        current_turn = Turn(year)
+        current_turn = Turn(year, start_year=0)
         while current_turn.get_phase() != phase_name and current_turn.year == year:
             current_turn = current_turn.get_next_turn()
         if current_turn.year != year:

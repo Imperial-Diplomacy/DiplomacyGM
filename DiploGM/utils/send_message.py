@@ -10,7 +10,7 @@ from discord import Message, Embed, Colour
 from discord.abc import Messageable
 
 from DiploGM import config
-from DiploGM.adjudicator.utils import svg_to_png, png_to_jpg
+from DiploGM.utils.image import svg_to_png, png_to_jpg
 from .logging import log_command_no_ctx
 
 

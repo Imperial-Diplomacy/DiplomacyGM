@@ -1,22 +1,26 @@
 """Module to handle database interactions."""
+from __future__ import annotations
+
 import logging
 import sqlite3
 from collections.abc import Iterable
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 # TODO: Find a better way to do this
 # maybe use a copy from manager?
 from DiploGM.map_parser.vector.vector import get_parser
-from DiploGM.models.province import Province
 from DiploGM.models.turn import Turn
-from DiploGM.models.board import Board
 from DiploGM.models.order import (
     PlayerOrder, Build, Disband, TransformBuild,
     Vassal, Liege, DualMonarchy, Disown, Defect, RebellionMarker
 )
-from DiploGM.models.player import Player
-from DiploGM.models.spec_request import SpecRequest
 from DiploGM.models.unit import DPAllocation, UnitType, Unit
+
+if TYPE_CHECKING:
+    from DiploGM.models.board import Board
+    from DiploGM.models.player import Player
+    from DiploGM.models.province import Province
+    from DiploGM.models.spec_request import SpecRequest
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +75,6 @@ class _DatabaseConnection:
                 fish = 0
 
             board = self._get_board(board_id, current_turn, fish, name, data_file, cursor)
-            # Boards are saved in the DB as 0-indexed years, annoyingly
             board.turn = Turn(board.data["year"] + board.turn.year, board.turn.phase, board.data["year"])
 
             boards[board_id] = board
@@ -165,8 +168,8 @@ class _DatabaseConnection:
         for player_name, target_player_name, order_type in vassals_data:
             player = get_player_by_name(player_name)
             target_player = get_player_by_name(target_player_name)
-            assert isinstance(player, Player)
-            assert isinstance(target_player, Player)
+            assert player is not None
+            assert target_player is not None
             order_class = next(
                 order_class
                 for order_class in order_classes

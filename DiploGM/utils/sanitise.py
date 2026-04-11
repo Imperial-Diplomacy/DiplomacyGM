@@ -1,10 +1,17 @@
 """Module to sanitise string inputs to stuff that the bot likes."""
+from __future__ import annotations
+
 import os
 import re
+from typing import Optional, Sequence, TYPE_CHECKING
 
 from DiploGM.models.turn import PhaseName, Turn
 from DiploGM.models.unit import UnitType
 from discord.ext import commands
+
+if TYPE_CHECKING:
+    import discord
+    from DiploGM.models.player import Player
 
 coast_dict = {
     "nc": ["nc", "north coast", "(nc)"],
@@ -118,6 +125,20 @@ def get_value_from_timestamp(timestamp: str) -> int | None:
     if match:
         return int(match.group(1))
 
+    return None
+
+def find_discord_role(user: Player,
+                      roles: Sequence[discord.Role],
+                      get_order_role: bool = False) -> Optional[discord.Role]:
+    """Gets the Discord role associated with this player, if it exists."""
+    from DiploGM import config
+    suffix = config.PLAYER_CHANNEL_SUFFIX if get_order_role else ""
+    for role in roles:
+        if simple_player_name(role.name) == simple_player_name(user.get_name()) + suffix:
+            return role
+    for role in roles:
+        if simple_player_name(role.name) == simple_player_name(user.name) + suffix:
+            return role
     return None
 
 def parse_variant_path(variant: str, as_filename: bool = True, return_parent: bool = False) -> str:

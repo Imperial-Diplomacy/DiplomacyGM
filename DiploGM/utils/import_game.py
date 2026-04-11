@@ -62,6 +62,7 @@ def import_game(board: Board, data: dict) -> str:
     if "turn" in data:
         new_turn = Turn.turn_from_string(data["turn"])
         if new_turn is not None:
+            new_turn.start_year = board.data.get("year", 1901)
             board.turn = new_turn
 
     if "fish" in data:

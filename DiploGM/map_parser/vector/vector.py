@@ -191,7 +191,8 @@ class Parser:
         elapsed = time.time() - start
         logger.info(f"map_parser.vector.parse: {elapsed}s")
 
-        initial_turn = Turn(self.data.get("year", 1901), PhaseName.SPRING_MOVES, self.data.get("year", 1901))
+        self.data["year"] = self.data.get("year", 1901)
+        initial_turn = Turn(self.data["year"], PhaseName.SPRING_MOVES, self.data["year"])
         if self.data.get("first_season") == "winter":
             initial_turn = initial_turn.get_previous_turn()
 

@@ -138,7 +138,7 @@ class TestDATC_H(unittest.TestCase):
         b.moves_adjudicate(self)
 
         b.retreat(a_holland, "Belgium")
-        f_north_sea.order = Move(b.board.get_province("Norwegian Sea"))
+        f_north_sea.order = Move(destination=b.board.get_province("Norwegian Sea"))
 
         b.assert_not_forced_disband(a_holland)
         b.retreats_adjudicate(self)

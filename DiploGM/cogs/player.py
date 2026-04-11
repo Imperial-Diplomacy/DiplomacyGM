@@ -54,6 +54,11 @@ class PlayerCog(commands.Cog):
             return
 
         message = parse_order(ctx.message.content, player, board)
+        database = get_connection()
+        if board.turn.is_builds():
+            database.save_build_orders_for_players(board, player)
+        else:
+            database.save_order_for_units(board, message["units"])
         if "title" in message:
             log_command(logger, ctx, message=message["title"], level=logging.DEBUG)
         elif "message" in message:
@@ -86,6 +91,11 @@ class PlayerCog(commands.Cog):
         content = remove_prefix(ctx)
 
         message = parse_remove_order(content, player, board)
+        database = get_connection()
+        if board.turn.is_builds():
+            database.save_build_orders_for_players(board, player)
+        else:
+            database.save_order_for_units(board, message["units"])
         log_command(logger, ctx, message=message["message"])
         await send_message_and_file(channel=ctx.channel, **message)
 

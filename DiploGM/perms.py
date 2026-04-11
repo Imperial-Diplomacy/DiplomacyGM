@@ -9,6 +9,7 @@ from DiploGM import config
 from DiploGM.errors import CommandPermissionError
 from DiploGM.config import HUB_SERVER_ID, SUPERUSERS, is_player_category
 from DiploGM.utils import (simple_player_name)
+from DiploGM.utils.sanitise import find_discord_role
 from DiploGM.manager import Manager
 from DiploGM.models.player import Player
 
@@ -109,19 +110,6 @@ def require_player_by_context(ctx: commands.Context, description: str) -> Player
                 f"You cannot {description} as a GM in non-player and non-GM channels."
             )
     return player
-
-def find_discord_role(user: Player,
-                      roles: Sequence[discord.Role],
-                      get_order_role: bool = False) -> Optional[discord.Role]:
-    """Gets the Discord role associated with this player, if it exists."""
-    suffix = config.PLAYER_CHANNEL_SUFFIX if get_order_role else ""
-    for role in roles:
-        if simple_player_name(role.name) == simple_player_name(user.get_name()) + suffix:
-            return role
-    for role in roles:
-        if simple_player_name(role.name) == simple_player_name(user.name) + suffix:
-            return role
-    return None
 
 # Player
 
