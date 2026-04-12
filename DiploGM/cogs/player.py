@@ -9,7 +9,7 @@ from DiploGM import perms
 from DiploGM.db.database import get_connection
 from DiploGM.parse_order import parse_order, parse_remove_order
 from DiploGM.utils import get_orders, log_command, parse_season, send_message_and_file
-from DiploGM.utils.sanitise import get_colour_option, remove_prefix
+from DiploGM.utils.sanitise import find_discord_role, get_colour_option, remove_prefix
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
 from DiploGM.models.player import ForcedDisbandOption, Player, ViewOrdersTags, OrdersSubsetOption
 from DiploGM.utils.send_message import ErrorMessage, send_error, send_orders_locked_error
@@ -412,7 +412,7 @@ class PlayerCog(commands.Cog):
 
         overwrites = {
             ctx.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            perms.find_discord_role(player, ctx.guild.roles): discord.PermissionOverwrite(view_channel=True)
+            find_discord_role(player, ctx.guild.roles): discord.PermissionOverwrite(view_channel=True)
         }
         for role in roles:
             overwrites[role] = discord.PermissionOverwrite(view_channel=True)
@@ -445,7 +445,7 @@ class PlayerCog(commands.Cog):
             perms.assert_gm_only(ctx, "use a gm argument for .press_directory")
 
         board = manager.get_board(ctx.guild.id)
-        power_roles = set(map(lambda p: perms.find_discord_role(p, guild.roles), board.get_players()))
+        power_roles = set(map(lambda p: find_discord_role(p, guild.roles), board.get_players()))
 
         if player is None:
             if "global" in arguments:
@@ -491,7 +491,7 @@ class PlayerCog(commands.Cog):
         direct_channels = [] # channels where the only perms are the calling country +1
         group_channels = [] # channels where the only perms are the calling country + >1
 
-        player_role = perms.find_discord_role(player, ctx.guild.roles)
+        player_role = find_discord_role(player, ctx.guild.roles)
         if player_role is None:
             await send_message_and_file(
                 channel=ctx.channel,

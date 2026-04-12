@@ -282,16 +282,18 @@ class Province():
             procqueue: list[Province] = []
             connected_sets: set[frozenset[Province]] = set()
 
-            for adjacent in p1.adjacency_data.adjacent | p2.adjacency_data.adjacent | possible_tripoint.adjacency_data.adjacent:
-                if adjacent not in (p1, p2, possible_tripoint):
-                    procqueue.append(adjacent)
-                    connected_sets.add(frozenset({adjacent}))
+            for adjacent in (p1.adjacency_data.adjacent |
+                             p2.adjacency_data.adjacent |
+                             possible_tripoint.adjacency_data.adjacent
+                             ).difference({p1, p2, possible_tripoint}):
+                procqueue.append(adjacent)
+                connected_sets.add(frozenset({adjacent}))
 
             def find_set_with_element(element):
                 for subgraph in connected_sets:
                     if element in subgraph:
                         return subgraph
-                raise Exception("Error in costal_connection algorithm")
+                raise RuntimeError("Error in coastal_connection algorithm")
 
             # we will retain the invariant that no two elements of connected_sets contain the same element
             for to_process in procqueue:

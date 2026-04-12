@@ -98,7 +98,7 @@ class MovesAdjudicator(Adjudicator):
 
         order = AdjudicableOrder(unit)
         # Kinda hacky
-        order.is_convoy = (valid == OrderValidity.VALID_WITH_CONVOY)
+        order.is_convoy = valid == OrderValidity.VALID_WITH_CONVOY
         order.not_supportable = not unit.order.is_support_holdable
         if failed:
             self.failed_or_invalid_units.add(MapperInformation(unit))

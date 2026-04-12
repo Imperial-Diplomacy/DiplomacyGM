@@ -177,21 +177,20 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
     if board.turn.is_builds():
         response = ""
         for player in sorted(board.players, key=lambda sort_player: sort_player.get_name()):
-            if board.is_player_hidden(player):
+            if board.is_player_hidden(player) or (player_restriction is not None and player != player_restriction):
                 continue
-            if not player_restriction or player == player_restriction:
-                visible = [
-                    order
-                    for order in player.build_orders
-                    if isinstance(order, PlayerOrder) and order.province.name in visible
-                ]
+            visible = [
+                order
+                for order in player.build_orders
+                if isinstance(order, PlayerOrder) and order.province.name in visible
+            ]
 
-                if len(visible) > 0:
-                    response += f"\n**{player.get_name()}**: ({len(player.centers)}) " + \
-                        f"({'+' if len(player.centers) - len(player.units) >= 0 else ''}" + \
-                        f"{len(player.centers) - len(player.units)})"
-                    for unit in visible:
-                        response += f"\n{unit}"
+            if len(visible) > 0:
+                response += f"\n**{player.get_name()}**: ({len(player.centers)}) " + \
+                    f"({'+' if len(player.centers) - len(player.units) >= 0 else ''}" + \
+                    f"{len(player.centers) - len(player.units)})"
+                for unit in visible:
+                    response += f"\n{unit}"
         return response
     response = ""
 

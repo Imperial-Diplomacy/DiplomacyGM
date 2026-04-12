@@ -2,14 +2,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING
 from enum import Enum, auto
-import discord
 
-from DiploGM import config
 from DiploGM.models import order
 from DiploGM.models.order import Disband, Build
-from DiploGM.utils import simple_player_name
 
 
 if TYPE_CHECKING:

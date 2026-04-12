@@ -17,7 +17,7 @@ def _get_adjacent_geom(province: Province) -> set[Province]:
 # Generally, two adjacent provinces should share exactly two adjacencies on either side
 # If there's only one, that typeically means there's a "hole" or the edge of the board
 # We try to trace a chain of such provinces, and if we reach the start, we have a loop
-def _find_province_loop(province: Province, 
+def _find_province_loop(province: Province,
                         destination: Province,
                         visited: list[Province],
                         ignored_provinces: set[Province]) -> Optional[list[Province]]:
@@ -35,6 +35,41 @@ def _find_province_loop(province: Province,
             return loop
     visited.pop()
     return None
+
+# Given a pair of adjacent provinces, checks for potential adjacency issues, including:
+# - No common adjacencies
+# - Loops of provinces with no internal adjacencies
+# - Groups of four provinces that all border each other
+def _check_common_adjacencies(province: Province,
+                              adj: Province,
+                              visited_provinces: set,
+                              visited_adjacent: set) -> str | None:
+    common_adj = _get_adjacent_geom(province) & _get_adjacent_geom(adj)
+    if len(common_adj) == 0:
+        return f"Provinces {province.name} and {adj.name} are adjacent but have no common adjacencies"
+    # Finding loops of provinces
+    if len(common_adj) == 1:
+        loop = _find_province_loop(adj, province, [province], visited_provinces)
+        # Comparing names of the first and last provinces in the loop so we only report it once
+        if loop is not None and loop[1].name > loop[-1].name:
+            return f"Found a loop of provinces {', '.join(p.name for p in loop)}. " + \
+                   "If they surround an impassable province or the board edge, this is expected"
+
+    # Searching for groups of four provinces that all share a border
+    warnings = []
+    for third, fourth in combinations(common_adj - visited_provinces - visited_adjacent, 2):
+        if fourth not in _get_adjacent_geom(third):
+            continue
+        if min(len(_get_adjacent_geom(province)),
+                len(_get_adjacent_geom(adj)),
+                len(_get_adjacent_geom(third)),
+                len(_get_adjacent_geom(fourth))) == 3:
+            # Skips provinces that only border the other three, as that's geometrically possible
+            continue
+        warnings.append(f"Provinces {province.name}, {adj.name}, {third.name}, " +
+                        f"and {fourth.name} all border each other")
+    visited_adjacent.add(adj)
+    return "\n".join(warnings) if warnings else None
 
 # This is a function that goes through a map and attempts to find adjacency issues
 # It will not be fool-proof, but it should detect the majority of potential errors
@@ -73,31 +108,8 @@ def verify_adjacencies(variant: str) -> str:
             warnings.append(f"Province {province.name} has no adjacencies")
         visited_adjacent = set()
         for adj in _get_adjacent_geom(province) - visited_provinces:
-            common_adj = _get_adjacent_geom(province) & _get_adjacent_geom(adj)
-            if len(common_adj) == 0:
-                warnings.append(f"Provinces {province.name} and {adj.name} are adjacent " +
-                                "but have no common adjacencies")
-                continue
-            # Finding loops of provinces
-            if len(common_adj) == 1:
-                loop = _find_province_loop(adj, province, [province], visited_provinces)
-                # Comparing names of the first and last provinces in the loop so we only report it once
-                if loop is not None and loop[1].name > loop[-1].name:
-                    warnings.append(f"Found a loop of provinces {', '.join(p.name for p in loop)}. " +
-                                    "If they surround an impassable province or the board edge, this is expected")
-
-            # Searching for groups of four provinces that all share a border
-            for third, fourth in combinations(common_adj - visited_provinces - visited_adjacent, 2):
-                if fourth not in _get_adjacent_geom(third):
-                    continue
-                if min(len(_get_adjacent_geom(province)),
-                        len(_get_adjacent_geom(adj)),
-                        len(_get_adjacent_geom(third)),
-                        len(_get_adjacent_geom(fourth))) == 3:
-                    # Skips provinces that only border the other three, as that's geometrically possible
-                    continue
-                warnings.append(f"Provinces {province.name}, {adj.name}, {third.name}, " +
-                                f"and {fourth.name} all border each other")
-            visited_adjacent.add(adj)
+            warning = _check_common_adjacencies(province, adj, visited_provinces, visited_adjacent)
+            if warning is not None:
+                warnings.append(warning)
         visited_provinces.add(province)
     return "\n".join(warnings) if warnings else "No adjacency issues found"

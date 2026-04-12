@@ -63,6 +63,8 @@ HUB_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID: int = all_config["hub"]["substitute_tic
 HUB_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID: int = all_config["hub"]["substitute_advertise_channel"]
 HUB_SERVER_SUBSTITUTE_LOG_CHANNEL_ID: int = all_config["hub"]["substitute_log_channel"]
 HUB_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID: int = all_config["hub"]["winter_scoreboard_output_channel"]
+HUB_SERVER_BOT_BUGS_CHANNEL_ID: int = all_config["hub"]["bot_bugs_channel"]
+HUB_SERVER_BOT_FEEDBACK_CHANNEL_ID: int = all_config["hub"]["bot_feedback_channel"]
 ## Roles
 HUB_BOT_WIZARD_ROLE: int = all_config["hub"]["bot_wizard"]
 

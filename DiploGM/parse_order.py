@@ -364,6 +364,31 @@ def _check_for_warnings(unit: Unit) -> str | None:
             return "This support is is between two non-adjacent provinces, and will fail unless there is a convoy."
     return None
 
+def _handle_individual_order(current_order: str,
+                             parser: Lark,
+                             player_restriction: Player | None,
+                             board: Board) -> tuple[str, Unit | None, str | None]:
+    logger.debug(current_order)
+    cmd = parser.parse(current_order.strip().lower() + " ")
+    ordered_unit: Unit = generator.transform(cmd)
+    if board.turn.is_builds():
+        return f"\u001b[0;32m{current_order}", None, None
+    movement = ordered_unit
+    if (warning := _check_for_warnings(ordered_unit)) is not None:
+        warning = f"`{current_order}`: {warning}"
+        color = "\u001b[0;33m"
+    else:
+        color = "\u001b[0;32m"
+    if ((ordered_unit.player is None or not ordered_unit.player.is_active)
+        and player_restriction is not None):
+        if (dp_order := ordered_unit.dp_allocations.get(player_restriction.name)) is not None:
+            orderoutput = f"{color}DP {dp_order.points}: {ordered_unit} {dp_order.order}"
+        else:
+            orderoutput = f"{color}Removed DP bid for {ordered_unit}"
+    else:
+        orderoutput = f"{color}{ordered_unit} {ordered_unit.order}"
+    return orderoutput, movement, warning
+
 def parse_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, Any]:
     """Parses the order commands, adds the orders as necessary, and returns a message of the results."""
     ordertext = message.split(maxsplit=1)
@@ -398,26 +423,12 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         if not current_order.strip():
             continue
         try:
-            logger.debug(current_order)
-            cmd = parser.parse(current_order.strip().lower() + " ")
-            ordered_unit: Unit = generator.transform(cmd)
-            if board.turn.is_builds():
-                orderoutput.append(f"\u001b[0;32m{current_order}")
-            else:
-                movement.append(ordered_unit)
-                if (warning:= _check_for_warnings(ordered_unit)) is not None:
-                    warnings.append(f"`{current_order}`: {warning}")
-                    color = "\u001b[0;33m"
-                else:
-                    color = "\u001b[0;32m"
-                if ((ordered_unit.player is None or not ordered_unit.player.is_active)
-                    and player_restriction is not None):
-                    if (dp_order := ordered_unit.dp_allocations.get(player_restriction.name)) is not None:
-                        orderoutput.append(f"{color}DP {dp_order.points}: {ordered_unit} {dp_order.order}")
-                    else:
-                        orderoutput.append(f"{color}Removed DP bid for {ordered_unit}")
-                else:
-                    orderoutput.append(f"{color}{ordered_unit} {ordered_unit.order}")
+            cur_order, move, warn = _handle_individual_order(current_order, parser, player_restriction, board)
+            orderoutput.append(cur_order)
+            if move is not None:
+                movement.append(move)
+            if warn is not None:
+                warnings.append(warn)
         except VisitError as e:
             orderoutput.append(f"\u001b[0;31m{current_order}")
             errors.append(f"`{current_order}`: {str(e).splitlines()[-1]}")

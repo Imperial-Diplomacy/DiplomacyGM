@@ -15,7 +15,7 @@ from DiploGM.utils import (
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
 from DiploGM.models.player import Player
 from DiploGM.models.province import ProvinceType
-from DiploGM.utils.sanitise import parse_season, remove_prefix
+from DiploGM.utils.sanitise import find_discord_role, parse_season, remove_prefix
 
 if TYPE_CHECKING:
     from DiploGM.models.board import Board
@@ -116,7 +116,7 @@ class CommandCog(commands.Cog):
         )
         for player in player_list:
             if (
-                player_role := perms.find_discord_role(player, ctx.guild.roles)
+                player_role := find_discord_role(player, ctx.guild.roles)
             ) is not None:
                 player_name = player_role.mention
             else:
@@ -472,7 +472,7 @@ class CommandCog(commands.Cog):
             if owner is None:
                 player_name = "None"
             elif (
-                player_role := perms.find_discord_role(owner, ctx.guild.roles)
+                player_role := find_discord_role(owner, ctx.guild.roles)
             ) is not None:
                 player_name = player_role.mention
             else:

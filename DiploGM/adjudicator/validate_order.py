@@ -167,19 +167,20 @@ def _validate_convoy_order(province: Province, order: ConvoyTransport) -> tuple[
 
 def _validate_support_order(province: Province, order: Support) -> tuple[OrderValidity, str | None]:
     source_unit = order.source.unit
+    destination = order.destination
     if not isinstance(source_unit, Unit):
         return OrderValidity.INVALID, "There is no unit to support"
 
-    move_valid, _ = order_is_valid(province, Move(destination=order.destination), strict_coast_movement=False)
+    move_valid, _ = order_is_valid(province, Move(destination=destination), False)
     if move_valid != OrderValidity.VALID:
         return OrderValidity.INVALID, "Cannot support somewhere you can't move to"
-    if order.destination.name in province.adjacency_data.difficult_adjacencies:
+    if destination.name in province.adjacency_data.difficult_adjacencies:
         return OrderValidity.INVALID, \
-            f"Cannot support to {order.destination} from {province} due to difficult adjacency"
-    is_support_hold = order.source == order.destination
+            f"Cannot support to {destination} from {province} due to difficult adjacency"
+    is_support_hold = order.source == destination
     source_to_destination_valid = (
         is_support_hold
-        or is_valid_result(order_is_valid(order.source, Move(destination=order.destination), strict_coast_movement=False))
+        or is_valid_result(order_is_valid(order.source, Move(destination=destination), False))
     )
 
     if not source_to_destination_valid:
@@ -194,7 +195,7 @@ def _validate_support_order(province: Province, order: Support) -> tuple[OrderVa
     mismatched_reason = ""
     if not isinstance(source_unit.order, Move):
         mismatched_reason = "did not make a move order"
-    elif source_unit.order.destination != order.destination:
+    elif source_unit.order.destination != destination:
         mismatched_reason = "moved to a different province"
     elif order.destination_coast is not None and source_unit.order.destination_coast != order.destination_coast:
         mismatched_reason = "moved to a different coast"

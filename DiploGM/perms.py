@@ -1,6 +1,6 @@
 from __future__ import annotations
 from functools import wraps
-from typing import Any, Awaitable, Callable, Optional, TYPE_CHECKING, Sequence
+from typing import Any, Awaitable, Callable, TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -9,7 +9,6 @@ from DiploGM import config
 from DiploGM.errors import CommandPermissionError
 from DiploGM.config import HUB_SERVER_ID, SUPERUSERS, is_player_category
 from DiploGM.utils import (simple_player_name)
-from DiploGM.utils.sanitise import find_discord_role
 from DiploGM.manager import Manager
 from DiploGM.models.player import Player
 

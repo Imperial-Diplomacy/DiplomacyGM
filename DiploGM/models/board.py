@@ -7,9 +7,6 @@ import re
 import time
 from typing import Dict, Optional, TYPE_CHECKING
 
-from discord import Thread, TextChannel
-
-from DiploGM.config import PLAYER_CHANNEL_SUFFIX, is_player_category
 from DiploGM.models.order import NMR, Move, Hold, Support, ConvoyTransport, Core, Transform, RetreatMove, RetreatDisband
 from DiploGM.models.province import ProvinceType
 from DiploGM.models.unit import Unit, UnitType, DPAllocation

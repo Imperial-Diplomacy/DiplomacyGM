@@ -39,7 +39,7 @@ from DiploGM.models.extension import ExtensionEvent, SQLiteExtensionEventReposit
 from DiploGM.models.order import Disband, Build
 from DiploGM.models.player import Player
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
-from DiploGM.utils.sanitise import get_colour_option, remove_prefix, sanitise_name
+from DiploGM.utils.sanitise import find_discord_role, get_colour_option, remove_prefix, sanitise_name
 from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
@@ -441,7 +441,7 @@ class GameManagementCog(commands.Cog):
                 await ctx.send(f"No Player for {channel.name}")
                 continue
 
-            if (role := perms.find_discord_role(player, guild.roles)) is None:
+            if (role := find_discord_role(player, guild.roles)) is None:
                 await ctx.send(f"No Role for {player.get_name()}")
                 continue
 
@@ -1384,8 +1384,8 @@ class GameManagementCog(commands.Cog):
             )
             return
 
-        old_role = perms.find_discord_role(player, ctx.guild.roles)
-        old_order_role = perms.find_discord_role(player, ctx.guild.roles, get_order_role=True)
+        old_role = find_discord_role(player, ctx.guild.roles)
+        old_order_role = find_discord_role(player, ctx.guild.roles, get_order_role=True)
         order_channel_name = player.get_name().lower().replace(" ", "-") + PLAYER_CHANNEL_SUFFIX
         void_channel_name = player.get_name().lower().replace(" ", "-") + "-void"
 
