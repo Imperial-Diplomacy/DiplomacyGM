@@ -50,10 +50,7 @@ class Mapper:
         self.player_restriction: str | None = restriction.name if restriction else None
 
         # different colors
-        if "color replacements" in self.board_svg_data:
-            self.replacements = self.board_svg_data["color replacements"]
-        else:
-            self.replacements = None
+        self.replacements: dict | None = self.board_svg_data.get("color replacements")
         self.load_colors(color_mode)
         if color_mode is not None:
             self.replace_colors(color_mode)
@@ -379,21 +376,23 @@ class Mapper:
 
     def replace_colors(self, color_mode: str) -> None:
         """Replaces colors in the SVG based on the color mode."""
+        if self.replacements is None:
+            return
         other_fills = find_svg_element(self.board_svg, "other_fills", self.board_svg_data)
         background = find_svg_element(self.board_svg, "background", self.board_svg_data)
-        if self.replacements is not None:
-            elements_to_process = []
-            if other_fills is not None:
-                elements_to_process.extend(other_fills)
-            if background is not None:
-                elements_to_process.extend(background)
-            for element in elements_to_process:
-                color = get_element_color(element)
-                if color in self.replacements:
-                    if color_mode in self.replacements[color]:
-                        self.utils.color_element(element, self.replacements[color][color_mode])
-                elif color_mode == "dark":
-                    self.utils.color_element(element, "ffffff")
+        titles = find_svg_element(self.board_svg, "titles", self.board_svg_data)
+        elements_to_process = []
+        if other_fills is not None:
+            elements_to_process.extend(other_fills)
+        if background is not None:
+            elements_to_process.extend(background)
+        for element in elements_to_process:
+            color = get_element_color(element)
+            if color in self.replacements:
+                if color_mode in self.replacements[color]:
+                    self.utils.color_element(element, self.replacements[color][color_mode])
+            elif color_mode == "dark":
+                self.utils.color_element(element, "ffffff")
 
 
 

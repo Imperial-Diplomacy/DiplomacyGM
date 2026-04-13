@@ -91,7 +91,7 @@ class Parser:
         for layer in LAYER_NAMES:
             l = find_svg_element(svg_root, layer, self.layers)
             if l is None:
-                if layer in {"island_borders", "island_fill_layer"}:
+                if layer in {"island_borders", "island_fill_layer", "island_ring_layer", "background"}:
                     logger.warning(f"Layer {layer} not found in SVG, but it might not be necessary")
                     continue
                 raise ValueError(f"Layer {layer} not found in SVG")

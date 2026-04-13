@@ -12,6 +12,7 @@ LAYER_DICTIONARY = {
     "land_layer": {"Region Colors"},
     "island_borders": {"Island Adjacencies"},
     "island_fill_layer": {"Island Fills"},
+    "island_ring_layer": {"Island Rings"},
     "sea_borders": {"Sea Adjacencies"},
     "province_names": {"Titles"},
     "supply_center_icons": {"SC Markers", "SC markers"},
@@ -24,6 +25,7 @@ LAYER_DICTIONARY = {
     "unit_output": {"Unit Output Layer"},
     "arrow_output": {"Orders Output Layer"},
     "background": {"Background"},
+    "other_fills": {"Other Fills", "OTHER FILLS (High Seas)"},
     "season": {"Season Title"},
     "power_banners": {"Power Banners"},
 }
