@@ -13,7 +13,7 @@ from lxml import etree
 
 from DiploGM.map_parser.vector.transform import TransGL3
 from DiploGM.map_parser.vector.utils import (
-    find_svg_element, get_element_color, get_unit_coordinates,
+    find_svg_element, get_element_color, get_sc_coordinates, get_unit_coordinates,
     parse_path, initialize_province_resident_data,
     LAYER_DICTIONARY, NAMESPACE, SVG_CONFIG_KEY
 )
@@ -28,6 +28,7 @@ from DiploGM.utils.sanitise import parse_variant_path
 # TODO: (BETA) consistent in bracket formatting
 HIGH_PROVINCES_KEY = "high provinces"
 LAYER_NAMES = set(LAYER_DICTIONARY.keys())
+INKSCAPE_LABEL = f"{NAMESPACE.get('inkscape')}label"
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +85,21 @@ class Parser:
         data["file"] = f"{parse_variant_path(variant_name)}/{data['file']}"
         return data
 
+    def _create_retreat_layer(self, svg_root: etree._ElementTree, layer_name: str, config_data: dict) -> Element:
+        """If a retreat layer is not found, we create one by copying the normal unit layer."""
+        move_layer_name = "army" if layer_name == "retreat_army" else "fleet"
+        print(f"Retreat layer {layer_name} not found. Creating one by copying {move_layer_name} layer.")
+        move_layer = find_svg_element(svg_root, move_layer_name, config_data)
+        if move_layer is None:
+            raise ValueError(f"Neither {layer_name} nor {move_layer_name} layers were found in the SVG")
+        retreat_layer = copy.deepcopy(move_layer)
+        retreat_layer.set("id", config_data.get(layer_name, f"{move_layer_name}_retreat"))
+        retreat_layer.set(f"{NAMESPACE.get('inkscape')}label", f"{move_layer_name.capitalize()} Locations (Retreats)")
+        translation = -self.data[SVG_CONFIG_KEY].get("unit_radius", 0)
+        retreat_layer.set("transform", f"translate({translation}, {translation}) {retreat_layer.get('transform', '')}")
+        svg_root.getroot().append(retreat_layer)
+        return retreat_layer
+
     def _load_layer_data(self, svg_root: etree._ElementTree) -> dict[str, Element]:
         layer_data: dict[str, Element] = {}
 
@@ -91,10 +107,14 @@ class Parser:
         for layer in LAYER_NAMES:
             l = find_svg_element(svg_root, layer, self.layers)
             if l is None:
-                if layer in {"island_borders", "island_fill_layer", "island_ring_layer", "background"}:
+                if layer in {"island_borders", "island_fill_layer", "island_ring_layer", "background", "other_fills", "season", "power_banners"}:
                     logger.warning(f"Layer {layer} not found in SVG, but it might not be necessary")
                     continue
-                raise ValueError(f"Layer {layer} not found in SVG")
+                if layer in {"retreat_army", "retreat_fleet"}:
+                    logger.warning(f"Layer {layer} not found in SVG. Duplicating army/fleet layer.")
+                    l = self._create_retreat_layer(svg_root, layer, self.layers)
+                else:
+                    raise ValueError(f"Layer {layer} not found in SVG")
             layer_data[layer] = l
 
         # If there are starting units in the map, get that layer as well
@@ -114,11 +134,9 @@ class Parser:
 
         # All provinces should have unique names
         for layer_name in ["land_layer", "island_borders", "sea_borders"]:
-            layer = self.layer_data.get(layer_name)
-            if layer is None:
-                continue
+            layer = self.layer_data.get(layer_name, [])
             for element in layer:
-                name = element.get(f"{NAMESPACE.get('inkscape')}label")
+                name = element.get(INKSCAPE_LABEL)
                 if not name:
                     logger.error("[%s] Element has no name: %s",
                                  layer_name, etree.tostring(element, encoding='unicode')[:120])
@@ -134,11 +152,9 @@ class Parser:
         # All elements in these layers should have names that reference known provinces
         for layer_name in ["island_fill_layer", "supply_center_icons",
                            "army", "retreat_army", "fleet", "retreat_fleet"]:
-            layer = self.layer_data.get(layer_name)
-            if layer is None:
-                continue
+            layer = self.layer_data.get(layer_name, [])
             for element in layer:
-                name = element.get(f"{NAMESPACE.get('inkscape')}label")
+                name = element.get(INKSCAPE_LABEL)
                 if not name:
                     logger.error("[%s] Element has no name: %s",
                                  layer_name, etree.tostring(element, encoding='unicode')[:120])
@@ -464,20 +480,6 @@ class Parser:
 
     # Sets province supply center values
     def _initialize_supply_centers(self, provinces: set[Province]) -> None:
-
-        def get_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
-            circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
-            if not circles:
-                return None, None
-            circle = circles[0]
-            cx = circle.get("cx")
-            cy = circle.get("cy")
-            if cx is None or cy is None:
-                return None, None
-            base_coordinates = float(cx), float(cy)
-            trans = TransGL3(supply_center_data)
-            return trans.transform(base_coordinates)
-
         def set_province_supply_center(province: Province, _element: Element, _coast: str | None) -> None:
             if province.has_supply_center:
                 raise RuntimeError(f"{province.name} already has a supply center")
@@ -485,7 +487,7 @@ class Parser:
 
         initialize_province_resident_data(provinces,
                                           self.layer_data["supply_center_icons"],
-                                          get_coordinates,
+                                          get_sc_coordinates,
                                           set_province_supply_center)
 
     def _set_province_unit(self, province: Province, unit_data: Element, coast: str | None = None) -> None:
@@ -544,7 +546,7 @@ class Parser:
     @staticmethod
     def get_province_name(province_data: Element) -> str:
         """Gets the province name from the SVG element, using Inkscape labels."""
-        province_name = province_data.get(f"{NAMESPACE.get('inkscape')}label")
+        province_name = province_data.get(INKSCAPE_LABEL)
         return province_name or ""
 
     def _get_province_and_coast(self, province_name: str) -> tuple[Province, str | None]:
@@ -615,7 +617,7 @@ class Parser:
             raise RuntimeError(f"Unit types are labeled, but {name} doesn't start with F or A")
 
         if "unit_type_from_names" in self.data[SVG_CONFIG_KEY] and self.data[SVG_CONFIG_KEY]["unit_type_from_names"]:
-            name = unit_data[1].get(f"{NAMESPACE.get('inkscape')}label")
+            name = unit_data[1].get(INKSCAPE_LABEL)
             if name is None:
                 raise RuntimeError("Unit has no label, but unit_type_from_names is enabled")
             if name.lower() in data_to_unit:
@@ -634,12 +636,18 @@ class Parser:
         give each province a name, army and fleet locations, and retreat locations, then return the SVG as bytes."""
         svg_root = etree.parse(self.data["file"])
         layers = {}
+        existing_objects = {}
         # First, we get a sample element from each layer, and then clear the layers
         # We need to find out the coordinate of the sample element and then apply appropriate translations
         for layer_name in ["army", "fleet", "retreat_army", "retreat_fleet", "titles"]:
             layer = find_svg_element(svg_root, layer_name, self.layers)
             if layer is None:
-                continue
+                if layer_name in {"retreat_army", "retreat_fleet"}:
+                    logger.warning(f"Layer {layer_name} not found in SVG. Duplicating army/fleet layer.")
+                    layer = self._create_retreat_layer(svg_root, layer_name, self.layers)
+                else:
+                    logger.warning(f"Layer {layer_name} not found in SVG, skipping...")
+                    continue
             sample_element = copy.deepcopy(layer[0])
             if layer_name != "titles":
                 coordinate = TransGL3(sample_element).transform(get_unit_coordinates(sample_element))
@@ -647,19 +655,22 @@ class Parser:
                 coordinate = (float(sample_element.get("x", "0")), float(sample_element.get("y", "0")))
                 sample_element.set("text-anchor", "middle")
             layers[layer_name] = {"layer": layer, "sample_element": sample_element, "coordinate": coordinate}
+            existing_objects[layer_name] = set()
             for element in layer:
-                layer.remove(element)
+                existing_objects[layer_name].add(element.get(INKSCAPE_LABEL))
 
         # For each province, we add an element to each layer.
         # We'll add a translation to put each element in the centroid of the province
         for province in self.name_to_province.values():
             for layer_name, layer_info in layers.items():
+                if layer_name in existing_objects and province.name in existing_objects[layer_name]:
+                    continue
                 if province.type == ProvinceType.SEA and layer_name in {"army", "retreat_army"}:
                     continue
                 if not province.adjacency_data.fleet_adjacent and layer_name in {"fleet", "retreat_fleet"}:
                     continue
                 copied_element = copy.deepcopy(layer_info["sample_element"])
-                copied_element.set(f"{NAMESPACE.get('inkscape')}label", province.name)
+                copied_element.set(INKSCAPE_LABEL, province.name)
                 if layer_name == "titles":
                     copied_element.text = province.name
                 center = shapely.centroid(province.geometry)

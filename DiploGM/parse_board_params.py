@@ -44,7 +44,7 @@ def parse_board_params(message: str, board: Board) -> tuple[str, str, bytes | No
         embed_colour,
     )
 
-def _set_build_options(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+def _set_build_options(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     key_name = "build_options"
     valid_options = "classic", "cores", "control", "anywhere"
     new_value = keywords[0].lower()
@@ -54,29 +54,7 @@ def _set_build_options(keywords: list[str], board: Board) -> tuple[str | None, s
     board.custom_data[key_name] = new_value
     return key_name, new_value
 
-def _set_convoyable_islands(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
-    key_name = "convoyable_islands"
-    valid_options = "true", "false", "enabled", "disabled"
-    new_value = keywords[0].lower()
-    if new_value not in valid_options:
-        raise ValueError(f"{new_value} is not a valid convoyable islands option")
-    new_value = "enabled" if new_value in ["true", "enabled"] else "disabled"
-    board.data[key_name] = new_value
-    board.custom_data[key_name] = new_value
-    return key_name, new_value
-
-def _set_supportable_cores(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
-    key_name = "supportable_cores"
-    valid_options = "true", "false", "enabled", "disabled"
-    new_value = keywords[0].lower()
-    if new_value not in valid_options:
-        raise ValueError(f"{new_value} is not a valid supportable cores option")
-    new_value = "enabled" if new_value in ["true", "enabled"] else "disabled"
-    board.data[key_name] = new_value
-    board.custom_data[key_name] = new_value
-    return key_name, new_value
-
-def _set_transformation(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+def _set_transformation(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     key_name = "transformation"
     valid_options = "disabled", "moves", "builds", "all"
     new_value = keywords[0].lower()
@@ -86,18 +64,7 @@ def _set_transformation(keywords: list[str], board: Board) -> tuple[str | None, 
     board.custom_data[key_name] = new_value
     return key_name, new_value
 
-def _set_dp(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
-    key_name = "dp"
-    valid_options = "true", "false", "enabled", "disabled"
-    new_value = keywords[0].lower()
-    if new_value not in valid_options:
-        raise ValueError(f"{new_value} is not a valid DP option")
-    new_value = "enabled" if new_value in ["true", "enabled"] else "disabled"
-    board.data[key_name] = new_value
-    board.custom_data[key_name] = new_value
-    return key_name, new_value
-
-def _set_victory_conditions(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+def _set_victory_conditions(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     key_name = "victory_conditions"
     valid_options = "classic", "vscc"
     new_value = keywords[0].lower()
@@ -107,7 +74,7 @@ def _set_victory_conditions(keywords: list[str], board: Board) -> tuple[str | No
     board.custom_data[key_name] = new_value
     return key_name, new_value
 
-def _set_victory_count(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+def _set_victory_count(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     key_name = "victory_count"
     new_value = keywords[0].lower()
     if not new_value.isdigit():
@@ -116,7 +83,7 @@ def _set_victory_count(keywords: list[str], board: Board) -> tuple[str | None, s
     board.custom_data[key_name] = new_value
     return key_name, new_value
 
-def _set_iscc(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+def _set_iscc(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     player_name, new_iscc = (keywords[0].lower(), keywords[1])
     if not (player := board.get_player(player_name)):
         raise ValueError(f"{player_name} was not found in the board")
@@ -127,7 +94,7 @@ def _set_iscc(keywords: list[str], board: Board) -> tuple[str | None, str | None
     board.custom_data["players"][player.name]["iscc"] = new_iscc
     return key_name, new_iscc
 
-def _set_vscc(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+def _set_vscc(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     player_name, new_vscc = (keywords[0].lower(), keywords[1])
     if not (player := board.get_player(player_name)):
         raise ValueError(f"{player_name} was not found in the board")
@@ -138,7 +105,7 @@ def _set_vscc(keywords: list[str], board: Board) -> tuple[str | None, str | None
     board.custom_data.setdefault("players", {}).setdefault(player.name, {})["vscc"] = new_vscc
     return key_name, new_vscc
 
-def _set_capital(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+def _set_capital(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     player_name, new_capital = (keywords[0].lower(), keywords[1])
     if not (player := board.get_player(player_name)):
         raise ValueError(f"{player_name} was not found in the board")
@@ -147,7 +114,7 @@ def _set_capital(keywords: list[str], board: Board) -> tuple[str | None, str | N
     board.data["players"][player.name]["capital"] = new_capital
     return key_name, new_capital
 
-def _set_player_name(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+def _set_player_name(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     player_name, new_name = (keywords[0].lower(), ' '.join(keywords[1:]))
     if not (player := board.get_player(player_name)):
         raise ValueError(f"{player_name} was not found in the board")
@@ -155,7 +122,7 @@ def _set_player_name(keywords: list[str], board: Board) -> tuple[str | None, str
     board.add_nickname(player, new_name)
     return key_name, new_name
 
-def _hide_player(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+def _hide_player(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     player_name, is_hidden = (keywords[0].lower(), keywords[1].lower())
     if not (player := board.get_player(player_name)):
         raise ValueError(f"{player_name} was not found in the board")
@@ -166,7 +133,7 @@ def _hide_player(keywords: list[str], board: Board) -> tuple[str | None, str | N
     board.custom_data.setdefault("players", {}).setdefault(player.name, {})["hidden"] = is_hidden
     return key_name, is_hidden
 
-def _add_player(keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+def _add_player(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     player_name, player_color = (' '.join(keywords[:-1]), keywords[-1].lower())
     if player_name in board.name_to_player:
         raise ValueError(f"{player_name} is already a player")
@@ -185,12 +152,22 @@ def _add_player(keywords: list[str], board: Board) -> tuple[str | None, str | No
     )
     return key_name, player_color
 
+# Several options are enabled/disabled toggles, so let's combine them.
+def _toggle_game_option(command: str, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+    key_name = str.replace(command, " ", "_")
+    valid_options = "true", "false", "enabled", "disabled"
+    new_value = keywords[0].lower()
+    if new_value not in valid_options:
+        raise ValueError(f"{new_value} is not a valid option. Please use true/false or enabled/disabled.")
+    board.data[key_name] = new_value
+    return key_name, new_value
+
 function_list = {
     "building": _set_build_options,
-    "convoyable islands": _set_convoyable_islands,
-    "supportable cores": _set_supportable_cores,
+    "convoyable islands": _toggle_game_option,
+    "supportable cores": _toggle_game_option,
     "transformation": _set_transformation,
-    "dp": _set_dp,
+    "dp": _toggle_game_option,
     "victory conditions": _set_victory_conditions,
     "victory count": _set_victory_count,
     "iscc": _set_iscc,
@@ -210,7 +187,7 @@ def _parse_command(command: str, board: Board) -> None:
         raise RuntimeError("No command key phrases found")
     if len(keywords) < 2:
         raise RuntimeError("Missing command keywords")
-    new_key, new_value = function_list[command_type](keywords, board)
+    new_key, new_value = function_list[command_type](command_type, keywords, board)
     if new_key is not None:
         get_connection().execute_arbitrary_sql(
             "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",

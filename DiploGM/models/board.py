@@ -361,19 +361,14 @@ class Board:
                 str_to_order[str(order)] = order
                 dp_allocations[str(order)] = allocation.points * multiplier
         # Now let's see which order got the highest bid
-        has_tie = False
         max_points = 0
-        best_order_str = ""
+        winning_order = None
         for order_str, points in dp_allocations.items():
             if points > max_points:
                 max_points = points
-                best_order_str = order_str
-                has_tie = False
-            elif points == max_points:
-                has_tie = True
-        if has_tie:
-            return None
-        winning_order = str_to_order[best_order_str]
+                winning_order = str_to_order[order_str]
+            elif points == max_points: # If there's a tie, it holds
+                winning_order = None
         if isinstance(winning_order, Move):
             winning_order.is_sortie = True
         return winning_order

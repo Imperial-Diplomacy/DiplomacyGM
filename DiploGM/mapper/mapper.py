@@ -13,7 +13,7 @@ import lxml.etree as etree
 
 from DiploGM.map_parser.vector.utils import (
     clear_svg_element, get_element_color, find_svg_element,
-    get_unit_coordinates, initialize_province_resident_data,
+    get_unit_coordinates, get_sc_coordinates, initialize_province_resident_data,
     NAMESPACE, SVG_CONFIG_KEY
 )
 from DiploGM.db.database import logger
@@ -287,18 +287,6 @@ class Mapper:
         if coasts is not None:
             initialize_province_resident_data(self.board.provinces, coasts, get_text_coordinate, match)
 
-        def get_sc_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
-            circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
-            if not circles:
-                return None, None
-            cx = circles[0].get("cx")
-            cy = circles[0].get("cy")
-            if cx is None or cy is None:
-                return None, None
-            base_coordinates = float(cx), float(cy)
-            trans = TransGL3(supply_center_data)
-            return trans.transform(base_coordinates)
-
         def set_province_supply_center(p: Province, e: Element, _:str | None) -> None:
             e.set("onclick", f'obj_clicked(event, "{p.name}", false)')
             e.set("oncontextmenu", f'obj_clicked(event, "{p.name}", false)')
@@ -380,7 +368,6 @@ class Mapper:
             return
         other_fills = find_svg_element(self.board_svg, "other_fills", self.board_svg_data)
         background = find_svg_element(self.board_svg, "background", self.board_svg_data)
-        titles = find_svg_element(self.board_svg, "titles", self.board_svg_data)
         elements_to_process = []
         if other_fills is not None:
             elements_to_process.extend(other_fills)
@@ -441,7 +428,7 @@ class Mapper:
 
         visited_provinces: set[str] = set()
 
-        for province_element in itertools.chain(province_layer, island_fill_layer):
+        for province_element in itertools.chain(province_layer, island_fill_layer, sea_layer, island_layer):
             try:
                 province = self._get_province_from_element_by_label(province_element)
             except ValueError as ex:
@@ -449,25 +436,16 @@ class Mapper:
                 continue
 
             visited_provinces.add(province.name)
-            color = self.impassable_color if province.is_impassable else self.neutral_color
-            if province.name not in self.adjacent_provinces:
+            if province.is_impassable:
+                color = self.impassable_color
+            elif province.name not in self.adjacent_provinces:
                 color = self.board_svg_data["unknown"]
-            elif province.owner:
-                color = self.player_colors[province.owner.name]
+            elif province_element in (island_layer, sea_layer):
+                color = self.clear_seas_color
+            else:
+                color = self.player_colors[province.owner.name] if province.owner else self.neutral_color
 
             self.utils.color_element(province_element, color)
-
-        for province_element in itertools.chain(sea_layer, island_layer):
-            try:
-                province = self._get_province_from_element_by_label(province_element)
-            except ValueError as ex:
-                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
-                continue
-
-            if province.name in self.adjacent_provinces:
-                self.utils.color_element(province_element, self.clear_seas_color)
-
-            visited_provinces.add(province.name)
 
         # Try to combine this with the code above? A lot of repeated stuff here
         for island_ring in island_ring_layer:
@@ -477,15 +455,17 @@ class Mapper:
                 print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
                 continue
 
-            color = self.impassable_color if province.is_impassable else self.neutral_color
-            if province.name not in self.adjacent_provinces:
+            if province.is_impassable:
+                color = self.impassable_color
+            elif province.name not in self.adjacent_provinces:
                 color = self.board_svg_data["unknown"]
-            elif province.owner:
-                color = self.player_colors[province.owner.name]
+            else:
+                color = self.player_colors[province.owner.name] if province.owner else self.neutral_color
+
             self.utils.color_element(island_ring, color, key="stroke")
 
         for province in self.board.provinces:
-            if province.name not in visited_provinces and (self.board.fow or province.type != ProvinceType.SEA):
+            if province.name not in visited_provinces:
                 print(f"Warning: Province {province.name} was not recolored by mapper!")
 
     def _color_centers(self) -> None:
@@ -644,6 +624,9 @@ class Mapper:
             for loc in new_locs:
                 root.append(
                     self.order_drawer.draw_retreat_move(
-                        None, RetreatMove(destination=retreat_province, destination_coast=retreat_coast), unit.unit_type, loc
-                    )
+                        None, RetreatMove(destination=retreat_province,
+                                          destination_coast=retreat_coast),
+                                          unit.unit_type,
+                                          loc
+                    )[0]
                 )

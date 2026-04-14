@@ -98,6 +98,17 @@ def get_unit_coordinates(
     y = float(y)
     return TransGL3(path).transform((x, y))
 
+def get_sc_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
+    circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
+    if not circles:
+        return None, None
+    cx = circles[0].get("cx")
+    cy = circles[0].get("cy")
+    if cx is None or cy is None:
+        return None, None
+    base_coordinates = float(cx), float(cy)
+    trans = TransGL3(supply_center_data)
+    return trans.transform(base_coordinates)
 
 def move_coordinate(
     former_coordinate: tuple[float, float],
