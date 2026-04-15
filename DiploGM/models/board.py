@@ -8,6 +8,7 @@ import time
 from typing import Dict, Optional, TYPE_CHECKING
 
 from discord import Thread, TextChannel
+from rapidfuzz.distance import DamerauLevenshtein
 
 from DiploGM.config import PLAYER_CHANNEL_SUFFIX, is_player_category
 from DiploGM.models.order import NMR, Move, Hold, Support, ConvoyTransport, Core, Transform, RetreatMove, RetreatDisband
@@ -222,7 +223,11 @@ class Board:
                 f'{", ".join([loc[0].name for loc in potential_locations])}.'
             )
         elif len(potential_locations) == 0:
-            raise ValueError(f"The location {name} does not match any known provinces.")
+            suggestion = self._suggest_province(name)
+            message = f"The location {name} does not match any known provinces."
+            if suggestion:
+                message += f" {suggestion}"
+            raise ValueError(message)
         else:
             return potential_locations[0]
 
@@ -260,6 +265,38 @@ class Board:
                 matches += [(province, coast) for coast in province.get_multiple_coasts()
                             if re.search(pattern, province.get_name(coast).lower())]
         return matches
+
+    def _suggest_province(self, name: str) -> str | None:
+        """Given a failed province lookup, calculate similarity to all known provinces and coasts and provide a suggestion, or None if no candidate is close enough to be worth suggesting."""
+        MAX_DISTANCE = 0.45 # If distance is too high (i.e. very different), no suggestion provided
+        CONFIDENT_GAP = 0.20 # Defines how much better a suggestion has to be than any other to confidently conclude it's the intended province
+
+        # Build (normalized_distance, display_name) for every candidate.
+        candidates: list[tuple[float, str]] = []
+        for key, province in self.name_to_province.items():
+            dist = DamerauLevenshtein.normalized_distance(name, key)
+            if dist <= MAX_DISTANCE: # Prefilter this out to make sorting faster
+                candidates.append((dist, province.name))
+
+        for key, (province, coast) in self.name_to_coast.items():
+            dist = DamerauLevenshtein.normalized_distance(name, key.lower())
+            if dist <= MAX_DISTANCE: # Prefilter this out to make sorting faster
+                candidates.append((dist, province.get_name(coast)))
+
+        # No candidates similar enough
+        if not candidates:
+            return None
+
+        candidates.sort(key=lambda x: x[0]) # Sort by distance
+        best_dist, best_name = candidates[0]
+        second_dist = candidates[1][0] if len(candidates) > 1 else float("inf")
+
+        # One suggestion is clearly superior so we confidently suggest it
+        if (second_dist - best_dist) >= CONFIDENT_GAP:
+            return f"Did you mean '{best_name}'?"
+
+        close = [display for dist, display in candidates if dist <= best_dist + CONFIDENT_GAP][:3]
+        return f"Did you mean one of: {', '.join(close)}?"
 
     def change_owner(self, province: Province, player: Player | None):
         """Changes the owner of a province, including supply center, if applicable."""
