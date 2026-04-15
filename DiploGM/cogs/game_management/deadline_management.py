@@ -205,6 +205,10 @@ async def ping_players(ctx: commands.Context) -> None:
             await ctx.send(f"No Player for {channel.name}")
             continue
 
+        # player is completely dead, not worth pinging
+        if len(player.centers) + len(player.units) == 0:
+            continue
+
         if (role := find_discord_role(player, guild.roles)) is None:
             await ctx.send(f"No Role for {player.get_name()}")
             continue
