@@ -1,3 +1,12 @@
+1.8.2
+=====
+
+Contributors:
+- andrewjdarley
+
+# Quality of Life
+- Added an order suggestor to help players with mispelled orders
+
 1.8.1
 =====
 
