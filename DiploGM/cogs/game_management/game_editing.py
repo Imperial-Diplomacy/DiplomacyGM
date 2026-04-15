@@ -96,7 +96,7 @@ async def rename_player(ctx: commands.Context, old_name: str, new_name: str) -> 
         await old_role.edit(name = sanitise_name(new_name))
         message += f"\nUpdated role {sanitise_name(old_name)} to {sanitise_name(new_name)}."
     if old_order_role:
-        await old_order_role.edit(name = sanitise_name(new_name) + PLAYER_CHANNEL_SUFFIX)
+        await old_order_role.edit(name = "orders-" + sanitise_name(new_name))
         message += f"\nUpdated order role {sanitise_name(old_name)}{PLAYER_CHANNEL_SUFFIX} " + \
                     f"to {sanitise_name(new_name)}{PLAYER_CHANNEL_SUFFIX}."
 

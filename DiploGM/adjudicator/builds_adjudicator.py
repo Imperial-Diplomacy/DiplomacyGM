@@ -175,7 +175,7 @@ class BuildsAdjudicator(Adjudicator):
             return
 
         owned_cores = {c for c in supply_centers if c.core_data.core == player}
-        for unit in player.units:
+        for unit in list(player.units):
             shortest_core_distance = min(unit.province.get_distance(c) for c in owned_cores) if owned_cores else 0
             shortest_sc_distance = min(unit.province.get_distance(c, shortest_core_distance) for c in supply_centers)
             unit_distances[unit.province] = (shortest_sc_distance, shortest_core_distance)
