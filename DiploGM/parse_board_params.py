@@ -91,7 +91,7 @@ def _set_iscc(_, keywords: list[str], board: Board) -> tuple[str | None, str | N
     if not new_iscc.isdigit():
         raise ValueError(f"{new_iscc} is not a whole number of starting SCs")
     board.data["players"][player.name]["iscc"] = new_iscc
-    board.custom_data["players"][player.name]["iscc"] = new_iscc
+    board.custom_data.setdefault("players", {}).setdefault(player.name, {})["iscc"] = new_iscc
     return key_name, new_iscc
 
 def _set_vscc(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
