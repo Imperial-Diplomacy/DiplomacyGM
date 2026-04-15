@@ -3,6 +3,7 @@
 
 Contributors
 - Golden Kumquat
+- thedarklizard
 
 # New Features
 - Added `.generate_layers` to populate the Army, Fleet, Retreat Army, Retreat Fleet, and Title layers with units/names
