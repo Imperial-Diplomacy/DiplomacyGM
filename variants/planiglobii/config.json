@@ -1,0 +1,169 @@
+{
+  "name": "Planiglobii Diplomacy",
+  "file": "planiglobii.0.2.svg",
+  "svg config": {
+    "detect_starting_units": true,
+    "unit_type_labeled": false,
+
+    "unit_labels": true,
+    "province_labels": true,
+    "center_labels": true,
+
+    "default_sea_color": "cbe0e9",
+    "border_margin_hint": 0.5,
+
+    "map_width": 388,
+    "unit_radius": 2.75,
+    "order_stroke_width": 0.55,
+    "neutral": "c7c7c7",
+    "neutral_sc": "e1e1e1",
+    "loc_x_offset": 7.7655,
+    "loc_y_offset": 7.033,
+    "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"],
+    "scoreboard": {
+      "sort": false,
+      "indexes": {
+        "1": "__name__ - __score__"
+      }
+    },
+    "season_format": "%Y"
+  },
+  "year": 1801,
+  "build_options": "classic",
+  "victory_conditions": "vscc",
+  "overrides": {
+    "Aqui": {
+      "coasts": {
+        "ec": ["Provence", "Ligurian Sea", "Barcelona"],
+        "sc": ["Bordeaux", "Bay of Biscay", "Galicia"]
+      }
+    },
+    "Hano": {
+      "coasts": {
+        "ec": ["Denmark", "Baltic Sea", "Berlin"],
+        "wc": ["Amst", "Heli Bight", "Denmark"]
+      }
+    },
+    "Italy": {
+      "coasts": {
+        "ec": ["Croatia", "Adri Sea", "Napl"],
+        "wc": ["Napl", "West Med", "Ligurian Sea", "Provence"]
+      }
+    },
+    "Leeds": {
+      "coasts": {
+        "ec": ["Scot", "North Sea", "London"],
+        "wc": ["Scot", "Ireland", "Wales"]
+      }
+    },
+    "Song": {
+      "coasts": {
+        "ec": ["Bangkok", "South China Sea", "Johor"],
+        "wc": ["Johor", "Andaman Sea", "Pegu"]
+      }
+    },
+    "St. Petersburg": {
+      "coasts": {
+        "nc": ["Nordland", "Arctic Ocean", "Yugra"],
+        "sc": ["Finland", "Gulf of Bothnia", "Baltics"]
+      }
+    }
+  },
+  "players": {
+    "Ashanti": {
+      "color": "d7d70a",
+      "iscc": 3,
+      "vscc": 20
+    },
+    "Bornu": {
+      "color": "977742",
+      "iscc": 3,
+      "vscc": 20
+    },
+    "Britain": {
+      "color": "bd505d",
+      "iscc": 6,
+      "vscc": 25
+    },
+    "Durrani": {
+      "color": "60914b",
+      "iscc": 3,
+      "vscc": 20
+    },
+    "Ethiopia": {
+      "color": "b758a9",
+      "iscc": 3,
+      "vscc": 20
+    },
+    "France": {
+      "color": "4081e2",
+      "iscc": 6,
+      "vscc": 25
+    },
+    "Kongo": {
+      "color": "3e4b86",
+      "iscc": 3,
+      "vscc": 20
+    },
+    "Maratha": {
+      "color": "dfaf24",
+      "iscc": 3,
+      "vscc": 20
+    },
+    "Netherlands": {
+      "color": "e99125",
+      "iscc": 5,
+      "vscc": 24
+    },
+    "Oman": {
+      "color": "734093",
+      "iscc": 4,
+      "vscc": 22
+    },
+    "Ottomans": {
+      "color": "8c2a34",
+      "iscc": 3,
+      "vscc": 20
+    },
+    "Portugal": {
+      "color": "197d30",
+      "iscc": 5,
+      "vscc": 24
+    },
+    "Prussia": {
+      "color": "567389",
+      "iscc": 3,
+      "vscc": 20
+    },
+    "Qajar": {
+      "color": "6c9f9b",
+      "iscc": 3,
+      "vscc": 20
+    },
+    "Qing": {
+      "color": "4a46c8",
+      "iscc": 4,
+      "vscc": 22
+    },
+    "Russia": {
+      "color": "e694c8",
+      "iscc": 5,
+      "vscc": 24
+    },
+    "Siam": {
+      "color": "bea4dd",
+      "iscc": 3,
+      "vscc": 20
+    },
+    "Spain": {
+      "color": "c7c15a",
+      "iscc": 4,
+      "vscc": 22
+    },
+    "Tokugawa": {
+      "color": "3f454b",
+      "iscc": 3,
+      "vscc": 20
+    }
+  }
+}

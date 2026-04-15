@@ -249,8 +249,8 @@ async def _adjudication_utils(ctx: commands.Context,
         aperms = discord.utils.find(lambda r: r.name == "Player", seva.roles).permissions
         bperms = discord.utils.find(lambda r: r.name == "Player", sevb.roles).permissions
 
-        a_allowed = ("Spring" in new_board.turn.get_phase()
-                    or ("Winter" in new_board.turn.get_phase()
+        a_allowed = ("Spring" in format(new_board.turn, "%S")
+                    or ("Winter" in format(new_board.turn, "%S")
                         and random.choice([0, 1]) == 0))
         await send_message_and_file(channel=ctx.channel,
                                     message=f"Game {'A' if a_allowed else 'B'} is permitted to play.")

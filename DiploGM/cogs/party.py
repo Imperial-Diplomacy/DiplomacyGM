@@ -471,7 +471,7 @@ class PartyCog(commands.Cog):
         if random.randrange(0, 5) == 0:
             get_connection().execute_arbitrary_sql(
                 """UPDATE boards SET fish=? WHERE board_id=? AND phase=?""",
-                (board.data["fish"], board.board_id, board.turn.get_indexed_name()),
+                (board.data["fish"], board.board_id, format(board.turn, "%I %S")),
             )
             get_connection().execute_arbitrary_sql(
                 """INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)""",

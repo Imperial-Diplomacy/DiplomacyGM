@@ -50,22 +50,22 @@ def parse_edit_state(message: str, board: Board) -> tuple[str, str, bytes | None
 
 # TODO: Move to .edit_game be careful about earlier boards
 def _set_phase(_, keywords: list[str], board: Board) -> None:
-    old_turn = board.turn.get_indexed_name()
+    old_turn = format(board.turn, "%I %S")
     new_turn = parse_season(keywords, board.turn)
     if new_turn is None:
         raise ValueError(f"{' '.join(keywords)} is not a valid phase name")
     board.turn = new_turn
     get_connection().execute_arbitrary_sql(
         "UPDATE boards SET phase=? WHERE board_id=? and phase=?",
-        (board.turn.get_indexed_name(), board.board_id, old_turn),
+        (format(board.turn, "%I %S"), board.board_id, old_turn),
     )
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET phase=? WHERE board_id=? and phase=?",
-        (board.turn.get_indexed_name(), board.board_id, old_turn),
+        (format(board.turn, "%I %S"), board.board_id, old_turn),
     )
     get_connection().execute_arbitrary_sql(
         "UPDATE units SET phase=? WHERE board_id=? and phase=?",
-        (board.turn.get_indexed_name(), board.board_id, old_turn),
+        (format(board.turn, "%I %S"), board.board_id, old_turn),
     )
 
 

@@ -6,6 +6,7 @@ class TransGL3:
     """Class to handle coordinate transformations using a 3x3 matrix.
     This parses transformation strings found in SVG elements, and turns them into a matrix."""
     def __init__(self, transform_string: str | Element | None=None):
+        #TODO: Wait, do we need to do these in order?
         if transform_string is None:
             transform_string = ""
         if not isinstance(transform_string, str):
@@ -64,9 +65,22 @@ class TransGL3:
             ])
             self.matrix = self.matrix @ m
 
+        if "scale" in transform_string:
+            match = re.search(r"scale\((.*?)\)", transform_string)
+            if not match:
+                raise ValueError(f"Malformed scale transformation: {transform_string}")
+            coords = match.group(1).split(",")
+            m = np.array([
+                [float(coords[0]), 0, 0],
+                [0, float(coords[1]) if len(coords) > 1 else float(coords[0]), 0],
+                [0, 0, 1]
+            ])
+            self.matrix = self.matrix @ m
+
         if ("matrix" not in transform_string
             and "translate" not in transform_string
             and "rotate" not in transform_string
+            and "scale" not in transform_string
             and transform_string != ""):
             raise ValueError(f"Unknown transformation: {transform_string}")
 

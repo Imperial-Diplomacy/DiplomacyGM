@@ -103,7 +103,7 @@ class _DatabaseConnection:
 
         board_data = cursor.execute(
             "SELECT * FROM boards WHERE board_id=? and phase=?",
-            (board_id, turn.get_indexed_name()),
+            (board_id, format(turn, "%I %S")),
         ).fetchone()
         if not board_data:
             cursor.close()
@@ -116,7 +116,7 @@ class _DatabaseConnection:
     def _load_builds(self, cursor, board_id: int, board: Board):
         builds_data = cursor.execute(
             "SELECT player, location, order_type, unit_type FROM builds WHERE board_id=? and phase=?",
-            (board_id, board.turn.get_indexed_name()),
+            (board_id, format(board.turn, "%I %S")),
         ).fetchall()
 
         def get_player_by_name(player_name) -> Player | None:
@@ -153,7 +153,7 @@ class _DatabaseConnection:
 
         vassals_data = cursor.execute(
             "SELECT player, target_player, order_type FROM vassal_orders WHERE board_id=? and phase=?",
-            (board_id, board.turn.get_indexed_name()),
+            (board_id, format(board.turn, "%I %S")),
         ).fetchall()
 
         order_classes = [
@@ -234,7 +234,7 @@ class _DatabaseConnection:
         if is_dislodged:
             retreat_ops = cursor.execute(
                 "SELECT retreat_loc FROM retreat_options WHERE board_id=? and phase=? and origin=?",
-                (board_id, board.turn.get_indexed_name(), location),
+                (board_id, format(board.turn, "%I %S"), location),
             )
             retreat_options = set(
                 map(board.get_province_and_coast, set().union(*retreat_ops))
@@ -357,7 +357,7 @@ class _DatabaseConnection:
 
         province_data = cursor.execute(
             "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
-            (board_id, board.turn.get_indexed_name()),
+            (board_id, format(board.turn, "%I %S")),
         ).fetchall()
         province_info_by_name = {
             province_name: (owner, core, half_core)
@@ -366,13 +366,12 @@ class _DatabaseConnection:
 
         if clear_status:
             cursor.execute("UPDATE units SET failed_order=False WHERE board_id=? and phase=?",
-                (board_id, board.turn.get_indexed_name()))
-
+                (board_id, format(board.turn, "%I %S")))
         unit_data = cursor.execute(
             "SELECT location, is_dislodged, owner, is_army, order_type, " +
                    "order_destination, order_source, failed_order " +
             "FROM units WHERE board_id=? and phase=?",
-            (board_id, board.turn.get_indexed_name()),
+            (board_id, format(board.turn, "%I %S")),
         ).fetchall()
         for province in board.provinces:
             self._load_province(board, province, province_info_by_name)
@@ -384,7 +383,7 @@ class _DatabaseConnection:
         dp_data = cursor.execute(
             "SELECT location, player, points, order_type, order_destination, order_source " +
             "FROM dp_orders WHERE board_id=? and phase=?",
-            (board_id, board.turn.get_indexed_name()),
+            (board_id, format(board.turn, "%I %S")),
         ).fetchall()
         for dp_info in dp_data:
             self._load_dp_orders(board, dp_info)
@@ -418,7 +417,7 @@ class _DatabaseConnection:
 
         cursor.execute(
             "INSERT INTO boards (board_id, phase, data_file, fish, name) VALUES (?, ?, ?, ?, ?)",
-            (board_id, board.turn.get_indexed_name(), board.datafile, board.data.get("fish", 0), board.data.get("name")),
+            (board_id, format(board.turn, "%I %S"), board.datafile, board.data.get("fish", 0), board.data.get("name")),
         )
         cursor.executemany(
             "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT "
@@ -466,7 +465,7 @@ class _DatabaseConnection:
             [
                 (
                     board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     province.name,
                     province.get_owner_name(),
                     province.core_data.core.name if province.core_data.core else None,
@@ -480,7 +479,7 @@ class _DatabaseConnection:
             [
                 (
                     board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     player.name,
                     build_order.province.get_name(build_order.coast),
                     build_order.__class__.__name__,
@@ -499,7 +498,7 @@ class _DatabaseConnection:
             [
                 (
                     board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     unit.province.get_name(unit.coast),
                     unit == unit.province.dislodged_unit,
                     unit.player.name if unit.player else None,
@@ -517,7 +516,7 @@ class _DatabaseConnection:
             [
                 (
                     board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     unit.province.get_name(unit.coast),
                     retreat_option[0].get_name(retreat_option[1]),
                 )
@@ -533,7 +532,7 @@ class _DatabaseConnection:
             [
                 (
                     board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     unit.province.get_name(unit.coast),
                     dp_player,
                     dp_order.points,
@@ -555,7 +554,7 @@ class _DatabaseConnection:
         Used to save the board after .edit commands
         """
         cursor = self._connection.cursor()
-        phase = board.turn.get_indexed_name()
+        phase = format(board.turn, "%I %S")
 
         # We delete and re-create units and retreat options, since some might be removed via command
         cursor.execute("DELETE FROM retreat_options WHERE board_id=? AND phase=?", (board_id, phase))
@@ -643,7 +642,7 @@ class _DatabaseConnection:
                     unit.order.get_source_str() if unit.order is not None else None,
                     unit.order.has_failed if unit.order is not None else False,
                     board.board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     unit.province.get_name(unit.coast),
                     f"{unit.province.get_name()} coast" if not unit.coast else None, # Legacy coast support
                     unit.province.dislodged_unit == unit,
@@ -656,7 +655,7 @@ class _DatabaseConnection:
             [
                 (
                     board.board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     unit.province.get_name(unit.coast),
                 )
                 for unit in units
@@ -670,7 +669,7 @@ class _DatabaseConnection:
              [
                 (
                     board.board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     unit.province.get_name(unit.coast),
                     dp_player,
                     dp_order.points,
@@ -688,7 +687,7 @@ class _DatabaseConnection:
             [
                 (
                     board.board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     unit.province.get_name(unit.coast),
                 )
                 for unit in units
@@ -700,7 +699,7 @@ class _DatabaseConnection:
             [
                 (
                     board.board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     unit.province.get_name(unit.coast),
                     retreat_option[0].get_name(retreat_option[1]),
                 )
@@ -725,7 +724,7 @@ class _DatabaseConnection:
             [
                 (
                     board.board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     player.name,
                     build_order.province.get_name(build_order.coast),
                     build_order.__class__.__name__,
@@ -744,7 +743,7 @@ class _DatabaseConnection:
             [
                 (
                     board.board_id,
-                    board.turn.get_indexed_name(),
+                    format(board.turn, "%I %S"),
                     player.name,
                     build_order.player.name,
                     build_order.__class__.__name__,
@@ -792,31 +791,31 @@ class _DatabaseConnection:
         cursor = self._connection.cursor()
         cursor.execute(
             "DELETE FROM boards WHERE board_id=? AND phase=?",
-            (board.board_id, board.turn.get_indexed_name()),
+            (board.board_id, format(board.turn, "%I %S")),
         )
         cursor.execute(
             "DELETE FROM provinces WHERE board_id=? AND phase=?",
-            (board.board_id, board.turn.get_indexed_name()),
+            (board.board_id, format(board.turn, "%I %S")),
         )
         cursor.execute(
             "DELETE FROM units WHERE board_id=? AND phase=?",
-            (board.board_id, board.turn.get_indexed_name()),
+            (board.board_id, format(board.turn, "%I %S")),
         )
         cursor.execute(
             "DELETE FROM dp_orders WHERE board_id=? AND phase=?",
-            (board.board_id, board.turn.get_indexed_name()),
+            (board.board_id, format(board.turn, "%I %S")),
         )
         cursor.execute(
             "DELETE FROM builds WHERE board_id=? AND phase=?",
-            (board.board_id, board.turn.get_indexed_name()),
+            (board.board_id, format(board.turn, "%I %S")),
         )
         cursor.execute(
             "DELETE FROM retreat_options WHERE board_id=? AND phase=?",
-            (board.board_id, board.turn.get_indexed_name()),
+            (board.board_id, format(board.turn, "%I %S")),
         )
         cursor.execute(
             "DELETE FROM vassal_orders WHERE board_id=? AND phase=?",
-            (board.board_id, board.turn.get_indexed_name()),
+            (board.board_id, format(board.turn, "%I %S")),
         )
         cursor.close()
         self._connection.commit()

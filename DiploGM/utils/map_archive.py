@@ -28,7 +28,7 @@ async def upload_map_to_archive(ctx: commands.Context,
     """Uploads a map to the archive given a server ID and the map as a PNG."""
     if not MAP_ARCHIVE_SAS_TOKEN:
         return
-    turnstr = board.turn.get_short_name() if turn is None else turn.get_short_name()
+    turnstr = format(board.turn, "%y%s") if turn is None else format(turn, "%y%s")
     url = None
     with open("gamelist.tsv", "r", encoding="utf-8") as gamefile:
         for server in gamefile:

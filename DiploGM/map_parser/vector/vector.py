@@ -78,9 +78,12 @@ class Parser:
                 data = config_merger.merge(data, variant_data)
         except FileNotFoundError:
             data = variant_data
-        keys_to_delete = [p[0] for p in data["players"].items() if p[1].get("disabled", "False").lower() == "true"]
-        for key in keys_to_delete:
-            del data["players"][key]
+        # If a config override removes a player, delete it
+        if isinstance(data["players"], dict):
+            keys_to_delete = [p[0] for p in data["players"].items()
+                              if p[1].get("disabled", "False").lower() == "true"]
+            for key in keys_to_delete:
+                del data["players"][key]
 
         data["file"] = f"{parse_variant_path(variant_name)}/{data['file']}"
         return data
@@ -107,7 +110,8 @@ class Parser:
         for layer in LAYER_NAMES:
             l = find_svg_element(svg_root, layer, self.layers)
             if l is None:
-                if layer in {"island_borders", "island_fill_layer", "island_ring_layer", "background", "other_fills", "season", "power_banners"}:
+                # TODO: Move to per-variant optional config
+                if layer in {"island_borders", "island_fill_layer", "island_ring_layer", "background", "other_fills", "season", "power_banners", "symbol_templates"}:
                     logger.warning(f"Layer {layer} not found in SVG, but it might not be necessary")
                     continue
                 if layer in {"retreat_army", "retreat_fleet"}:
@@ -125,12 +129,13 @@ class Parser:
             layer_data["starting_units"] = starting_units
         return layer_data
 
-    def verify_svg(self) -> bool:
+    def verify_svg(self) -> list[str]:
         """Checks the SVG to try to find parsing issues."""
-        is_valid = True
+        errors = []
         seen_names: set[str] = set()
         for province, data in self.data.get("overrides", {}).get("high provinces", {}).items():
             seen_names.update(f"{province}{i}" for i in range(1, data["num"] + 1))
+        high_province_names = seen_names.copy()
 
         # All provinces should have unique names
         for layer_name in ["land_layer", "island_borders", "sea_borders"]:
@@ -138,14 +143,15 @@ class Parser:
             for element in layer:
                 name = element.get(INKSCAPE_LABEL)
                 if not name:
-                    logger.error("[%s] Element has no name: %s",
-                                 layer_name, etree.tostring(element, encoding='unicode')[:120])
-                    is_valid = False
+                    error = f"[{layer_name}] Element has no name: {etree.tostring(element, encoding='unicode')[:120]}"
+                    logger.error(error)
+                    errors.append(error)
                     continue
 
-                if name in seen_names:
-                    logger.error("[%s] Duplicate name: '%s'", layer_name, name)
-                    is_valid = False
+                if name in seen_names and name not in high_province_names:
+                    error = f"[{layer_name}] Duplicate name: '{name}'"
+                    logger.error(error)
+                    errors.append(error)
                 else:
                     seen_names.add(name)
 
@@ -156,20 +162,20 @@ class Parser:
             for element in layer:
                 name = element.get(INKSCAPE_LABEL)
                 if not name:
-                    logger.error("[%s] Element has no name: %s",
-                                 layer_name, etree.tostring(element, encoding='unicode')[:120])
-                    is_valid = False
+                    error = f"[{layer_name}] Element has no name: {etree.tostring(element, encoding='unicode')[:120]}"
+                    logger.error(error)
+                    errors.append(error)
                     continue
                 if name == "Capital Marker":
                     continue
 
                 name = re.sub(r" \(?[ensw]c\)?$", "", name)  # Remove coast names
                 if name not in seen_names:
-                    logger.error("[%s] Name '%s' not found in any province layer",
-                                 layer_name, name)
-                    is_valid = False
+                    error = f"[{layer_name}] Name '{name}' not found in any province layer"
+                    logger.error(error)
+                    errors.append(error)
 
-        return is_valid
+        return errors
 
     def parse(self) -> Board:
         """Parses the SVG and config data to create a Board with the initial state."""
@@ -300,7 +306,10 @@ class Parser:
                            self.data[SVG_CONFIG_KEY].get("loc_y_offset", 0)])
 
         for name, data in self.data["overrides"].get("provinces", {}).items():
-            province = self.name_to_province[name]
+            province = self.name_to_province.get(name)
+            if not province:
+                logger.warning(f"Province {name} in overrides not found in map, skipping...")
+                continue
             # Add/remove adjacencies and coasts
             # TODO: Some way to specify whether or not to clear other adjacencies?
             province.adjacency_data.adjacent.update({self.name_to_province[n] for n in data.get("adjacencies", [])})
@@ -368,8 +377,9 @@ class Parser:
         # Add a default unit coordinate to provinces without one, just in case
         for province in provinces:
             center = shapely.centroid(province.geometry)
-            province.unit_coordinates["default"] = UnitLocation(primary_coordinate=(center.x, center.y),
-                                                                retreat_coordinate=(center.x, center.y))
+            center = (center.x, center.y) if center else (0, 0)
+            province.unit_coordinates["default"] = UnitLocation(primary_coordinate=center,
+                                                                retreat_coordinate=center)
             for unit in province.unit_coordinates.keys():
                 province.all_coordinates.setdefault(unit, set()).add(province.unit_coordinates[unit])
 
@@ -473,9 +483,11 @@ class Parser:
             # TODO: (BETA): we cheat assume core = owner if exists because capital center symbols work different
             core = province.owner
             if not core:
-                core_data = center_data.findall(".//svg:circle", namespaces=NAMESPACE)
-                if len(core_data) >= 2:
-                    core = self._get_element_player(core_data[1], province_name=province.name)
+                sc_circles = center_data.findall(".//svg:circle", namespaces=NAMESPACE)
+                if len(sc_circles) > 0:
+                    core = self._get_element_player(sc_circles[-1], province_name=province.name)
+                else:
+                    core = self._get_element_player(center_data, province_name=province.name)
             province.core_data.core = core
 
     # Sets province supply center values
@@ -624,7 +636,7 @@ class Parser:
                 return data_to_unit[name.lower()]
             raise RuntimeError(f"Unit types are labeled, but {name} wasn't sail or shield")
 
-        unit_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
+        unit_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[-1]
         num_sides = unit_data.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides")
         if num_sides in data_to_unit:
             return data_to_unit[num_sides]
@@ -674,8 +686,9 @@ class Parser:
                 if layer_name == "titles":
                     copied_element.text = province.name
                 center = shapely.centroid(province.geometry)
-                dx = center.x - layer_info["coordinate"][0]
-                dy = center.y - layer_info["coordinate"][1]
+                center = (center.x, center.y) if center else (0, 0)
+                dx = center[0] - layer_info["coordinate"][0]
+                dy = center[1] - layer_info["coordinate"][1]
                 if layer_name in {"retreat_army", "retreat_fleet"}:
                     dx -= self.data[SVG_CONFIG_KEY].get("unit_radius", 20) / 2
                     dy -= self.data[SVG_CONFIG_KEY].get("unit_radius", 20) / 2
@@ -696,8 +709,9 @@ def get_parser(name: str, force_refresh: bool=False) -> Parser:
     if force_refresh or name not in parsers:
         logger.info(f"Creating new Parser for board named {name}")
         new_parser = Parser(name)
-        if new_parser.verify_svg():
+        errors = new_parser.verify_svg()
+        if not errors:
             parsers[name] = new_parser
         else:
-            raise ValueError(f"SVG verification failed for {name}")
+            raise ValueError(f"SVG verification failed for {name}:\n* {'\n* '.join(errors)}")
     return parsers[name]

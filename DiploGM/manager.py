@@ -302,7 +302,7 @@ class Manager(metaclass=SingletonMeta):
         self._boards[old_board.board_id] = old_board
         mapper = Mapper(old_board)
 
-        message = f"Rolled back to {old_board.turn.get_indexed_name()}"
+        message = f"Rolled back to {old_board.turn: %Y %S}"
         file, file_name = mapper.draw_current_map()
         return message, file, file_name
 
@@ -335,7 +335,7 @@ class Manager(metaclass=SingletonMeta):
         self._boards[board.board_id] = loaded_board
         mapper = Mapper(loaded_board)
 
-        message = f"Reloaded board for phase {loaded_board.turn.get_indexed_name()}"
+        message = f"Reloaded board for phase {loaded_board.turn: %Y %S}"
         file, file_name = mapper.draw_current_map()
         return message, file, file_name
 

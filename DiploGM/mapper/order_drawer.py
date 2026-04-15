@@ -363,7 +363,7 @@ class OrderDrawer:
             {
                 "cx": build_location[0],
                 "cy": build_location[1],
-                "r": 10,
+                "r": self.board_svg_data["unit_radius"],
                 "fill": "none",
                 "stroke": "green",
                 "stroke-width": self.board_svg_data["order_stroke_width"],

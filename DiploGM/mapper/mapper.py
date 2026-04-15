@@ -62,10 +62,22 @@ class Mapper:
         clear_svg_element(self.board_svg, "starting_units", self.board_svg_data)
 
         self.cached_elements = {}
-        for element_name in ["army", "fleet", "retreat_army", "retreat_fleet", "unit_output"]:
+        for element_name in ["army", "fleet", "retreat_army", "retreat_fleet", "unit_output", "symbol_templates"]:
             self.cached_elements[element_name] = find_svg_element(
                 self.board_svg, element_name, self.board_svg_data
             )
+
+        # Load cached unit symbols if they exist, which we can copy over for fancy units
+        self.cached_symbols = {}
+        for element in self.cached_elements["symbol_templates"]:
+            label = element.get(f"{NAMESPACE['inkscape']}label")
+            if label in {"Armies", "Fleets"}:
+                unit_type = UnitType.ARMY if label == "Armies" else UnitType.FLEET
+                self.cached_symbols[unit_type] = {}
+                for child in element:
+                    child_label = child.get(f"{NAMESPACE['inkscape']}label")
+                    if child_label is not None:
+                        self.cached_symbols[unit_type][child_label] = child
 
         visible_provinces = (self.board.get_visible_provinces(restriction)
                              if restriction else self.board.provinces)
@@ -505,6 +517,8 @@ class Mapper:
 
             for elem in center_element:
                 self.utils.color_element(elem, element_color)
+            if len(center_element) == 0:
+                self.utils.color_element(center_element, element_color)
             if province.name in capital_provinces and capital_marker is not None:
                 capital_copy = copy.deepcopy(capital_marker)
                 for elem in capital_copy:
@@ -551,11 +565,15 @@ class Mapper:
         return {(0, 0)}
 
     def _draw_unit(self, unit: Unit, use_moves_svg=False):
-        unit_element = self._get_element_for_unit_type(unit.unit_type)
+        player_name = unit.player.name if unit.player else "Neutral"
+        if (copied_symbol := self.cached_symbols.get(unit.unit_type, {}).get(player_name)) is not None:
+            unit_element = copy.deepcopy(copied_symbol)
+        else:
+            unit_element = self._get_element_for_unit_type(unit.unit_type)
+            for path in unit_element:
+                self.utils.color_element(path, self.player_colors[player_name])
         province = unit.province
 
-        for path in unit_element:
-            self.utils.color_element(path, self.player_colors["Neutral" if unit.player is None else unit.player.name])
 
         current_coords = get_unit_coordinates(unit_element)
         current_coords = TransGL3(unit_element).transform(current_coords)

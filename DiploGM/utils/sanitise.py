@@ -152,7 +152,7 @@ def parse_variant_path(variant: str, as_filename: bool = True, return_parent: bo
         for v in variant_list:
             if os.path.isdir(f"variants/{variant}/{v}") and os.path.isfile(f"variants/{variant}/{v}/config.json"):
                 return f"variants/{variant}/{v}" if as_filename else v
-    else:
+    elif "." in variant:
         variant_name, _ = variant.split(".", 1)
         variant_path = f"variants/{variant_name}/{variant}"
         if os.path.isdir(variant_path) and os.path.isfile(f"{variant_path}/config.json"):

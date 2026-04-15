@@ -9,23 +9,24 @@ from DiploGM.map_parser.vector.transform import TransGL3
 from DiploGM.models.province import Province
 
 LAYER_DICTIONARY = {
-    "land_layer": {"Region Colors"},
+    "land_layer": {"Region Colors", "Region Fills"},
     "island_borders": {"Island Adjacencies"},
     "island_fill_layer": {"Island Fills"},
     "island_ring_layer": {"Island Rings"},
     "sea_borders": {"Sea Adjacencies"},
-    "province_names": {"Titles"},
-    "supply_center_icons": {"SC Markers", "SC markers"},
-    "titles": {"Titles"},
+    "province_names": {"Titles", "Region Names"},
+    "supply_center_icons": {"Supply Centers", "SC Markers", "SC markers"},
+    "titles": {"Titles", "Labels", "Region Names"},
+    "symbol_templates": {"Symbol Templates"},
     "army": {"Army Locations"},
-    "retreat_army": {"Army Locations (Retreats)"},
+    "retreat_army": {"Army Retreat Locations", "Army Locations (Retreats)"},
     "fleet": {"Fleet Locations"},
-    "retreat_fleet": {"Fleet Locations (Retreats)"},
+    "retreat_fleet": {"Fleet Retreat Locations", "Fleet Locations (Retreats)"},
     "starting_units": {"Units"},
     "unit_output": {"Unit Output Layer"},
     "arrow_output": {"Orders Output Layer"},
     "background": {"Background"},
-    "other_fills": {"Other Fills", "OTHER FILLS (High Seas)"},
+    "other_fills": {"Other Fills", "OTHER FILLS (High Seas)", "OTHER FILLS (Impassables and High Seas)"},
     "season": {"Season Title"},
     "power_banners": {"Power Banners"},
 }
@@ -77,8 +78,8 @@ def get_unit_coordinates(
     unit_data: Element,
 ) -> tuple[float, float]:
     """Gets the x, y coordinates of a unit."""
-    path = unit_data.find("{http://www.w3.org/2000/svg}path")
-    assert path is not None
+    subpath = unit_data.find("{http://www.w3.org/2000/svg}path")
+    path = subpath if subpath is not None else unit_data
 
     x = path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cx")
     y = path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cy")
@@ -96,7 +97,7 @@ def get_unit_coordinates(
 
     x = float(x)
     y = float(y)
-    return TransGL3(path).transform((x, y))
+    return (x, y) if subpath is None else TransGL3(path).transform((x, y))
 
 def get_sc_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
     circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)

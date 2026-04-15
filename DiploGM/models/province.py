@@ -114,7 +114,7 @@ class Province():
         """Sets the coordinates of a unit given its type, coast, and whether it's retreating."""
         # Set default cooordinate if none are found
         center = shapely.centroid(self.geometry)
-        center_coord = (center.x, center.y)
+        center_coord = (center.x, center.y) if center else (0, 0)
         coord = coord if coord else center_coord
         index = coast if coast else unit_type.name
 
