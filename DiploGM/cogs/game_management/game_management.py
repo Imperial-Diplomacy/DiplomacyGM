@@ -283,7 +283,7 @@ class GameManagementCog(commands.Cog):
             Posts in player channels information about the phase change unless "silent" is passed.
             If configured, also uploads the map to the archive.
         """
-        await adjudication.publish_orders(ctx, args)
+        await adjudication.publish_orders(ctx, *args)
 
     @commands.command(
         brief="Adjudicates the game",
