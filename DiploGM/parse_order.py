@@ -397,7 +397,8 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             "message": "For information about entering orders, please use the "
                        "[player guide](https://docs.google.com/document/d/1SNZgzDViPB-7M27dTF0SdmlVuu_KYlqqzX0FQ4tWc2M/"
                        "edit#heading=h.7u3tx93dufet) for examples and syntax.",
-            "embed_colour": ERROR_COLOUR
+            "embed_colour": ERROR_COLOUR,
+            "units": []
         }
     orderlist = ordertext[1].strip().splitlines()
     movement = []

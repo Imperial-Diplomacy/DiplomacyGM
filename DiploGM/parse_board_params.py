@@ -185,7 +185,7 @@ def _parse_command(command: str, board: Board) -> None:
 
     if command_type not in function_list:
         raise RuntimeError("No command key phrases found")
-    if len(keywords) < 2:
+    if len(keywords) < 1:
         raise RuntimeError("Missing command keywords")
     new_key, new_value = function_list[command_type](command_type, keywords, board)
     if new_key is not None:

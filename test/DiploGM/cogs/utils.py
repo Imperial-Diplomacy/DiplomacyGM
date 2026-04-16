@@ -65,6 +65,7 @@ def create_mock_context(
 
     ctx.channel = create_mock_channel() if channel is None else channel
     ctx.author = create_mock_member() if author is None else author
+    ctx.author.guild = ctx.guild
 
     # Message
     ctx.message = MagicMock(spec=discord.Message)
@@ -83,7 +84,7 @@ def create_mock_context(
 def create_mock_gm_context(guild_id: int = 0, message_content: str = "") -> MagicMock:
     """Create a context for a GM in a GM channel (gm-bot-commands in 'gm channels' category)."""
     channel = create_mock_channel("gm-bot-commands", category_name="gm channels")
-    author = create_mock_member(roles=["gm"], user_id=100)
+    author = create_mock_member(roles=["GM Team"], user_id=100)
     return create_mock_context(
         guild_id=guild_id,
         channel=channel,
@@ -110,8 +111,14 @@ def create_mock_player_context(
 class CogTestCase(unittest.IsolatedAsyncioTestCase):
     """Base test class that sets up a game board and patches send_message_and_file."""
 
-    # Subclasses can override to patch additional import sites
+    # Subclasses should list all import sites of send_message_and_file to patch
     send_patch_targets: list[str] = []
+
+    @staticmethod
+    async def invoke(cog, command_name: str, ctx, *args):
+        """Invoke a cog command's underlying callback directly, bypassing discord.py dispatch."""
+        cmd = getattr(cog, command_name)
+        await cmd.callback(cog, ctx, *args)
 
     def setUp(self):
         self.builder = BoardBuilder()
@@ -122,10 +129,7 @@ class CogTestCase(unittest.IsolatedAsyncioTestCase):
         self._patches = []
         self.mock_send = AsyncMock()
 
-        targets = ["DiploGM.cogs.command.send_message_and_file"]
-        targets.extend(self.send_patch_targets)
-
-        for target in targets:
+        for target in self.send_patch_targets:
             p = mock.patch(target, self.mock_send)
             p.start()
             self._patches.append(p)
@@ -152,27 +156,29 @@ class CogTestCase(unittest.IsolatedAsyncioTestCase):
         return kwargs.get("title", "")
 
     def assert_message_contains(self, text: str, call_index: int = -1):
-        """Assert that the sent message or title contains the given text."""
+        """Assert that the sent message, messages, or title contains the given text."""
         kwargs = self.get_sent_kwargs(call_index)
         message = kwargs.get("message", "") or ""
         title = kwargs.get("title", "") or ""
-        combined = f"{title}\n{message}"
+        messages = "\n".join(kwargs.get("messages", []) or [])
+        combined = f"{title}\n{message}\n{messages}"
         if text not in combined:
             raise AssertionError(
                 f"Expected '{text}' in sent output, got:\n"
-                f"  title: {title!r}\n  message: {message!r}"
+                f"  title: {title!r}\n  message: {message!r}\n  messages: {messages!r}"
             )
 
     def assert_message_not_contains(self, text: str, call_index: int = -1):
-        """Assert that the sent message and title do not contain the given text."""
+        """Assert that the sent message, messages, and title do not contain the given text."""
         kwargs = self.get_sent_kwargs(call_index)
         message = kwargs.get("message", "") or ""
         title = kwargs.get("title", "") or ""
-        combined = f"{title}\n{message}"
+        messages = "\n".join(kwargs.get("messages", []) or [])
+        combined = f"{title}\n{message}\n{messages}"
         if text in combined:
             raise AssertionError(
                 f"Did not expect '{text}' in sent output, got:\n"
-                f"  title: {title!r}\n  message: {message!r}"
+                f"  title: {title!r}\n  message: {message!r}\n  messages: {messages!r}"
             )
 
     def assert_file_sent(self, call_index: int = -1):
