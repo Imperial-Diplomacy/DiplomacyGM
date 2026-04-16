@@ -7,13 +7,14 @@ from discord.ext import commands
 
 from DiploGM import config
 from DiploGM.errors import CommandPermissionError
-from DiploGM.config import HUB_SERVER_ID, SUPERUSERS
+from DiploGM.config import HUB_SERVER_ID, SUPERUSERS, is_player_category
 from DiploGM.utils import (simple_player_name)
 from DiploGM.manager import Manager
 from DiploGM.models.player import Player
 
 if TYPE_CHECKING:
     from discord.abc import Messageable
+    from DiploGM.models.board import Board
 
 manager = Manager()
 
@@ -25,13 +26,42 @@ def get_player_by_context(ctx: commands.Context) -> Player | None:
     board = manager.get_board(ctx.guild.id)
     # return if in order channel
     weak_channel_checking = "weak channel checking" in board.data.get("flags", [])
-    if board.fow or weak_channel_checking:
-        return board.get_player_by_channel(
-            ctx.channel, ignore_category=weak_channel_checking
+    if board.data.get("fow", "disabled") == "enabled" or weak_channel_checking:
+        return get_player_by_channel(
+            board, ctx.channel, ignore_category=weak_channel_checking
         )
     if not isinstance(ctx.author, discord.Member):
         return None
     return manager.get_member_player_object(ctx.message.author)
+
+def get_player_by_channel(
+        board: Board,
+        channel: Messageable,
+        ignore_category=False,
+) -> Player | None:
+    """Given a Discord channel, tries to find a matching Player."""
+    # thread -> main channel
+    if isinstance(channel, discord.Thread):
+        assert isinstance(channel.parent, discord.TextChannel)
+        channel = channel.parent
+    assert isinstance(channel, discord.TextChannel)
+
+    name = channel.name
+    if (not ignore_category) and not is_player_category(channel.category):
+        return None
+
+    if board.is_chaos() and name.endswith("-void"):
+        name = name[:-5]
+    else:
+        if not name.endswith(config.PLAYER_CHANNEL_SUFFIX):
+            return None
+
+        name = name[: -(len(config.PLAYER_CHANNEL_SUFFIX))]
+
+    try:
+        return board.get_player(name)
+    except ValueError:
+        return None
 
 def is_player_channel(player_role: Player, channel: Messageable) -> bool:
     """Checks to see if the given channel is the player's orders channel."""
@@ -52,9 +82,9 @@ def require_player_by_context(ctx: commands.Context, description: str) -> Player
     board = manager.get_board(ctx.guild.id)
     # return if in order channel
     weak_channel_checking = "weak channel checking" in board.data.get("flags", [])
-    if board.fow or weak_channel_checking:
-        player = board.get_player_by_channel(
-            ctx.channel, ignore_category=weak_channel_checking
+    if board.data.get("fow", "disabled") == "enabled" or weak_channel_checking:
+        player = get_player_by_channel(
+            board, ctx.channel, ignore_category=weak_channel_checking
         )
         if player:
             return player
@@ -71,7 +101,7 @@ def require_player_by_context(ctx: commands.Context, description: str) -> Player
             raise CommandPermissionError(
                 f"You cannot {description} because you are neither a GM nor a player."
             )
-        player_channel = board.get_player_by_channel(ctx.channel)
+        player_channel = get_player_by_channel(board, ctx.channel)
         if player_channel is not None:
             player = player_channel
         elif not is_gm_channel(ctx.channel):

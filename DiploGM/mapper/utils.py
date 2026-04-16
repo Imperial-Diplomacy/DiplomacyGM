@@ -20,7 +20,7 @@ class MapperUtils:
     def __init__(self, board_svg_data: dict[str, Any]):
         self.board_svg_data = board_svg_data
 
-    def create_element(self, tag: str, attributes: dict[str, Any]) -> etree.Element:
+    def create_element(self, tag: str, attributes: dict[str, Any]) -> Element:
         """Creates an XML element with the given tag and attributes."""
         attributes_str = {key: str(val) for key, val in attributes.items()}
         return etree.Element(tag, attributes_str)

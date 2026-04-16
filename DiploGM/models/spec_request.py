@@ -9,7 +9,7 @@ from DiploGM.utils.repository import Repository
 @dataclass
 class SpectatorBan:
     user_id: int
-    end_time: str # discord_timestamp 
+    end_time: str # discord_timestamp
 
 class SpectatorBanRepository(Repository):
     def __init__(self, db_path: Path | str) -> None:

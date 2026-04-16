@@ -24,6 +24,8 @@ substitute_ticket_channel = 1294689571103309944
 substitute_advertise_channel = 1201263909622010037
 substitute_log_channel = 1282421565174059053  # currently a threadchannel (#gm-hangout->'Reputation Tracker')
 winter_scoreboard_output_channel = 1439377486055215246  # currently a threadchannel
+bot_bugs_channel = 1286027175048253573
+bot_feedback_channel = 1280587781638459528
 # Role ids
 bot_wizard = 1424487941857611837
 

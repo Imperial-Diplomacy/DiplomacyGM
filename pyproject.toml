@@ -60,3 +60,7 @@ quote-style = "double"
 indent-style = "tab"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[tool.pylint.master]
+init-hook = "import sys; sys.path.insert(0, '.')"
+max-line-length = 120

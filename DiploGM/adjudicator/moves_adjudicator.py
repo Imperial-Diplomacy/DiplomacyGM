@@ -98,7 +98,7 @@ class MovesAdjudicator(Adjudicator):
 
         order = AdjudicableOrder(unit)
         # Kinda hacky
-        order.is_convoy = (valid == OrderValidity.VALID_WITH_CONVOY)
+        order.is_convoy = valid == OrderValidity.VALID_WITH_CONVOY
         order.not_supportable = not unit.order.is_support_holdable
         if failed:
             self.failed_or_invalid_units.add(MapperInformation(unit))
@@ -273,7 +273,7 @@ class MovesAdjudicator(Adjudicator):
             # These orders fail if attacked by nation, even if that order isn't successful
             moves_here = self.moves_by_destination.get(order.current_province.name, set()) - {order}
             for move_here in moves_here:
-                # coring should fail even if the attack comes from the same nation
+                # coring and transforming should fail even if the attack comes from the same nation
                 if move_here.country == order.country and order.type == OrderType.SUPPORT:
                     continue
                 if not move_here.is_valid:

@@ -1,29 +1,32 @@
 import logging
 import re
-import numpy as np
 from typing import Callable
-
-from shapely.geometry import Point
 from xml.etree.ElementTree import Element, ElementTree
+import numpy as np
+from shapely.geometry import Point
 
 from DiploGM.map_parser.vector.transform import TransGL3
 from DiploGM.models.province import Province
 
 LAYER_DICTIONARY = {
-    "land_layer": {"Region Colors"},
+    "land_layer": {"Region Colors", "Region Fills"},
     "island_borders": {"Island Adjacencies"},
     "island_fill_layer": {"Island Fills"},
+    "island_ring_layer": {"Island Rings"},
     "sea_borders": {"Sea Adjacencies"},
-    "province_names": {"Titles"},
-    "supply_center_icons": {"SC Markers", "SC markers"},
+    "province_names": {"Titles", "Region Names"},
+    "supply_center_icons": {"Supply Centers", "SC Markers", "SC markers"},
+    "titles": {"Titles", "Labels", "Region Names"},
+    "symbol_templates": {"Symbol Templates"},
     "army": {"Army Locations"},
-    "retreat_army": {"Army Locations (Retreats)"},
+    "retreat_army": {"Army Retreat Locations", "Army Locations (Retreats)"},
     "fleet": {"Fleet Locations"},
-    "retreat_fleet": {"Fleet Locations (Retreats)"},
+    "retreat_fleet": {"Fleet Retreat Locations", "Fleet Locations (Retreats)"},
     "starting_units": {"Units"},
     "unit_output": {"Unit Output Layer"},
     "arrow_output": {"Orders Output Layer"},
     "background": {"Background"},
+    "other_fills": {"Other Fills", "OTHER FILLS (High Seas)", "OTHER FILLS (Impassables and High Seas)"},
     "season": {"Season Title"},
     "power_banners": {"Power Banners"},
 }
@@ -69,13 +72,14 @@ def get_element_color(element: Element, prefix="fill:") -> str | None:
             if value.startswith("#"):
                 value = value[1:]
             return value
+    return None
 
 def get_unit_coordinates(
     unit_data: Element,
 ) -> tuple[float, float]:
     """Gets the x, y coordinates of a unit."""
-    path = unit_data.find("{http://www.w3.org/2000/svg}path")
-    assert path is not None
+    subpath = unit_data.find("{http://www.w3.org/2000/svg}path")
+    path = subpath if subpath is not None else unit_data
 
     x = path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cx")
     y = path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cy")
@@ -93,8 +97,19 @@ def get_unit_coordinates(
 
     x = float(x)
     y = float(y)
-    return TransGL3(path).transform((x, y))
+    return (x, y) if subpath is None else TransGL3(path).transform((x, y))
 
+def get_sc_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
+    circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
+    if not circles:
+        return None, None
+    cx = circles[0].get("cx")
+    cy = circles[0].get("cy")
+    if cx is None or cy is None:
+        return None, None
+    base_coordinates = float(cx), float(cy)
+    trans = TransGL3(supply_center_data)
+    return trans.transform(base_coordinates)
 
 def move_coordinate(
     former_coordinate: tuple[float, float],
@@ -125,7 +140,7 @@ def _parse_path_command(
             coordlist[index] = 0
         coordlist[index] += args[0]
         return (coordlist[0], coordlist[1])
-    raise RuntimeError(f"Unknown SVG path command: {command}")
+    raise ValueError(f"Unknown SVG path command: {command}")
 
 def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float, float]]]:
     """Parses an SVG path string into a list of coordinates."""
@@ -148,7 +163,7 @@ def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float
             command = path[current_index]
             if command.lower() == "z":
                 if start is None:
-                    raise Exception("Invalid geometry: got 'z' on first element in a subgeometry")
+                    raise ValueError("Invalid geometry: got 'z' on first element in a subgeometry")
                 province_coordinates[-1].append(translation.transform(start))
                 start = None
                 current_index += 1
@@ -156,12 +171,9 @@ def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float
                     # If we are closing, and there is more, there must be a second polygon (Chukchi Sea)
                     province_coordinates += [[]]
                     continue
-                else:
-                    break
+                break
 
-            elif command.lower() in arguments_by_command:
-                expected_arguments = arguments_by_command[command.lower()]
-            else:
+            if (expected_arguments := arguments_by_command.get(command.lower())) is None:
                 raise RuntimeError(f"Unknown SVG path command {command}")
 
             current_index += 1
@@ -169,7 +181,7 @@ def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float
         if command is None:
             raise RuntimeError("Path string does not start with a command")
         if command.lower() == "z":
-            raise Exception("Invalid path, 'z' was followed by arguments")
+            raise ValueError("Invalid path, 'z' was followed by arguments")
 
         final_index = current_index + expected_arguments
         if len(path) < final_index:

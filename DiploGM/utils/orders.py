@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import List, Tuple, TYPE_CHECKING
 from discord.ext.commands import Context
 
+from DiploGM.utils.sanitise import find_discord_role
 from DiploGM.models.order import PlayerOrder
 from DiploGM.models.player import ForcedDisbandOption, Player, ViewOrdersTags, OrdersSubsetOption
 
@@ -35,7 +36,7 @@ def get_build_orders(player: Player,
         and player.waived_orders == 0):
         return None, None
 
-    if (player_role := player.find_discord_role(ctx.guild.roles)) is not None:
+    if (player_role := find_discord_role(player, ctx.guild.roles)) is not None:
         player_name = player_role.mention
     else:
         player_name = player.get_name()
@@ -89,7 +90,7 @@ def _get_move_orders(board: Board,
             if not ordered and not dp_orders:
                 return (None, None)
 
-    if (player_role := player.find_discord_role(ctx.guild.roles)) is not None:
+    if (player_role := find_discord_role(player, ctx.guild.roles)) is not None:
         player_name = player_role.mention
     else:
         player_name = player.get_name()
@@ -176,21 +177,20 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
     if board.turn.is_builds():
         response = ""
         for player in sorted(board.players, key=lambda sort_player: sort_player.get_name()):
-            if board.is_player_hidden(player):
+            if board.is_player_hidden(player) or (player_restriction is not None and player != player_restriction):
                 continue
-            if not player_restriction or player == player_restriction:
-                visible = [
-                    order
-                    for order in player.build_orders
-                    if isinstance(order, PlayerOrder) and order.province.name in visible
-                ]
+            visible = [
+                order
+                for order in player.build_orders
+                if isinstance(order, PlayerOrder) and order.province.name in visible
+            ]
 
-                if len(visible) > 0:
-                    response += f"\n**{player.get_name()}**: ({len(player.centers)}) " + \
-                        f"({'+' if len(player.centers) - len(player.units) >= 0 else ''}" + \
-                        f"{len(player.centers) - len(player.units)})"
-                    for unit in visible:
-                        response += f"\n{unit}"
+            if len(visible) > 0:
+                response += f"\n**{player.get_name()}**: ({len(player.centers)}) " + \
+                    f"({'+' if len(player.centers) - len(player.units) >= 0 else ''}" + \
+                    f"{len(player.centers) - len(player.units)})"
+                for unit in visible:
+                    response += f"\n{unit}"
         return response
     response = ""
 

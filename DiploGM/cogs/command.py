@@ -15,7 +15,7 @@ from DiploGM.utils import (
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
 from DiploGM.models.player import Player
 from DiploGM.models.province import ProvinceType
-from DiploGM.utils.sanitise import parse_season, remove_prefix
+from DiploGM.utils.sanitise import find_discord_role, parse_season, remove_prefix
 
 if TYPE_CHECKING:
     from DiploGM.models.board import Board
@@ -105,8 +105,8 @@ class CommandCog(commands.Cog):
         old_board = manager._database.get_board(
             board.board_id,
             parse_season(["Fall"], board.turn.get_previous_turn()),
-            board.fish,
-            board.name,
+            board.data.get("fish", 0),
+            board.data.get("name"),
             board.datafile,
         )
         player_list = (
@@ -116,7 +116,7 @@ class CommandCog(commands.Cog):
         )
         for player in player_list:
             if (
-                player_role := player.find_discord_role(ctx.guild.roles)
+                player_role := find_discord_role(player, ctx.guild.roles)
             ) is not None:
                 player_name = player_role.mention
             else:
@@ -154,9 +154,17 @@ class CommandCog(commands.Cog):
         csv = "csv" in arguments
         alphabetical = len({"a", "alpha", "alphabetical"} & set(arguments)) > 0
 
-        board = manager.get_board(ctx.guild.id)
+        # TODO: We should combine these, since this will be done a lot
+        try:
+            board = manager.get_board(ctx.guild.id)
+        except RuntimeError:
+            log_command(logger, ctx, message="No game this this server.")
+            await send_message_and_file(
+                channel=ctx.channel, title="There is no game this this server."
+            )
+            return
 
-        if board.fow:
+        if board.data.get("fow", "disabled") == "enabled":
             perms.assert_gm_only(ctx, "get scoreboard")
 
         if csv and not board.is_chaos():
@@ -203,7 +211,7 @@ class CommandCog(commands.Cog):
             message += f"Deadline: <t:{board.data['deadline']}:f>\n"
         if board.is_chaos():
             message += "Chaos: :white_check_mark:\n"
-        if board.fow:
+        if board.data.get("fow", "disabled") == "enabled":
             message += "Fog of War: :white_check_mark:\n"
         await send_message_and_file(
             channel=ctx.channel,
@@ -311,7 +319,7 @@ class CommandCog(commands.Cog):
             return
 
         # FOW permissions
-        if board.fow:
+        if board.data.get("fow", "disabled") == "enabled":
             player = perms.require_player_by_context(ctx, "get province info")
             if player and not province in board.get_visible_provinces(player):
                 log_command(
@@ -410,7 +418,7 @@ class CommandCog(commands.Cog):
             province, _ = board.get_province_and_coast(player_name)
             player = board.get_player(province.name.lower())
 
-        elif board.fow:
+        elif board.data.get("fow", "disabled") == "enabled":
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Gametype Error!",
@@ -472,7 +480,7 @@ class CommandCog(commands.Cog):
             if owner is None:
                 player_name = "None"
             elif (
-                player_role := owner.find_discord_role(ctx.guild.roles)
+                player_role := find_discord_role(owner, ctx.guild.roles)
             ) is not None:
                 player_name = player_role.mention
             else:

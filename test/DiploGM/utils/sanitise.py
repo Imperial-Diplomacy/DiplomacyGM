@@ -27,7 +27,7 @@ class TestSanitise(unittest.TestCase):
             output_turn = parse_season(input_phase.split(" "),
                                        Turn(1903, PhaseName.SPRING_RETREATS))
 
-            self.assertEqual(output_turn.year, expected_turn.year,
+            self.assertEqual(format(output_turn, "%Y"), format(expected_turn, "%Y"),
                              f"Failed to get proper year for input '{input_phase}'")
-            self.assertEqual(output_turn.get_phase(), expected_turn.get_phase(),
+            self.assertEqual(format(output_turn, "%S"), format(expected_turn, "%S"),
                              f"Failed to get proper phase for input '{input_phase}'")
