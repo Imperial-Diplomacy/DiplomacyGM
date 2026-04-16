@@ -63,3 +63,4 @@ line-ending = "auto"
 
 [tool.pylint.master]
 init-hook = "import sys; sys.path.insert(0, '.')"
+max-line-length = 120
