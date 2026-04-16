@@ -264,7 +264,7 @@ class DiploGM(commands.Bot):
     async def after_any_command(self, ctx: commands.Context):
         """After any command, log the time taken to execute the command."""
         assert ctx.command is not None
-        if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) or not ctx.guild or ctx.command:
+        if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) or not ctx.guild or not ctx.command:
             return
         self.last_command_time = ctx.message.created_at
         time_spent = (
