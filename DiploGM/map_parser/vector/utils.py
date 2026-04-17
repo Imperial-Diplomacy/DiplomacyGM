@@ -108,7 +108,7 @@ def get_sc_coordinates(supply_center_data: Element) -> tuple[float | None, float
     if cx is None or cy is None:
         return None, None
     base_coordinates = float(cx), float(cy)
-    trans = TransGL3(supply_center_data)
+    trans = TransGL3(supply_center_data) * TransGL3(circles[0])
     return trans.transform(base_coordinates)
 
 def move_coordinate(

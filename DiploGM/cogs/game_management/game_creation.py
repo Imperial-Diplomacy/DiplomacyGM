@@ -85,6 +85,7 @@ async def import_game(ctx: commands.Context) -> None:
         await send_message_and_file(channel=ctx.channel, message=message)
         return
     board = manager.get_board(ctx.guild.id)
+    get_connection().delete_board(board)
     message = import_game_module.import_game(board, decoded_file)
     get_connection().save_board(ctx.guild.id, board)
     log_command(logger, ctx, message=message)

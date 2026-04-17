@@ -445,6 +445,7 @@ class GameManagementCog(commands.Cog):
         * victory_count [number] (only used with classic victory conditions)
         * iscc [player] [starting scs]
         * vscc [player] [victory scs] (only used with vscc victory conditions)
+        * capital [player] [province]
         * player_name [original name] [new name]
         * hide_player [player] ['true', 'false']
         * add_player [player] [color] (Once added, a player cannot be removed)

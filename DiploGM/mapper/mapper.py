@@ -69,7 +69,7 @@ class Mapper:
 
         # Load cached unit symbols if they exist, which we can copy over for fancy units
         self.cached_symbols = {}
-        for element in self.cached_elements["symbol_templates"]:
+        for element in self.cached_elements["symbol_templates"] or []:
             label = element.get(f"{NAMESPACE['inkscape']}label")
             if label in {"Armies", "Fleets"}:
                 unit_type = UnitType.ARMY if label == "Armies" else UnitType.FLEET
@@ -521,10 +521,16 @@ class Mapper:
                 self.utils.color_element(center_element, element_color)
             if province.name in capital_provinces and capital_marker is not None:
                 capital_copy = copy.deepcopy(capital_marker)
+                capital_coord = get_sc_coordinates(capital_copy)
+                center_coord = get_sc_coordinates(center_element)
+                if capital_coord[0] is None or capital_coord[1] is None or center_coord[0] is None or center_coord[1] is None:
+                    print(f"Could not find coordinates for capital marker or center {province.name}, skipping translation", file=sys.stderr)
+                    continue
+                capital_copy.set("transform", f"translate({center_coord[0] - capital_coord[0]}, {center_coord[1] - capital_coord[1]})")
                 for elem in capital_copy:
                     if get_element_color(elem) != "000000":
                         self.utils.color_element(elem, element_color)
-                center_element.append(capital_copy)
+                centers_layer.append(capital_copy)
         if capital_marker is not None:
             centers_layer.remove(capital_marker)
 
