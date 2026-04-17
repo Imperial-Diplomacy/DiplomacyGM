@@ -71,7 +71,7 @@ class OrderDrawer:
             else:
                 coord_list = order.province.all_coordinates[disbanding_unit.unit_type.name]
             for coord in coord_list:
-                self.draw_force_disband(None, None, coord.primary_coordinate, self.moves_svg)
+                self.draw_force_disband(None, None, coord.primary_coordinate, None, self.moves_svg)
         elif isinstance(order, TransformBuild):
             assert order.province.unit is not None
             transforming_unit: Unit = order.province.unit
@@ -135,13 +135,13 @@ class OrderDrawer:
         )
         element.append(drawn_order)
 
-    def draw_retreat_move(self, _,
+    def draw_retreat_move(self, unit: Unit,
                           order: RetreatMove,
-                          unit_type: UnitType,
-                          coordinate: tuple[float, float]) -> list[Element]:
+                          coordinate: tuple[float, float],
+                          _) -> list[Element]:
         """Draws a retreat move on the map, returning the elements to be copied across the board if necessary.
         This is a public method since we need to draw potential retreats on the current map."""
-        destination = self.utils.loc_to_point(order.destination, unit_type, order.destination_coast, coordinate)
+        destination = self.utils.loc_to_point(order.destination, unit.unit_type, order.destination_coast, coordinate)
         if order.destination.unit:
             destination = self.utils.pull_coordinate(coordinate, destination)
         order_path = self.utils.create_element(
@@ -386,10 +386,10 @@ class OrderDrawer:
         )
         element.append(drawn_order)
 
-    def draw_force_disband(self, _, __, coordinate: tuple[float, float], svg) -> None:
+    def draw_force_disband(self, _, __, coordinate: tuple[float, float], ___, svg = None) -> None:
         """Draws a disband order on the map.
         This method is public since we need to forced disbands on the current map."""
-        element = svg.getroot()
+        element = (svg if svg is not None else self.moves_svg).getroot()
         cross_width = self.board_svg_data["order_stroke_width"] / (2**0.5)
         square_rad = self.board_svg_data["unit_radius"] / (2**0.5)
         # two corner and a center point. Rotate and concat them to make the correct object

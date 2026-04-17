@@ -624,7 +624,7 @@ class Mapper:
         root = svg.getroot()
         if not unit.retreat_options:
             self.order_drawer.draw_force_disband(
-                None, None, unit.province.get_unit_coordinates(unit.unit_type, unit.coast, True), svg)
+                None, None, unit.province.get_unit_coordinates(unit.unit_type, unit.coast, True), None, svg)
             return
 
         # TODO: Move into helper function along with logic in draw_moves_and_retreats
@@ -648,9 +648,8 @@ class Mapper:
             for loc in new_locs:
                 root.append(
                     self.order_drawer.draw_retreat_move(
-                        None, RetreatMove(destination=retreat_province,
+                        unit, RetreatMove(destination=retreat_province,
                                           destination_coast=retreat_coast),
-                                          unit.unit_type,
-                                          loc
+                                          loc, None
                     )[0]
                 )
