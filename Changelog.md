@@ -1,3 +1,17 @@
+1.9.1
+=====
+
+Contributors:
+- andrewjdarley
+- Golden Kumquat
+
+# Quality of Life
+- Added an order suggestor to help players with mispelled orders
+
+# Bugfixes
+- `.import_game` now works on games with a year on or before the start year
+- Capital markers now properly sit on top of their SC
+
 1.9.0
 =====
 

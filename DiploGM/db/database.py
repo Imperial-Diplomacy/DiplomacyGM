@@ -16,11 +16,12 @@ from DiploGM.models.order import (
 )
 from DiploGM.models.unit import DPAllocation, UnitType, Unit
 
+from DiploGM.models.spec_request import SpecRequest
+
 if TYPE_CHECKING:
     from DiploGM.models.board import Board
     from DiploGM.models.player import Player
     from DiploGM.models.province import Province
-    from DiploGM.models.spec_request import SpecRequest
 
 logger = logging.getLogger(__name__)
 
