@@ -63,6 +63,8 @@ HUB_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID: int = all_config["hub"]["substitute_tic
 HUB_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID: int = all_config["hub"]["substitute_advertise_channel"]
 HUB_SERVER_SUBSTITUTE_LOG_CHANNEL_ID: int = all_config["hub"]["substitute_log_channel"]
 HUB_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID: int = all_config["hub"]["winter_scoreboard_output_channel"]
+HUB_SERVER_BOT_BUGS_CHANNEL_ID: int = all_config["hub"]["bot_bugs_channel"]
+HUB_SERVER_BOT_FEEDBACK_CHANNEL_ID: int = all_config["hub"]["bot_feedback_channel"]
 ## Roles
 HUB_BOT_WIZARD_ROLE: int = all_config["hub"]["bot_wizard"]
 
@@ -73,9 +75,9 @@ SUPERUSERS = all_config["permissions"]["superusers"]
 EXTENSIONS_TO_LOAD_ON_STARTUP = all_config["extensions"]["load_on_startup"]
 
 # COLOURS
-EMBED_STANDARD_COLOUR = all_config["colours"]["embed_standard"]
-PARTIAL_ERROR_COLOUR = all_config["colours"]["embed_partial_success"]
-ERROR_COLOUR = all_config["colours"]["embed_error"]
+EMBED_STANDARD_COLOUR: str = all_config["colours"]["embed_standard"]
+PARTIAL_ERROR_COLOUR: str = all_config["colours"]["embed_partial_success"]
+ERROR_COLOUR: str = all_config["colours"]["embed_error"]
 
 # INKSCAPE
 SIMULATRANEOUS_SVG_EXPORT_LIMIT = all_config["inkscape"]["simultaneous_svg_exports_limit"]

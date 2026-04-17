@@ -39,21 +39,25 @@ class Turn:
             year_str = str(self.year)
         return f"{year_str} {self.phase_names[self.phase]}"
 
-    def get_indexed_name(self) -> str:
-        """Used since the database 0-indexes the years, so it wants stuff like 0 Spring Moves, etc."""
-        return f"{self.year - self.start_year} {self.phase_names[self.phase]}"
+    def __format__(self, fmt: str) -> str:
+        """Format the turn using format specifiers.
 
-    def get_short_name(self) -> str:
-        """Returns something like 42sm for 1642 Spring Moves."""
-        return f"{str(self.year % 100)}{self.short_names[self.phase]}"
-
-    def get_phase(self) -> str:
-        """Returns the name of the phase, e.g. Spring Moves."""
-        return self.phase_names[self.phase]
-
-    def get_short_phase(self) -> str:
-        """Returns the short name of the phase, e.g. sm for Spring Moves."""
-        return self.short_names[self.phase]
+        Supported specifiers:
+            %Y - Full year
+            %y - Two-digit year
+            %I - Zero-indexed year (year - start_year; used for DB queries)
+            %S - Full phase name (e.g. "Spring Moves")
+            %s - Short phase name (e.g. "sm")
+        """
+        if not fmt:
+            return str(self)
+        result = fmt
+        result = result.replace("%Y", str(self.year))
+        result = result.replace("%y", str(self.year % 100))
+        result = result.replace("%I", str(self.year - self.start_year))
+        result = result.replace("%S", self.phase_names[self.phase])
+        result = result.replace("%s", self.short_names[self.phase])
+        return result
 
     def get_next_turn(self) -> Turn:
         """Gets the next turn, incrementing the year if it's currently Winter Builds."""
@@ -89,8 +93,8 @@ class Turn:
         split_index = turn_str.index(" ")
         year = int(turn_str[:split_index])
         phase_name = turn_str[split_index:].strip()
-        current_turn = Turn(year)
-        while current_turn.get_phase() != phase_name and current_turn.year == year:
+        current_turn = Turn(year, start_year=0)
+        while format(current_turn, "%S") != phase_name and current_turn.year == year:
             current_turn = current_turn.get_next_turn()
         if current_turn.year != year:
             return None

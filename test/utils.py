@@ -138,7 +138,7 @@ class BoardBuilder():
             unit = self.army(place, player)
 
         end, end_coast = self.board.get_province_and_coast(to)
-        order = Move(end, end_coast)
+        order = Move(destination=end, destination_coast=end_coast)
         unit.order = order
 
         return unit
@@ -181,7 +181,7 @@ class BoardBuilder():
         else:
             unit = self.army(place, player)
 
-        order = Transform(coast)
+        order = Transform(destination_coast=coast)
         unit.order = order
 
         return unit
@@ -199,7 +199,7 @@ class BoardBuilder():
             The created fleet with its convoy order set.
         """
         unit = self.fleet(place, player)
-        order = ConvoyTransport(source.province, self.board.get_province(to))
+        order = ConvoyTransport(source=source.province, destination=self.board.get_province(to))
         unit.order = order
 
         return unit
@@ -223,7 +223,7 @@ class BoardBuilder():
             unit = self.army(place, player)
 
         end, end_coast = self.board.get_province_and_coast(to)
-        order = Support(source.province, end, end_coast)
+        order = Support(source=source.province, destination=end, destination_coast=end_coast)
         unit.order = order
 
         return unit
@@ -266,7 +266,7 @@ class BoardBuilder():
         else:
             unit = self.army(place, player)
 
-        order = Support(source.province, source.province)
+        order = Support(source=source.province, destination=source.province)
         unit.order = order
 
         return unit
@@ -293,7 +293,7 @@ class BoardBuilder():
             unit: The unit that is retreating.
             place: The name of the province to retreat to.
         """
-        unit.order = RetreatMove(self.board.get_province(place))
+        unit.order = RetreatMove(destination=self.board.get_province(place))
 
     def build(self, player: Player, *places: tuple[UnitType, str]):
         """Add build orders for a player.

@@ -1,10 +1,17 @@
 """Module to sanitise string inputs to stuff that the bot likes."""
+from __future__ import annotations
+
 import os
 import re
+from typing import Optional, Sequence, TYPE_CHECKING
 
 from DiploGM.models.turn import PhaseName, Turn
 from DiploGM.models.unit import UnitType
 from discord.ext import commands
+
+if TYPE_CHECKING:
+    import discord
+    from DiploGM.models.player import Player
 
 coast_dict = {
     "nc": ["nc", "north coast", "(nc)"],
@@ -120,6 +127,19 @@ def get_value_from_timestamp(timestamp: str) -> int | None:
 
     return None
 
+def find_discord_role(user: Player,
+                      roles: Sequence[discord.Role],
+                      get_order_role: bool = False) -> Optional[discord.Role]:
+    """Gets the Discord role associated with this player, if it exists."""
+    prefix = "orders-" if get_order_role else ""
+    for role in roles:
+        if simple_player_name(role.name) == prefix + simple_player_name(user.get_name()):
+            return role
+    for role in roles:
+        if simple_player_name(role.name) == prefix + simple_player_name(user.name):
+            return role
+    return None
+
 def parse_variant_path(variant: str, as_filename: bool = True, return_parent: bool = False) -> str:
     """Parses the variant path to get the correct path for the parser."""
     if os.path.isdir(f"variants/{variant}"):
@@ -131,7 +151,7 @@ def parse_variant_path(variant: str, as_filename: bool = True, return_parent: bo
         for v in variant_list:
             if os.path.isdir(f"variants/{variant}/{v}") and os.path.isfile(f"variants/{variant}/{v}/config.json"):
                 return f"variants/{variant}/{v}" if as_filename else v
-    else:
+    elif "." in variant:
         variant_name, _ = variant.split(".", 1)
         variant_path = f"variants/{variant_name}/{variant}"
         if os.path.isdir(variant_path) and os.path.isfile(f"{variant_path}/config.json"):
@@ -143,3 +163,10 @@ def parse_variant_path(variant: str, as_filename: bool = True, return_parent: bo
 def remove_prefix(ctx: commands.Context) -> str:
     """Removes the command prefix from the message content."""
     return ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").strip()
+
+def get_colour_option(board, args) -> str | None:
+    """Gets the colour option from the arguments, defaulting to None."""
+    color_options = board.data["svg config"].get("color_options", {"standard"})
+    if (color_arguments := list(set(color_options) & set(args))):
+        return color_arguments[0]
+    return None

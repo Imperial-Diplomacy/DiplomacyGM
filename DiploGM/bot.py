@@ -16,6 +16,8 @@ from DiploGM.config import (
     BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID,
     EMBED_STANDARD_COLOUR,
     ERROR_COLOUR,
+    HUB_SERVER_BOT_BUGS_CHANNEL_ID,
+    HUB_SERVER_BOT_FEEDBACK_CHANNEL_ID,
     HUB_SERVER_ID,
     HUB_SERVER_BOT_STATUS_CHANNEL_ID,
     EXTENSIONS_TO_LOAD_ON_STARTUP,
@@ -99,6 +101,7 @@ class DiploGM(commands.Bot):
 
     @staticmethod
     def get_all_extensions():
+        """Gets all cog extensions."""
         for filename in os.listdir(_EXTENSION_DIRECTORY):
             # ignore non py files
             # ignore private files e.g. '_private.py'
@@ -109,6 +112,7 @@ class DiploGM(commands.Bot):
 
     # add logging to base extension functions
     async def load_extension(self, name: str, *, package: Optional[str] = None):
+        """Loads a cog extension."""
         try:
             start = datetime.datetime.now()
             await super().load_extension(f"{name}", package=package)
@@ -120,6 +124,7 @@ class DiploGM(commands.Bot):
             raise e
 
     async def unload_extension(self, name: str, *, package: Optional[str] = None) -> None:
+        """Unloads a cog extension."""
         try:
             start = datetime.datetime.now()
             await super().unload_extension(f"{name}", package=package)
@@ -132,6 +137,7 @@ class DiploGM(commands.Bot):
 
 
     async def reload_extension(self, name: str, *, package: Optional[str] = None) -> None:
+        """Reloads a cog extension. Will roll back to the previous version if it fails to load."""
         try:
             start = datetime.datetime.now()
             await super().reload_extension(f"{name}", package=package)
@@ -175,6 +181,7 @@ class DiploGM(commands.Bot):
     # TODO: Functionality to unload/reload listeners
 
     async def on_message_listener(self, message: discord.Message):
+        """If a player sends a message, update their last activity time."""
         if message.author.bot:
             return
         server_id = message.guild.id if message.guild else None
@@ -188,6 +195,7 @@ class DiploGM(commands.Bot):
 
 
     async def on_ready(self):
+        """Stuff that happens when the bot has finished starting up."""
         now = datetime.datetime.now(datetime.timezone.utc)
         logger.info(f"Setup took {now - self.creation_time}")
 
@@ -234,6 +242,7 @@ class DiploGM(commands.Bot):
         await super().close()
 
     async def before_any_command(self, ctx: commands.Context):
+        """Before any command, log the command and thumbs-up the message."""
         if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)):
             return
         assert isinstance(ctx.guild, discord.Guild)
@@ -253,8 +262,9 @@ class DiploGM(commands.Bot):
         await ctx.message.add_reaction("👍")
 
     async def after_any_command(self, ctx: commands.Context):
+        """After any command, log the time taken to execute the command."""
         assert ctx.command is not None
-        if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) or not ctx.guild or ctx.command:
+        if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) or not ctx.guild or not ctx.command:
             return
         self.last_command_time = ctx.message.created_at
         time_spent = (
@@ -276,50 +286,50 @@ class DiploGM(commands.Bot):
             f"complete in {time_spent}s",
         )
 
-    async def on_command_error(self, ctx: commands.Context, error):
-        if isinstance(error, commands.CommandNotFound):
+    async def on_command_error(self, context: commands.Context, exception: Exception):
+        if isinstance(exception, commands.CommandNotFound):
             # we shouldn't do anything if the user says something like "..."
             return
 
-        assert ctx.guild is not None and ctx.command is not None and self.user is not None
+        assert context.guild is not None and context.command is not None and self.user is not None
         try:
             # mark the message as failed
-            await ctx.message.add_reaction("❌")
-            await ctx.message.remove_reaction("👍", self.user)
+            await context.message.add_reaction("❌")
+            await context.message.remove_reaction("👍", self.user)
         except Exception:
             # if reactions fail, ignore and continue handling existing exception
             pass
 
-        if getattr(ctx, "handled", False):
-            logger.info(f"global on_command_error skipped a {type(error)} that was previously handled...")
+        if getattr(context, "handled", False):
+            logger.info(f"global on_command_error skipped a {type(exception)} that was previously handled...")
             return
 
         time_spent = (
-            datetime.datetime.now(datetime.timezone.utc) - ctx.message.created_at
+            datetime.datetime.now(datetime.timezone.utc) - context.message.created_at
         )
 
         if isinstance(
-            error,
+            exception,
             (
                 commands.CommandInvokeError,
                 commands.ConversionError,
                 commands.HybridCommandError,
             ),
         ):
-            original = error.original
+            original = exception.original
         else:
-            original = error
+            original = exception
 
-        channel_name = (ctx.channel.name if isinstance(ctx.channel, (discord.TextChannel, discord.Thread))
-                                         else ctx.channel.id)
+        channel_name = (context.channel.name if isinstance(context.channel, (discord.TextChannel, discord.Thread))
+                                             else context.channel.id)
 
         if isinstance(original, CommandPermissionError):
             logger.info(
-                f"[{ctx.guild.name}][#{channel_name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-                f"permission denied in {time_spent}s: {original}",
+                f"[{context.guild.name}][#{channel_name}]({context.message.author.name}) - "
+                f"'{context.message.content}' - permission denied in {time_spent}s: {original}",
             )
             await send_message_and_file(
-                channel=ctx.channel,
+                channel=context.channel,
                 message=str(original),
                 embed_colour=ERROR_COLOUR,
             )
@@ -327,20 +337,20 @@ class DiploGM(commands.Bot):
 
         logger.log(
             logging.ERROR,
-            f"[{ctx.guild.name}][#{channel_name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
+            f"[{context.guild.name}][#{channel_name}]({context.message.author.name}) - '{context.message.content}' - "
             f"errored in {time_spent}s\n"
-            f"{''.join(traceback.format_exception(type(error), error, error.__traceback__))}",
+            f"{''.join(traceback.format_exception(type(exception), exception, exception.__traceback__))}",
         )
 
         if isinstance(original, discord.Forbidden):
             await send_message_and_file(
-                channel=ctx.channel,
+                channel=context.channel,
                 message="I do not have the correct permissions to do this.\n"
                 "I might not be setup correctly.\n"
                 "If this is unexpected please contact a GM or reach out in: "
-                "https://discord.com/channels/1201167737163104376/1286027175048253573"
+                f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_BUGS_CHANNEL_ID}"
                 " or "
-                "https://discord.com/channels/1201167737163104376/1280587781638459528",
+                f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_FEEDBACK_CHANNEL_ID}",
                 embed_colour=ERROR_COLOUR,
             )
             return
@@ -349,10 +359,10 @@ class DiploGM(commands.Bot):
             out = (
                 f"`{original}`\n\n"
                 "If you need some help on how to use this command, " +
-                f"consider running this command instead: `.help {ctx.command}`"
+                f"consider running this command instead: `.help {context.command}`"
             )
             await send_message_and_file(
-                channel=ctx.channel,
+                channel=context.channel,
                 title="You are missing a required argument.",
                 message=out,
             )
@@ -363,7 +373,7 @@ class DiploGM(commands.Bot):
         if isinstance(original, RuntimeError):
             out = f"`{original}`\n"
             await send_message_and_file(
-                channel=ctx.channel,
+                channel=context.channel,
                 title="DiploGM ran into a Runtime Error",
                 message=out,
             )
@@ -385,7 +395,7 @@ class DiploGM(commands.Bot):
                 "please report this to a bot dev using a feedback channel"
             )
             await send_message_and_file(
-                channel=ctx.channel,
+                channel=context.channel,
                 title="The Command didn't work this time.",
                 message=out,
             )
@@ -401,20 +411,20 @@ class DiploGM(commands.Bot):
         # Out to Bot Dev Server
         bot_error_channel = self.get_channel(BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID)
         if bot_error_channel and isinstance(bot_error_channel, discord.TextChannel):
-            channel_category = (ctx.channel.category
-                                if isinstance(ctx.channel, (discord.TextChannel, discord.Thread))
-                                else ctx.channel.id)
-            channel_name = (ctx.channel.name
-                            if isinstance(ctx.channel, (discord.TextChannel, discord.Thread))
-                            else ctx.channel.id)
+            channel_category = (context.channel.category
+                                if isinstance(context.channel, (discord.TextChannel, discord.Thread))
+                                else context.channel.id)
+            channel_name = (context.channel.name
+                            if isinstance(context.channel, (discord.TextChannel, discord.Thread))
+                            else context.channel.id)
             unhandled_out_dev = (
                 f"Type: {type(original)}\n"
-                f"Location: {ctx.guild.name} [{channel_category or ''}]-[{channel_name}]\n"
-                f"Link: {ctx.message.jump_url}\n"
+                f"Location: {context.guild.name} [{channel_category or ''}]-[{channel_name}]\n"
+                f"Link: {context.message.jump_url}\n"
                 f"Time: {str(datetime.datetime.now(datetime.timezone.utc))[:-13]} UTC\n"
-                f"Invoking User: {ctx.author.mention}[{ctx.author.name}]\n"
-                f"Invoked Command: {ctx.command.name}\n"
-                f"Command Invocation Message: ||`{ctx.message.content}`||\n"
+                f"Invoking User: {context.author.mention}[{context.author.name}]\n"
+                f"Invoked Command: {context.command.name}\n"
+                f"Command Invocation Message: ||`{context.message.content}`||\n"
             ) + unhandled_out
             await send_message_and_file(
                 channel=bot_error_channel,
@@ -425,19 +435,20 @@ class DiploGM(commands.Bot):
         # Out to Invoking Channel
         unhandled_out = (
             "Please report this to a bot dev in a feedback channel: "
-            "https://discord.com/channels/1201167737163104376/1286027175048253573"
+            f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_BUGS_CHANNEL_ID}"
             " or "
-            "https://discord.com/channels/1201167737163104376/1280587781638459528"
+            f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_FEEDBACK_CHANNEL_ID}"
             "\n"
         ) + unhandled_out
         await send_message_and_file(
-            channel=ctx.channel,
+            channel=context.channel,
             title="ERROR: >.< How did we get here...",
             message=unhandled_out,
             embed_colour=ERROR_COLOUR,
         )
 
     async def on_reaction_add(self, reaction, user):
+        """1-in-10,000 chance to call out someone for reacting."""
         if user.bot:
             return
 

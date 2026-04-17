@@ -72,9 +72,18 @@ class PanelDrawer:
         vscc_index = self.board_svg_data.get("power_vscc_index", 7)
 
         self.utils.color_element(power_element[0], self.player_colors[player.name])
-        new_translation = (self.scoreboard_power_locations[banner_index][0] - initial_pretransform_coordinates[0],
-                            self.scoreboard_power_locations[banner_index][1] - initial_pretransform_coordinates[1])
-        power_element.set("transform", f"translate({new_translation[0]}, {new_translation[1]})")
+        if self.board_svg_data.get("scoreboard", {}).get("sort", True):
+            new_translation = (self.scoreboard_power_locations[banner_index][0] - initial_pretransform_coordinates[0],
+                                self.scoreboard_power_locations[banner_index][1] - initial_pretransform_coordinates[1])
+            power_element.set("transform", f"translate({new_translation[0]}, {new_translation[1]})")
+
+        if "scoreboard" in self.board_svg_data:
+            for index, value in self.board_svg_data["scoreboard"].get("indexes", {}).items():
+                value = value.replace("__name__", player.get_name())
+                value = value.replace("__score__", str(len(player.centers)))
+                power_element[int(index)][0].text = value
+            return True
+
         if high_player_count or player_data.get("nickname"):
             power_element[name_index][0].text = player.get_name()
             # Fix for Poland-Lithuanian Commonwealth
@@ -112,7 +121,7 @@ class PanelDrawer:
         if all_power_banners_element is None:
             return
 
-        if self.board.fow and self.restriction is not None:
+        if self.board.data.get("fow", "disabled") == "enabled" and self.restriction is not None:
             # don't get info
             players = sorted(self.board.get_players(), key=lambda sort_player: sort_player.name)
         else:
@@ -133,7 +142,12 @@ class PanelDrawer:
         date = find_svg_element(svg, "season", self.board_svg_data)
         if date is None:
             return
-        game_name = self.board.name
-        name_text = "" if game_name is None else f"{game_name} — "
+        game_name = self.board.data.get("name")
+        if (season_format := self.board_svg_data.get("season_format")) is not None:
+            name_text = format(self.board.turn, season_format)
+            name_text = name_text.replace("%N", game_name if game_name else "")
+        else:
+            name_text = "" if game_name is None else f"{game_name} — "
+            name_text += format(self.board.turn, "%Y %S")
         # TODO: this is hacky; I don't know a better way
-        date[0][0].text = name_text + str(self.board.turn)
+        date[0][0].text = name_text

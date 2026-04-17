@@ -128,6 +128,22 @@ def _validate_convoymove_order(province: Province, order: Move) -> tuple[OrderVa
         return OrderValidity.INVALID, f"No valid convoy path from {province} to {order.destination}"
     return OrderValidity.VALID, None
 
+def _validate_transform_order(province: Province, order: Transform) -> tuple[OrderValidity, str | None]:
+    assert province.unit is not None
+    if not province.has_supply_center:
+        return OrderValidity.INVALID, "Transformation must be done in a supply center"
+    if province.owner != province.unit.player:
+        return OrderValidity.INVALID, "Units can only transform in owned supply centers"
+    if province.type == ProvinceType.SEA:
+        return OrderValidity.INVALID, "Fleets cannot transform in sea provinces"
+    if province.is_landlocked():
+        return OrderValidity.INVALID, "Armies cannot transform in inland provinces"
+    if (province.unit.unit_type == UnitType.ARMY
+        and province.get_multiple_coasts()
+        and order.destination_coast not in province.get_multiple_coasts()):
+        return OrderValidity.INVALID, "Unit needs to transform to a valid coast"
+    return OrderValidity.VALID, None
+
 def _validate_convoy_order(province: Province, order: ConvoyTransport) -> tuple[OrderValidity, str | None]:
     unit = province.unit
     assert unit is not None
@@ -139,7 +155,7 @@ def _validate_convoy_order(province: Province, order: ConvoyTransport) -> tuple[
     if not isinstance(source_unit.order, Move) or source_unit.order.destination != order.destination:
         return OrderValidity.MISMATCHED_ORDER, f"Convoyed unit {order.source} did not make corresponding order"
     valid_move, reason = order_is_valid(
-        order.source, Move(order.destination), strict_coast_movement=False
+        order.source, Move(destination=order.destination), strict_coast_movement=False
     )
     if not is_valid_result(valid_move):
         return valid_move, reason
@@ -151,19 +167,20 @@ def _validate_convoy_order(province: Province, order: ConvoyTransport) -> tuple[
 
 def _validate_support_order(province: Province, order: Support) -> tuple[OrderValidity, str | None]:
     source_unit = order.source.unit
+    destination = order.destination
     if not isinstance(source_unit, Unit):
         return OrderValidity.INVALID, "There is no unit to support"
 
-    move_valid, _ = order_is_valid(province, Move(order.destination), strict_coast_movement=False)
+    move_valid, _ = order_is_valid(province, Move(destination=destination), False)
     if move_valid != OrderValidity.VALID:
         return OrderValidity.INVALID, "Cannot support somewhere you can't move to"
-    if order.destination.name in province.adjacency_data.difficult_adjacencies:
+    if destination.name in province.adjacency_data.difficult_adjacencies:
         return OrderValidity.INVALID, \
-            f"Cannot support to {order.destination} from {province} due to difficult adjacency"
-    is_support_hold = order.source == order.destination
+            f"Cannot support to {destination} from {province} due to difficult adjacency"
+    is_support_hold = order.source == destination
     source_to_destination_valid = (
         is_support_hold
-        or is_valid_result(order_is_valid(order.source, Move(order.destination), strict_coast_movement=False))
+        or is_valid_result(order_is_valid(order.source, Move(destination=destination), False))
     )
 
     if not source_to_destination_valid:
@@ -175,12 +192,15 @@ def _validate_support_order(province: Province, order: Support) -> tuple[OrderVa
             return OrderValidity.INVALID, f"Supported unit {order.source} cannot be supported"
         return OrderValidity.VALID, None
 
+    mismatched_reason = ""
     if not isinstance(source_unit.order, Move):
-        return OrderValidity.MISMATCHED_ORDER, f"Supported unit {order.source} did not make a move order"
-    if source_unit.order.destination != order.destination:
-        return OrderValidity.MISMATCHED_ORDER, f"Supported unit {order.source} moved to a different province"
-    if order.destination_coast is not None and source_unit.order.destination_coast != order.destination_coast:
-        return OrderValidity.MISMATCHED_ORDER, f"Supported unit {order.source} moved to a different coast"
+        mismatched_reason = "did not make a move order"
+    elif source_unit.order.destination != destination:
+        mismatched_reason = "moved to a different province"
+    elif order.destination_coast is not None and source_unit.order.destination_coast != order.destination_coast:
+        mismatched_reason = "moved to a different coast"
+    if mismatched_reason:
+        return OrderValidity.MISMATCHED_ORDER, f"Supported unit {order.source} {mismatched_reason}"
 
     return OrderValidity.VALID, None
 
@@ -197,15 +217,19 @@ def order_is_valid(province: Province, order: Order, strict_coast_movement=True)
         - bool result is True if the order is valid, False otherwise
         - str reason is "convoy" if order is valid but requires a convoy, provides reasoning if invalid
     """
+    order_functions = {Transform: _validate_transform_order,
+                       ConvoyTransport: _validate_convoy_order,
+                       Support: _validate_support_order}
     if order is None:
         return OrderValidity.INVALID, "Order is missing"
 
-    if ((isinstance(order, Support) or isinstance(order, ConvoyTransport))
-        and order.source.unit is None):
+    if (isinstance(order, (Support, ConvoyTransport)) and order.source.unit is None):
         return OrderValidity.INVALID, f"No unit for supporting / convoying at {order.source}"
     if province.unit is None:
         return OrderValidity.INVALID, f"There is no unit in {province}"
 
+    if type(order) in order_functions:
+        return order_functions[type(order)](province, order)
     if isinstance(order, (Hold, RetreatDisband, NMR)):
         return OrderValidity.VALID, None
     if isinstance(order, Core):
@@ -214,29 +238,11 @@ def order_is_valid(province: Province, order: Order, strict_coast_movement=True)
         if province.owner != province.unit.player:
             return OrderValidity.INVALID, "Units can only core in owned supply centers"
         return OrderValidity.VALID, None
-    if isinstance(order, Transform):
-        if not province.has_supply_center:
-            return OrderValidity.INVALID, "Transformation must be done in a supply center"
-        if province.owner != province.unit.player:
-            return OrderValidity.INVALID, "Units can only transform in owned supply centers"
-        if province.type == ProvinceType.SEA:
-            return OrderValidity.INVALID, "Fleets cannot transform in sea provinces"
-        if province.is_landlocked():
-            return OrderValidity.INVALID, "Armies cannot transform in inland provinces"
-        if (province.unit.unit_type == UnitType.ARMY
-            and province.get_multiple_coasts()
-            and order.destination_coast not in province.get_multiple_coasts()):
-            return OrderValidity.INVALID, "Unit needs to transform to a valid coast"
-        return OrderValidity.VALID, None
     if isinstance(order, (Move, RetreatMove)):
         valid, reason = _validate_move_order(province, order, strict_coast_movement)
         if valid != OrderValidity.VALID and isinstance(order, Move) and province.unit.unit_type == UnitType.ARMY:
             # Try convoy validation if move is invalid
             return _validate_convoymove_order(province, order)
         return valid, reason
-    if isinstance(order, ConvoyTransport):
-        return _validate_convoy_order(province, order)
-    if isinstance(order, Support):
-        return _validate_support_order(province, order)
 
     return OrderValidity.INVALID, f"Unknown move type: {order.__class__.__name__}"

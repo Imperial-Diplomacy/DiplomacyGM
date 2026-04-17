@@ -18,5 +18,4 @@ def make_adjudicator(board: Board) -> Adjudicator:
         return RetreatsAdjudicator(board)
     if board.turn.is_builds():
         return BuildsAdjudicator(board)
-    else:
-        raise ValueError("Board is in invalid phase")
+    raise ValueError("Board is in invalid phase")

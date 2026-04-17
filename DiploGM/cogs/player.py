@@ -9,7 +9,7 @@ from DiploGM import perms
 from DiploGM.db.database import get_connection
 from DiploGM.parse_order import parse_order, parse_remove_order
 from DiploGM.utils import get_orders, log_command, parse_season, send_message_and_file
-from DiploGM.utils.sanitise import remove_prefix
+from DiploGM.utils.sanitise import find_discord_role, get_colour_option, remove_prefix
 from DiploGM.manager import Manager, SEVERENCE_A_ID, SEVERENCE_B_ID
 from DiploGM.models.player import ForcedDisbandOption, Player, ViewOrdersTags, OrdersSubsetOption
 from DiploGM.utils.send_message import ErrorMessage, send_error, send_orders_locked_error
@@ -54,6 +54,11 @@ class PlayerCog(commands.Cog):
             return
 
         message = parse_order(ctx.message.content, player, board)
+        database = get_connection()
+        if board.turn.is_builds():
+            database.save_build_orders_for_players(board, player)
+        else:
+            database.save_order_for_units(board, message["units"])
         if "title" in message:
             log_command(logger, ctx, message=message["title"], level=logging.DEBUG)
         elif "message" in message:
@@ -86,6 +91,11 @@ class PlayerCog(commands.Cog):
         content = remove_prefix(ctx)
 
         message = parse_remove_order(content, player, board)
+        database = get_connection()
+        if board.turn.is_builds():
+            database.save_build_orders_for_players(board, player)
+        else:
+            database.save_order_for_units(board, message["units"])
         log_command(logger, ctx, message=message["message"])
         await send_message_and_file(channel=ctx.channel, **message)
 
@@ -192,14 +202,13 @@ class PlayerCog(commands.Cog):
         arguments = remove_prefix(ctx).lower().split()
         convert_svg = (player is not None) or not (
             {"true", "t", "svg", "s"} & set(arguments)
-        )
+        )   
         board = manager.get_board(ctx.guild.id)
-        color_options = set(board.data["svg config"].get("color_options", {"standard"}))
-        color_options.add("custom")
-        color_arguments = list(color_options & set(arguments))
-        color_mode = color_arguments[0] if color_arguments else None
-        movement_only = "movement" in arguments
-        turn = parse_season(arguments, board.turn)
+        args = {"color_mode": get_colour_option(board, arguments),
+                "movement_only": "movement" in arguments,
+                "turn": parse_season(arguments, board.turn),
+                "is_severance": ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID],
+                "fow_player": player if board.data.get("fow", "disabled") == "enabled" else None}
 
         if player and show_moves and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
@@ -207,24 +216,12 @@ class PlayerCog(commands.Cog):
             return
 
         try:
-            if not board.fow:
-                file, file_name = manager.draw_map(
-                    ctx.guild.id,
-                    draw_moves = show_moves,
-                    player_restriction = player,
-                    color_mode = color_mode,
-                    turn = turn,
-                    movement_only = movement_only and show_moves,
-                    is_severance = ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID],
-                )
-            elif show_moves:
-                file, file_name = manager.draw_fow_players_moves_map(
-                    ctx.guild.id, player, color_mode
-                )
-            else:
-                file, file_name = manager.draw_fow_current_map(
-                    ctx.guild.id, player, color_mode
-                )
+            file, file_name = manager.draw_map(
+                ctx.guild.id,
+                draw_moves = show_moves,
+                player_restriction = player,
+                args = args,
+            )
         except Exception as err:
             logger.error(err, exc_info=True)
             log_command(
@@ -244,11 +241,11 @@ class PlayerCog(commands.Cog):
         log_command(
             logger,
             ctx,
-            message=f"Generated {'moves' if show_moves else 'current'} map for {turn}",
+            message=f"Generated {'moves' if show_moves else 'current'} map for {args.get('turn', board.turn)}",
         )
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{turn} {'Orders' if show_moves else 'Current'} Map",
+            title=f"{args.get('turn', board.turn)} {'Orders' if show_moves else 'Current'} Map",
             message=message,
             file=file,
             file_name=file_name,
@@ -299,9 +296,8 @@ class PlayerCog(commands.Cog):
         assert ctx.guild is not None
         arguments = remove_prefix(ctx).lower().split()
         board = manager.get_board(ctx.guild.id)
-        color_options = board.data["svg config"].get("color_options", {"standard"})
-        color_arguments = list(set(color_options) & set(arguments))
-        color_mode = color_arguments[0] if color_arguments else None
+        color_mode = get_colour_option(board, arguments)
+        fow_player = player if board.data.get("fow", "disabled") == "enabled" else None
 
         if player and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
@@ -309,14 +305,9 @@ class PlayerCog(commands.Cog):
             return
 
         try:
-            if not board.fow:
-                file, file_name = manager.draw_gui_map(
-                    ctx.guild.id, color_mode=color_mode
-                )
-            else:
-                file, file_name = manager.draw_fow_gui_map(
-                    ctx.guild.id, player_restriction=player, color_mode=color_mode
-                )
+            file, file_name = manager.draw_gui_map(
+                ctx.guild.id, color_mode=color_mode, fow_player=fow_player
+            )
         except Exception as err:
             log_command(
                 logger,
@@ -349,7 +340,7 @@ class PlayerCog(commands.Cog):
         assert ctx.guild is not None
         board = manager.get_board(ctx.guild.id)
 
-        if not player or not board.fow:
+        if not player or board.data.get("fow", "disabled") != "enabled":
             log_command(logger, ctx, message="No fog of war game")
             await send_message_and_file(
                 channel=ctx.channel,
@@ -421,7 +412,7 @@ class PlayerCog(commands.Cog):
 
         overwrites = {
             ctx.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            player.find_discord_role(ctx.guild.roles): discord.PermissionOverwrite(view_channel=True)
+            find_discord_role(player, ctx.guild.roles): discord.PermissionOverwrite(view_channel=True)
         }
         for role in roles:
             overwrites[role] = discord.PermissionOverwrite(view_channel=True)
@@ -454,7 +445,7 @@ class PlayerCog(commands.Cog):
             perms.assert_gm_only(ctx, "use a gm argument for .press_directory")
 
         board = manager.get_board(ctx.guild.id)
-        power_roles = set(map(lambda p: p.find_discord_role(guild.roles), board.get_players()))
+        power_roles = set(map(lambda p: find_discord_role(p, guild.roles), board.get_players()))
 
         if player is None:
             if "global" in arguments:
@@ -500,7 +491,7 @@ class PlayerCog(commands.Cog):
         direct_channels = [] # channels where the only perms are the calling country +1
         group_channels = [] # channels where the only perms are the calling country + >1
 
-        player_role = player.find_discord_role(ctx.guild.roles)
+        player_role = find_discord_role(player, ctx.guild.roles)
         if player_role is None:
             await send_message_and_file(
                 channel=ctx.channel,

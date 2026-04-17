@@ -1,4 +1,4 @@
-1.8.2
+1.9.1
 =====
 
 Contributors:
@@ -6,6 +6,52 @@ Contributors:
 
 # Quality of Life
 - Added an order suggestor to help players with mispelled orders
+
+1.9.0
+=====
+
+Contributors
+- Golden Kumquat
+- thedarklizard
+
+# New Features
+- Added `.generate_layers` to populate the Army, Fleet, Retreat Army, Retreat Fleet, and Title layers with units/names
+  - To use, have one sample object in each layer, and the command will place units and titles on the center of provinces if one does not exist already
+- Added the Planiglobii variant
+- Maps can now support per-nation unit designs
+- `.edit_game set_capital` can now change a player's capital, which is reflected in the map if supported by the SVG
+
+# Quality of Life
+- Lots of map parser changes:
+  - Added more layer names to search for in the layer dictionary
+  - Added SVG support for units and SCs that are single objects and not groups
+  - Sorting the scoreboard is now optional
+  - More flexibility in what text of each scoreboard element is
+  - More formatting options available for the Season Title
+  - If a retreat layer is not found, will copy over the corrosponding unit layer as a backup
+  - `.verify_svg()` now returns a list of issues instead of simply logging them
+  - Removed warn_missing_coordinates() as the board is better at handling them
+
+# Developer Chnages
+- Refactored the game_management cog into smaller, more manageable modules based on function
+- Moved fow, fish, and name parametres into board.data
+- Split up some large methods into smaller chunks
+- Moved a few ImpDip-specific values into the config file
+- Moved some common operations into helper functions
+- Combined FoW map generation logic with standard map generation
+- Moved SQL calls out of parse_order and parse_edit_state modules
+  - Added save_board_state() as a common call for all `.edit` commands
+- Consolidated several common `.edit` and `.edit_game` commands that all did almost the same thing
+- Added a format() function to Turn for more custom turn displaying
+- Moved verify_adjacencies() into its own module
+- TransGL3() properly handles scale transformations
+- Moved import_game() to its own module
+- Added more polymorphism to UnitOrders
+
+# Bugfixes
+- Island rings get colored in properly
+- Civil disorder properly works when there are no units left
+- Fixed order roles in renaming
 
 1.8.1
 =====
@@ -31,13 +77,13 @@ Contributors:
 =====
 
 Contributors
-- Golden Kumuqat
+- Golden Kumquat
 
 # New Features
 - If a player did not order enough disbands, units will automatically be removed via civil disorder rules
 - More DP updates:
   - Each power has a designated maximum number of DP that they can allocate per turn, set by default to 1/SC with a max of 3
-  - If a player tries to allocate more DP than available, some DP allocations will be redered invalid
+  - If a player tries to allocate more DP than available, some DP allocations will be rendered invalid
   - `.ping_players` now alerts when someone has unspent or overspent DP
   - Added `.edit_game dp <disabled|enabled>`
 - Added `.export_game` which outputs a JSON file of the current board state
