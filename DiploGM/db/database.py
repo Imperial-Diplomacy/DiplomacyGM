@@ -300,7 +300,7 @@ class _DatabaseConnection:
         #  so we don't have to reparse the whole board each time
         board = get_parser(data_file).parse()
         board.turn = turn
-        board.data["fish"] = fish
+        board.data["fish"] = int(fish)
         # TODO: Move name out of here in the next patch
         board.data["name"] = name
         board.board_id = board_id
@@ -719,6 +719,14 @@ class _DatabaseConnection:
         else:
             players = {player}
         cursor = self._connection.cursor()
+        cursor.executemany(
+            "DELETE FROM builds WHERE board_id=? AND phase=? AND player=?",
+            [(board.board_id, format(board.turn, "%I %S"), p.name) for p in players],
+        )
+        cursor.executemany(
+            "DELETE FROM vassal_orders WHERE board_id=? AND phase=? AND player=?",
+            [(board.board_id, format(board.turn, "%I %S"), p.name) for p in players],
+        )
         cursor.executemany(
             "INSERT INTO builds (board_id, phase, player, location, order_type, unit_type) VALUES (?, ?, ?, ?, ?, ?) "
             "ON CONFLICT (board_id, phase, player, location) DO UPDATE SET order_type=?, unit_type=?",

@@ -166,7 +166,8 @@ def remove_prefix(ctx: commands.Context) -> str:
 
 def get_colour_option(board, args) -> str | None:
     """Gets the colour option from the arguments, defaulting to None."""
-    color_options = board.data["svg config"].get("color_options", {"standard"})
+    color_options: list[str] = board.data["svg config"].get("color_options", ["standard"])
+    color_options.append("custom")
     if (color_arguments := list(set(color_options) & set(args))):
         return color_arguments[0]
     return None

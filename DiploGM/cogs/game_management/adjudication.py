@@ -211,7 +211,7 @@ async def _upload_maps(ctx: commands.Context, args: dict, title: str, board: Boa
     file, file_name = manager.draw_map_for_board(
         board,
         draw_moves=is_orders,
-        args={"color": args["color"]},
+        args={"color_mode": args["color"]},
     )
     converted_file: bytes | None = None
     converted_file_name: str | None = None
@@ -323,7 +323,7 @@ async def adjudicate(ctx: commands.Context) -> None:
         file, file_name = manager.draw_map_for_board(
             draw_board,
             draw_moves=True,
-            args={"color": args["color"], "movement_only": True},
+            args={"color_mode": args["color"], "movement_only": True},
         )
         await send_message_and_file(
             channel=ctx.channel,

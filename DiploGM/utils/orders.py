@@ -54,9 +54,9 @@ def get_build_orders(player: Player,
     for unit in player.build_orders | set(
         player.vassal_orders.values()
     ):
-        body += f"\n{unit}"
+        body += f"{unit}\n"
     if player.waived_orders > 0:
-        body += f"\nWaive {player.waived_orders}"
+        body += f"\nWaive {player.waived_orders}\n"
     return title, body
 
 def _get_move_orders(board: Board,

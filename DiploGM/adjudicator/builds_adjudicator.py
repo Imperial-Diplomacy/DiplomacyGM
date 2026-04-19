@@ -170,7 +170,7 @@ class BuildsAdjudicator(Adjudicator):
         unit_distances: dict[Province, tuple[int, int]] = {}
         supply_centers = sorted(player.centers, key=lambda p: p.name)
         if len(supply_centers) == 0:
-            for unit in player.units:
+            for unit in list(player.units):
                 self._board.delete_unit(unit.province)
             return
 
