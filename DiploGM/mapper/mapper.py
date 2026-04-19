@@ -439,6 +439,7 @@ class Mapper:
         island_ring_layer = island_ring_layer if island_ring_layer is not None else []
 
         visited_provinces: set[str] = set()
+        sea_elements = set(sea_layer) | set(island_layer)
 
         for province_element in itertools.chain(province_layer, island_fill_layer, sea_layer, island_layer):
             try:
@@ -452,7 +453,7 @@ class Mapper:
                 color = self.impassable_color
             elif province.name not in self.adjacent_provinces:
                 color = self.board_svg_data["unknown"]
-            elif province_element in (island_layer, sea_layer):
+            elif province_element in sea_elements:
                 color = self.clear_seas_color
             else:
                 color = self.player_colors[province.owner.name] if province.owner else self.neutral_color
