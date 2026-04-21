@@ -48,6 +48,7 @@ class Board:
         }
         self.orders_enabled: bool = True
         self.data: dict = data
+        self.data.setdefault("fish", 0)
         self.custom_data: dict = {}
         self.datafile = datafile
 
