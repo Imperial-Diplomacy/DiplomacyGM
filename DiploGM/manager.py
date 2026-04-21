@@ -50,7 +50,11 @@ class Manager(metaclass=SingletonMeta):
         """Creates a new game in the specified server and of the specified variant."""
         if self._boards.get(server_id):
             return False, "A game already exists in this server."
-        if not os.path.isdir(parse_variant_path(gametype)):
+        try:
+            variant_path = parse_variant_path(gametype)
+        except ValueError as e:
+            return False, str(e)
+        if not os.path.isdir(variant_path):
             return False, f"Game {gametype} does not exist."
 
         logger.info(f"Creating new game in server {server_id}")
@@ -341,7 +345,11 @@ class Manager(metaclass=SingletonMeta):
 
     def reload_variant(self, variant: str) -> str:
         """Reloads a variant, including adjacencies and all boards."""
-        if not os.path.isdir(parse_variant_path(variant)):
+        try:
+            variant_path = parse_variant_path(variant)
+        except ValueError as e:
+            return str(e)
+        if not os.path.isdir(variant_path):
             return f"Variant {variant} does not exist."
 
         # Remove adjacency cache to force a reload
