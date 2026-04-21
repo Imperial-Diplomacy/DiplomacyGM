@@ -86,7 +86,7 @@ class _DatabaseConnection:
 
     def get_old_board(self, board: Board, turn: Turn) -> Board | None:
         """Finds an older board from that same game"""
-        return self.get_board(board.board_id, turn, board.data.get("fish", 0), board.data.get("name"), board.datafile)
+        return self.get_board(board.board_id, turn, board.data.get("fish", 0), board.data.get("game_name"), board.datafile)
 
     def get_board(
         self,
@@ -300,9 +300,8 @@ class _DatabaseConnection:
         #  so we don't have to reparse the whole board each time
         board = get_parser(data_file).parse()
         board.turn = turn
-        board.data["fish"] = int(fish)
         # TODO: Move name out of here in the next patch
-        board.data["name"] = name
+        board.set_data("game_name", name)
         board.board_id = board_id
 
         board_params = cursor.execute(
@@ -312,19 +311,13 @@ class _DatabaseConnection:
 
         # Turning a key deliniated with slashes into a nested dict
         for key, value in board_params:
-            cur_dict = board.data
-            cur_custom_dict = board.custom_data
-            split_key = key.split("/", 1)
-            while len(split_key) > 1:
-                if split_key[0] not in cur_dict:
-                    cur_dict[split_key[0]] = {}
-                if split_key[0] not in cur_custom_dict:
-                    cur_custom_dict[split_key[0]] = {}
-                cur_dict = cur_dict[split_key[0]]
-                cur_custom_dict = cur_custom_dict[split_key[0]]
-                split_key = split_key[1].split("/", 1)
-            cur_dict[split_key[0]] = value
-            cur_custom_dict[split_key[0]] = value
+            board.set_data(key.split("/"), value)
+
+        board.set_data("fish", int(board.data.get("fish", fish)))
+        # Temporary to ensure that "fish" and "name" are migrated
+        cursor.execute("INSERT OR IGNORE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)", (board_id, "fish", board.data["fish"]))
+        if board.data.get("game_name") is not None:
+            cursor.execute("INSERT OR IGNORE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)", (board_id, "game_name", board.data["game_name"]))
         if board.data["players"] != "chaos":
             board.update_players()
 
@@ -352,7 +345,6 @@ class _DatabaseConnection:
             player.points = points
             player.units = set()
             player.centers = set()
-            # TODO - player build orders
         if board.turn.is_builds():
             self._load_builds(cursor, board_id, board)
 
@@ -408,8 +400,9 @@ class _DatabaseConnection:
         # TODO: Check if board already exists
         cursor = self._connection.cursor()
 
+        cursor.execute("DELETE FROM board_parameters WHERE board_id=?", (board_id,))
         cursor.executemany(
-            "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
+            "INSERT INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
             [
                 (board_id, key, str(value))
                 for key, value in flatten_dict(board.custom_data).items()
@@ -418,7 +411,7 @@ class _DatabaseConnection:
 
         cursor.execute(
             "INSERT INTO boards (board_id, phase, data_file, fish, name) VALUES (?, ?, ?, ?, ?)",
-            (board_id, format(board.turn, "%I %S"), board.datafile, board.data.get("fish", 0), board.data.get("name")),
+            (board_id, format(board.turn, "%I %S"), board.datafile, board.data.get("fish", 0), board.data.get("game_name")),
         )
         cursor.executemany(
             "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT "

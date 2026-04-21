@@ -164,8 +164,8 @@ class Mapper:
                         # copy it 3 times (-1, 0, +1)
                         lval = copy.deepcopy(path)
                         rval = copy.deepcopy(path)
-                        lval.attrib["transform"] = f"translate({-self.board.data['svg config']['map_width']}, 0)"
-                        rval.attrib["transform"] = f"translate({self.board.data['svg config']['map_width']}, 0)"
+                        lval.attrib["transform"] = f"translate({-self.board_svg_data['map_width']}, 0)"
+                        rval.attrib["transform"] = f"translate({self.board_svg_data['map_width']}, 0)"
 
                         arrow_layer.append(lval)
                         arrow_layer.append(rval)

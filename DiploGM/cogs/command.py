@@ -106,7 +106,7 @@ class CommandCog(commands.Cog):
             board.board_id,
             parse_season(["Fall"], board.turn.get_previous_turn()),
             board.data.get("fish", 0),
-            board.data.get("name"),
+            board.data.get("game_name"),
             board.datafile,
         )
         player_list = (

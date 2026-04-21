@@ -143,7 +143,7 @@ async def _update_deadline(ctx: commands.Context, guild_id: int) -> None:
     if not (timestamp := board.data.get("deadline")):
         return
     phase_length = 2 if board.turn.is_moves() else 1
-    board.data["deadline"] = int(timestamp) + 60 * 60 * 24 * phase_length
+    board.set_data("deadline", int(timestamp) + 60 * 60 * 24 * phase_length)
     get_connection().execute_arbitrary_sql(
         "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
         (board.board_id, "deadline", board.data["deadline"])
@@ -315,7 +315,7 @@ async def adjudicate(ctx: commands.Context) -> None:
     # We draw the board from the DB to apply failed and DP orders that we want to hide from players
     draw_board = manager.get_board_from_db(guild.id, old_turn)
     manager.apply_adjudication_results(guild.id, draw_board)
-    title = (f"{board.data.get('name')} — " if board.data.get("name") else "") + f"{old_turn}"
+    title = (f"{board.data.get('game_name')} — " if board.data.get("game_name") else "") + f"{old_turn}"
 
     await _upload_maps(ctx, args, title, draw_board, True)
 

@@ -178,7 +178,7 @@ class PartyCog(commands.Cog):
             word_of_bumble = "elbmub nesohc eht era uoY"
 
         board = manager.get_board(ctx.guild.id)
-        board.data["fish"] -= 1
+        board.set_data("fish", board.data["fish"] - 1)
         await send_message_and_file(channel=ctx.channel, title=word_of_bumble)
 
     @commands.command(hidden=True)
@@ -429,12 +429,12 @@ class PartyCog(commands.Cog):
                 ":sloth:",
                 ":hippopotamus:",
             ]
-            board.data["fish"] += 10
+            board.set_data("fish", board.data["fish"] + 10)
             board.fish_pop["fish_pop"] -= 10
             fish_message = f"**Caught a rare fish!** {random.choice(rare_fish_options)}"
         elif fish_num < 16:
             fish_num = (fish_num + 1) // 2
-            board.data["fish"] += fish_num
+            board.set_data("fish", board.data["fish"] + fish_num)
             board.fish_pop["fish_pop"] -= fish_num
             fish_emoji_options = [
                 ":fish:",
@@ -460,14 +460,14 @@ class PartyCog(commands.Cog):
                     # Bumbles that lose fish lose a lot of them
                     fish_num *= random.randrange(3, 10)
 
-            board.data["fish"] -= fish_num
+            board.set_data("fish", board.data["fish"] - fish_num)
             board.fish_pop["fish_pop"] += fish_num
             fish_kind = "captured" if board.data["fish"] >= 0 else "future"
             fish_message = f"Accidentally let {fish_num} {fish_kind} fish sneak away :("
         else:
             fish_message = "You find nothing but barren water and overfished seas, maybe let the population recover?"
         fish_message += f"\nIn total, {board.data['fish']} fish have been caught!"
-        # TODO: Next patch, finihs migrating fish to parameters and remove it from the board SQL
+        # TODO: Next patch, finish migrating fish to parameters and remove it from the board SQL
         if random.randrange(0, 5) == 0:
             get_connection().execute_arbitrary_sql(
                 """UPDATE boards SET fish=? WHERE board_id=? AND phase=?""",

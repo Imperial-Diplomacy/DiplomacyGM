@@ -50,7 +50,11 @@ class Manager(metaclass=SingletonMeta):
         """Creates a new game in the specified server and of the specified variant."""
         if self._boards.get(server_id):
             return False, "A game already exists in this server."
-        if not os.path.isdir(parse_variant_path(gametype)):
+        try:
+            variant_path = parse_variant_path(gametype)
+        except ValueError as e:
+            return False, str(e)
+        if not os.path.isdir(variant_path):
             return False, f"Game {gametype} does not exist."
 
         logger.info(f"Creating new game in server {server_id}")
@@ -116,7 +120,7 @@ class Manager(metaclass=SingletonMeta):
         """Loads a fresh board from the database for the given server and turn."""
         cur_board = self.get_board(server_id)
         board = self._database.get_board(
-            cur_board.board_id, turn, cur_board.data.get("fish", 0), cur_board.data.get("name"), cur_board.datafile
+            cur_board.board_id, turn, cur_board.data.get("fish", 0), cur_board.data.get("game_name"), cur_board.datafile
         )
         if board is None:
             raise RuntimeError(f"There is no {turn} board for this server")
@@ -184,7 +188,7 @@ class Manager(metaclass=SingletonMeta):
                 cur_board.board_id,
                 turn,
                 cur_board.data.get("fish", 0),
-                cur_board.data.get("name"),
+                cur_board.data.get("game_name"),
                 cur_board.datafile,
             )
             if board is None:
@@ -238,7 +242,7 @@ class Manager(metaclass=SingletonMeta):
 
         board = self.get_board(server_id)
         old_board = self._database.get_board(
-            server_id, board.turn, board.data.get("fish", 0), board.data.get("name"), board.datafile
+            server_id, board.turn, board.data.get("fish", 0), board.data.get("game_name"), board.datafile
         )
         assert old_board is not None
         adjudicator = make_adjudicator(old_board)
@@ -289,7 +293,7 @@ class Manager(metaclass=SingletonMeta):
             board.board_id,
             last_turn,
             board.data.get("fish", 0),
-            board.data.get("name"),
+            board.data.get("game_name"),
             board.datafile,
             clear_status=True,
         )
@@ -314,7 +318,7 @@ class Manager(metaclass=SingletonMeta):
             board.board_id,
             last_turn,
             board.data.get("fish", 0),
-            board.data.get("name"),
+            board.data.get("game_name"),
             board.datafile,
         )
         return old_board
@@ -325,7 +329,7 @@ class Manager(metaclass=SingletonMeta):
         board = self.get_board(server_id)
 
         loaded_board = self._database.get_board(
-            server_id, board.turn, board.data.get("fish", 0), board.data.get("name"), board.datafile
+            server_id, board.turn, board.data.get("fish", 0), board.data.get("game_name"), board.datafile
         )
         if loaded_board is None:
             raise ValueError(
@@ -341,7 +345,11 @@ class Manager(metaclass=SingletonMeta):
 
     def reload_variant(self, variant: str) -> str:
         """Reloads a variant, including adjacencies and all boards."""
-        if not os.path.isdir(parse_variant_path(variant)):
+        try:
+            variant_path = parse_variant_path(variant)
+        except ValueError as e:
+            return str(e)
+        if not os.path.isdir(variant_path):
             return f"Variant {variant} does not exist."
 
         # Remove adjacency cache to force a reload
@@ -353,7 +361,7 @@ class Manager(metaclass=SingletonMeta):
             if board.datafile == variant:
                 logger.info(f"Reloading board for server {server_id}")
                 loaded_board = self._database.get_board(
-                    server_id, board.turn, board.data.get("fish", 0), board.data.get("name"), board.datafile
+                    server_id, board.turn, board.data.get("fish", 0), board.data.get("game_name"), board.datafile
                 )
                 if loaded_board is None:
                     logger.warning(f"There is no {board.turn} board for this server")
