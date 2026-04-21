@@ -1,4 +1,7 @@
-"""Module to parse commands to edit the game state."""
+"""Module to parse commands to edit the game state.
+These commands are designed to make changes to the current board and not for game-wide settings.
+After these commands are executed, the Units, Provinces, Players, and, Retreat Options tables are saved.
+For changes to game-wide settings, see .edit_game in parse_board_params.py."""
 import logging
 import string
 
@@ -213,11 +216,10 @@ def _remove_player_vassal(_, keywords: list[str], board: Board) -> None:
 
 def _set_game_name(_, parameter_str: str, board: Board) -> None:
     newname = None if parameter_str == "None" else parameter_str
-    board.data["name"] = newname
-    board.custom_data["name"] = newname
+    board.set_data("game_name", newname)
     get_connection().execute_arbitrary_sql(
-        "INSERT OR REPLACE INTO board_parameters (board_id, key, value) VALUES (?, ?, ?)",
-        (board.board_id, "name", newname)
+        "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
+        (board.board_id, "game_name", newname)
     )
 
 def _apocalypse(_, keywords: list[str], board: Board) -> None:
@@ -284,7 +286,7 @@ function_list = {
     "set player points": _set_player_points
 }
 
-def _bulk(keywords: list[str], board: Board) -> None:
+def _bulk(_, keywords: list[str], board: Board) -> None:
     player = keywords[1]
     if keywords[0] in ["set core", "set half core", "set province owner", "set total owner", "delete unit"]:
         for i in keywords[2:]:

@@ -50,8 +50,7 @@ def _set_build_options(_, keywords: list[str], board: Board) -> tuple[str | None
     new_value = keywords[0].lower()
     if new_value not in valid_options:
         raise ValueError(f"{new_value} is not a valid build option")
-    board.data[key_name] = new_value
-    board.custom_data[key_name] = new_value
+    board.set_data([key_name], new_value)
     return key_name, new_value
 
 def _set_transformation(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
@@ -60,8 +59,7 @@ def _set_transformation(_, keywords: list[str], board: Board) -> tuple[str | Non
     new_value = keywords[0].lower()
     if new_value not in valid_options:
         raise ValueError(f"{new_value} is not a valid transformation option")
-    board.data[key_name] = new_value
-    board.custom_data[key_name] = new_value
+    board.set_data([key_name], new_value)
     return key_name, new_value
 
 def _set_victory_conditions(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
@@ -70,8 +68,7 @@ def _set_victory_conditions(_, keywords: list[str], board: Board) -> tuple[str |
     new_value = keywords[0].lower()
     if new_value not in valid_options:
         raise ValueError(f"{new_value} is not a valid victory condition option")
-    board.data[key_name] = new_value
-    board.custom_data[key_name] = new_value
+    board.set_data([key_name], new_value)
     return key_name, new_value
 
 def _set_victory_count(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
@@ -79,8 +76,7 @@ def _set_victory_count(_, keywords: list[str], board: Board) -> tuple[str | None
     new_value = keywords[0].lower()
     if not new_value.isdigit():
         raise ValueError(f"{new_value} is not a whole number of victory SCs")
-    board.data[key_name] = new_value
-    board.custom_data[key_name] = new_value
+    board.set_data([key_name], new_value)
     return key_name, new_value
 
 def _set_iscc(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
@@ -90,8 +86,7 @@ def _set_iscc(_, keywords: list[str], board: Board) -> tuple[str | None, str | N
     key_name = f"players/{player.name}/iscc"
     if not new_iscc.isdigit():
         raise ValueError(f"{new_iscc} is not a whole number of starting SCs")
-    board.data["players"][player.name]["iscc"] = new_iscc
-    board.custom_data.setdefault("players", {}).setdefault(player.name, {})["iscc"] = new_iscc
+    board.set_data(["players", player.name, "iscc"], new_iscc)
     return key_name, new_iscc
 
 def _set_vscc(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
@@ -101,8 +96,7 @@ def _set_vscc(_, keywords: list[str], board: Board) -> tuple[str | None, str | N
     key_name = f"players/{player.name}/vscc"
     if not new_vscc.isdigit():
         raise ValueError(f"{new_vscc} is not a whole number of starting SCs")
-    board.data["players"][player.name]["vscc"] = new_vscc
-    board.custom_data.setdefault("players", {}).setdefault(player.name, {})["vscc"] = new_vscc
+    board.set_data(["players", player.name, "vscc"], new_vscc)
     return key_name, new_vscc
 
 def _set_capital(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
@@ -111,7 +105,7 @@ def _set_capital(_, keywords: list[str], board: Board) -> tuple[str | None, str 
         raise ValueError(f"{player_name} was not found in the board")
     key_name = f"players/{player.name}/capital"
     board.get_province(new_capital)
-    board.data["players"][player.name]["capital"] = new_capital
+    board.set_data(["players", player.name, "capital"], new_capital)
     return key_name, new_capital
 
 def _set_player_name(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
@@ -129,8 +123,7 @@ def _hide_player(_, keywords: list[str], board: Board) -> tuple[str | None, str 
     key_name = f"players/{player.name}/hidden"
     if is_hidden not in ["true", "false"]:
         raise ValueError(f"{is_hidden} needs to be true or false")
-    board.data["players"][player.name]["hidden"] = is_hidden
-    board.custom_data.setdefault("players", {}).setdefault(player.name, {})["hidden"] = is_hidden
+    board.set_data(["players", player.name, "hidden"], is_hidden)
     return key_name, is_hidden
 
 def _add_player(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
@@ -143,8 +136,7 @@ def _add_player(_, keywords: list[str], board: Board) -> tuple[str | None, str |
         "iscc" : 1,
         "vscc" : board.data["victory_count"]
     }
-    board.data["players"][player_name] = player_data
-    board.custom_data.setdefault("players", {})[player_name] = dict(player_data)
+    board.set_data(["players", player_name], dict(player_data))
     board.add_new_player(player_name, player_color)
     get_connection().execute_arbitrary_sql(
         "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?)",
@@ -159,7 +151,7 @@ def _toggle_game_option(command: str, keywords: list[str], board: Board) -> tupl
     new_value = keywords[0].lower()
     if new_value not in valid_options:
         raise ValueError(f"{new_value} is not a valid option. Please use true/false or enabled/disabled.")
-    board.data[key_name] = new_value
+    board.set_data(key_name, new_value)
     return key_name, new_value
 
 function_list = {

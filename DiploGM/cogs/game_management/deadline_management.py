@@ -65,13 +65,14 @@ async def set_deadline(ctx: commands.Context) -> None:
             )
             return
         new_deadline = deadline + int(parsed_time.total_seconds())
-        board.data["deadline"] = new_deadline
+        board.set_data("deadline", new_deadline)
         logger.info(f"Adjusted deadline by {parsed_time} to {new_deadline}")
         await send_message_and_file(
             channel=ctx.channel,
             message=f"Adjusted deadline by {parsed_time}. New deadline is <t:{int(new_deadline)}:R>.",
         )
     elif cancel:
+        board.custom_data.pop("deadline", None)
         board.data.pop("deadline", None)
         new_deadline = None
         logger.info("Removed deadline")
@@ -89,7 +90,7 @@ async def set_deadline(ctx: commands.Context) -> None:
             )
             return
         new_deadline = int(timestamp_match.group(1))
-        board.data["deadline"] = new_deadline
+        board.set_data("deadline", new_deadline)
         logger.info(f"Set new deadline: {new_deadline}")
         await send_message_and_file(
             channel=ctx.channel,
