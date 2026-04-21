@@ -6,7 +6,7 @@ from discord.utils import find as discord_find
 
 from DiploGM import perms
 from DiploGM import utils
-from DiploGM.config import ERROR_COLOUR, HUB_SERVER_ID, PARTIAL_ERROR_COLOUR, PLAYER_CHANNEL_SUFFIX
+from DiploGM.config import ERROR_COLOUR, HUB_SERVER_ID, HUB_SERVER_VERIFIED_ROLE, PARTIAL_ERROR_COLOUR, PLAYER_CHANNEL_SUFFIX
 from DiploGM.models.spec_request import SpectatorBan, SpectatorBanRepository
 from DiploGM.utils import send_message_and_file
 from DiploGM.manager import Manager
@@ -363,7 +363,7 @@ class SpectatorCog(commands.Cog):
             )
             return
 
-        if not discord.utils.get(hub_requester.roles, name="ImpDip Verified"):
+        if not discord.utils.get(hub_requester.roles, name=HUB_SERVER_VERIFIED_ROLE):
             await interaction.response.send_message(
                 f"You are not verified on the Hub Server! Notifying {_team.mention}!"
             )

@@ -16,8 +16,8 @@ from DiploGM.config import (
     BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID,
     EMBED_STANDARD_COLOUR,
     ERROR_COLOUR,
-    HUB_SERVER_BOT_BUGS_CHANNEL_ID,
-    HUB_SERVER_BOT_FEEDBACK_CHANNEL_ID,
+    GAME_PLAYING,
+    HUB_SERVER_BOT_BUG_REPORT_CHANNEL_MESSAGE,
     HUB_SERVER_ID,
     HUB_SERVER_BOT_STATUS_CHANNEL_ID,
     EXTENSIONS_TO_LOAD_ON_STARTUP,
@@ -219,7 +219,7 @@ class DiploGM(commands.Bot):
             await send_message_and_file(channel=channel, message=message, embed_colour=EMBED_STANDARD_COLOUR)
 
         # Set bot's presence (optional)
-        await self.change_presence(activity=discord.Game(name="Impdip 🔪"))
+        await self.change_presence(activity=discord.Game(name=GAME_PLAYING))
 
     async def close(self):
         logger.info("Shutting down gracefully.")
@@ -347,10 +347,7 @@ class DiploGM(commands.Bot):
                 channel=context.channel,
                 message="I do not have the correct permissions to do this.\n"
                 "I might not be setup correctly.\n"
-                "If this is unexpected please contact a GM or reach out in: "
-                f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_BUGS_CHANNEL_ID}"
-                " or "
-                f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_FEEDBACK_CHANNEL_ID}",
+                f"If this is unexpected please contact a GM or reach out in: {HUB_SERVER_BOT_BUG_REPORT_CHANNEL_MESSAGE}",
                 embed_colour=ERROR_COLOUR,
             )
             return
@@ -434,11 +431,7 @@ class DiploGM(commands.Bot):
 
         # Out to Invoking Channel
         unhandled_out = (
-            "Please report this to a bot dev in a feedback channel: "
-            f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_BUGS_CHANNEL_ID}"
-            " or "
-            f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_FEEDBACK_CHANNEL_ID}"
-            "\n"
+            f"Please report this to a bot dev in a feedback channel: {HUB_SERVER_BOT_BUG_REPORT_CHANNEL_MESSAGE}\n"
         ) + unhandled_out
         await send_message_and_file(
             channel=context.channel,
