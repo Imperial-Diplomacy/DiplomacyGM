@@ -345,7 +345,7 @@ class SpectatorCog(commands.Cog):
 
             if end_ts is not None and now_ts < end_ts:
                 await interaction.response.send_message(
-                    f"You are currently banned from spectating with DiploGM until this time:\n\n" +
+                    "You are currently banned from spectating with DiploGM until this time:\n\n" +
                     f"{end_ts}\n\nContact the Moderation team if you are unsure why.",
                     ephemeral=True,
                 )

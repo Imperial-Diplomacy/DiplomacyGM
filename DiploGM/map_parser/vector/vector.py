@@ -112,10 +112,10 @@ class Parser:
             if l is None:
                 # TODO: Move to per-variant optional config
                 if layer in {"island_borders", "island_fill_layer", "island_ring_layer", "background", "other_fills", "season", "power_banners", "symbol_templates"}:
-                    logger.warning(f"Layer {layer} not found in SVG, but it might not be necessary")
+                    logger.warning("Layer %s not found in SVG, but it might not be necessary", layer)
                     continue
                 if layer in {"retreat_army", "retreat_fleet"}:
-                    logger.warning(f"Layer {layer} not found in SVG. Duplicating army/fleet layer.")
+                    logger.warning("Layer %s not found in SVG. Duplicating army/fleet layer.", layer)
                     l = self._create_retreat_layer(svg_root, layer, self.layers)
                 else:
                     raise ValueError(f"Layer {layer} not found in SVG")
@@ -211,7 +211,7 @@ class Parser:
         units = {province.unit for province in provinces if province.unit}
 
         elapsed = time.time() - start
-        logger.info(f"map_parser.vector.parse: {elapsed}s")
+        logger.info("map_parser.vector.parse: %ss", elapsed)
 
         self.data["year"] = self.data.get("year", 1901)
         initial_turn = Turn(self.data["year"], PhaseName.SPRING_MOVES, self.data["year"])

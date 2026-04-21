@@ -106,43 +106,47 @@ class BuildsAdjudicator(Adjudicator):
 
     def _adjudicate_build(self, order: Build, player: Player) -> int:
         # ignore coast specifications for army
+        error = ""
         if (order.unit_type == UnitType.FLEET and order.province.is_landlocked()):
-            logger.warning(f"Skipping {order}; tried building an inland fleet")
-            return 0
-        if (order.unit_type == UnitType.FLEET
+            error = "tried building an inland fleet"
+        elif (order.unit_type == UnitType.FLEET
             and order.province.get_multiple_coasts()
             and order.coast not in order.province.get_multiple_coasts()):
-            logger.warning(f"Skipping {order}; someone didn't specify a valid coast")
-            return 0
-        if order.province.unit is not None:
-            logger.warning(f"Skipping {order}; there is already a unit there")
-            return 0
-        if not order.province.has_supply_center or order.province.owner != player:
-            logger.warning(f"Skipping {order}; tried to build in non-sc, non-owned")
-            return 0
-        if not order.province.can_build(self.parameters.get("build_options")):
-            logger.warning(f"Skipping {order}; build order does not meet build requirements")
+            error = "someone didn't specify a valid coast"
+        elif order.province.unit is not None:
+            error = "there is already a unit there"
+        elif not order.province.has_supply_center or order.province.owner != player:
+            error = "tried to build in non-sc, non-owned"
+        elif not order.province.can_build(self.parameters.get("build_options")):
+            error = "build order does not meet build requirements"
+
+        if error:
+            logger.warning("Skipping %s; errors: %s", order, error)
             return 0
         self._board.create_unit(order.unit_type, player, order.province, order.coast, None)
         return -1
 
     def _adjudicate_transform(self, order: TransformBuild):
+        error = ""
         if order.province.unit is None:
-            logger.warning(f"Skipping {order}; there is no unit there to transform")
+            error = "there is no unit there to transform"
         elif not order.province.has_supply_center:
-            logger.warning(f"Skipping {order}; tried to transform in a province without a supply center")
+            error = "tried to transform in a province without a supply center"
         elif order.province.type == ProvinceType.SEA:
-            logger.warning(f"Skipping {order}; tried to transform in a sea province")
+            error = "tried to transform in a sea province"
         elif order.province.is_landlocked():
-            logger.warning(f"Skipping {order}; tried to transform in an inland province")
+            error = "tried to transform in an inland province"
         elif (order.province.unit.unit_type == UnitType.ARMY
                 and order.province.get_multiple_coasts()
                 and order.coast not in order.province.get_multiple_coasts()):
-            logger.warning(f"Skipping {order}; tried to transform to an invalid coast")
+            error = "tried to transform to an invalid coast"
         else:
             new_unit_type = UnitType.FLEET if order.province.unit.unit_type == UnitType.ARMY else UnitType.ARMY
             order.province.unit.unit_type = new_unit_type
             order.province.unit.coast = order.coast
+            return
+
+        logger.warning("Skipping %s; errors: %s", order, error)
 
     def _adjudicate_order(self, order: Order, available_builds: int, player: Player) -> int:
         if isinstance(order, Build):
@@ -152,7 +156,7 @@ class BuildsAdjudicator(Adjudicator):
 
         if available_builds < 0 and isinstance(order, Disband):
             if order.province.unit is None:
-                logger.warning(f"Skipping {order}; there is no unit there to disband")
+                logger.warning("Skipping %s; there is no unit there to disband", order)
                 return 0
             self._board.delete_unit(order.province)
             return 1
@@ -193,7 +197,7 @@ class BuildsAdjudicator(Adjudicator):
             for order in player.build_orders:
                 available_builds += self._adjudicate_order(order, available_builds, player)
             if available_builds < 0:
-                logger.warning(f"Player {player.get_name()} disbanded less orders than they should have")
+                logger.warning("Player %s disbanded less orders than they should have", player.get_name())
                 self._adjudicate_civil_disorder(player, -available_builds)
 
         if self.parameters.get("has_vassals"):
