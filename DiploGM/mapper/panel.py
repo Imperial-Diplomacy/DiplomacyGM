@@ -4,7 +4,7 @@ import re
 from typing import TYPE_CHECKING
 from xml.etree.ElementTree import ElementTree, Element
 
-from DiploGM.map_parser.vector.utils import get_element_color, find_svg_element
+from DiploGM.map_parser.vector.utils import get_coordinates, get_element_color, find_svg_element
 from DiploGM.map_parser.vector.transform import TransGL3
 
 if TYPE_CHECKING:
@@ -32,16 +32,15 @@ class PanelDrawer:
         )
         if all_power_banners_element is None:
             return
-        self.scoreboard_power_locations: list[tuple[float, float]] = []
+        self.scoreboard_power_locations: list[complex] = []
         for power_element in all_power_banners_element:
-            destination_pretransform_coordinates = TransGL3(power_element[0]).transform((float(power_element[0].get("x", 0)),
-                                                                                         float(power_element[0].get("y", 0))))
+            destination_pretransform_coordinates = TransGL3(power_element[0]).transform(get_coordinates(power_element[0]))
             destination_coordinates = TransGL3(power_element).transform(destination_pretransform_coordinates)
             self.scoreboard_power_locations.append(destination_coordinates)
 
         # each power is placed in the right spot based on the transform field which has value of
         # "translate($x,$y)" where x,y are floating point numbers; we parse these via regex and sort by y-value
-        self.scoreboard_power_locations.sort(key=lambda loc: loc[1])
+        self.scoreboard_power_locations.sort(key=lambda loc: loc.imag)
 
 
     def draw_side_panel(self, svg: ElementTree) -> None:
@@ -53,8 +52,7 @@ class PanelDrawer:
                            banner_index: int, high_player_count: bool) -> bool:
         if len(power_element) == 0:
             return False
-        initial_pretransform_coordinates = TransGL3(power_element[0]).transform((float(power_element[0].get("x", 0)),
-                                                                                 float(power_element[0].get("y", 0))))
+        initial_pretransform_coordinates = TransGL3(power_element[0]).transform(get_coordinates(power_element[0]))
         banner_coordinates = TransGL3(power_element).transform(initial_pretransform_coordinates)
         if high_player_count and banner_coordinates != self.scoreboard_power_locations[banner_index]:
             return False
@@ -73,9 +71,8 @@ class PanelDrawer:
 
         self.utils.color_element(power_element[0], self.player_colors[player.name])
         if self.board_svg_data.get("scoreboard", {}).get("sort", True):
-            new_translation = (self.scoreboard_power_locations[banner_index][0] - initial_pretransform_coordinates[0],
-                                self.scoreboard_power_locations[banner_index][1] - initial_pretransform_coordinates[1])
-            power_element.set("transform", f"translate({new_translation[0]}, {new_translation[1]})")
+            new_translation = self.scoreboard_power_locations[banner_index] - initial_pretransform_coordinates
+            power_element.set("transform", f"translate({new_translation.real}, {new_translation.imag})")
 
         if "scoreboard" in self.board_svg_data:
             for index, value in self.board_svg_data["scoreboard"].get("indexes", {}).items():

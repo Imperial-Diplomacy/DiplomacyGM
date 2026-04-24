@@ -98,10 +98,11 @@ class TransGL3:
         ])
         return self
 
-    def transform(self, point: tuple[float, float]) -> tuple[float, float]:
+    def transform(self, point: complex) -> complex:
         """Applies the transformation to a point."""
-        point_array = np.concatenate((point, (1,)))
-        return tuple((point_array @ self.matrix)[:2].tolist())
+        point_array = np.array([point.real, point.imag, 1])
+        transformed = point_array @ self.matrix
+        return complex(transformed[0], transformed[1])
 
     # represents a convolution
     # (t1 * t2).transform(p) == t1.transform(t2.transform(p))

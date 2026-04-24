@@ -45,8 +45,8 @@ class ProvinceAdjacency:
 class UnitLocation:
     """Represents the coordinates and retreat coordinates of a unit in a province.
     A province might have multiple of these, usually if it's wrapping around the board."""
-    primary_coordinate: tuple[float, float]
-    retreat_coordinate: tuple[float, float]
+    primary_coordinate: complex
+    retreat_coordinate: complex
 
 class Province():
     """Represents a province on the map."""
@@ -97,24 +97,24 @@ class Province():
     def get_unit_coordinates(self,
                              unit_type: UnitType,
                              coast: str | None = None,
-                             is_retreat: bool = False) -> tuple[float, float]:
+                             is_retreat: bool = False) -> complex:
         """Gets the coordinates of a unit given its type, coast, and whether it's retreating."""
         index = coast if coast in self.unit_coordinates else unit_type.name
         if is_retreat:
             return (self.unit_coordinates[index].retreat_coordinate if index in self.unit_coordinates
-                    else self.unit_coordinates.get("default", UnitLocation((0, 0), (0, 0))).retreat_coordinate)
+                    else self.unit_coordinates.get("default", UnitLocation(complex(0), complex(0))).retreat_coordinate)
         return (self.unit_coordinates[index].primary_coordinate if index in self.unit_coordinates
-                else self.unit_coordinates.get("default", UnitLocation((0, 0), (0, 0))).primary_coordinate)
+                else self.unit_coordinates.get("default", UnitLocation(complex(0), complex(0))).primary_coordinate)
 
     def set_unit_coordinate(self,
-                            coord: tuple[float, float] | None,
+                            coord: complex | None,
                             unit_type: UnitType,
                             is_retreat: bool = False,
                             coast: str | None = None):
         """Sets the coordinates of a unit given its type, coast, and whether it's retreating."""
         # Set default cooordinate if none are found
         center = shapely.centroid(self.geometry)
-        center_coord = (center.x, center.y) if center else (0, 0)
+        center_coord = complex(center.x, center.y) if center else complex(0)
         coord = coord if coord else center_coord
         index = coast if coast else unit_type.name
 

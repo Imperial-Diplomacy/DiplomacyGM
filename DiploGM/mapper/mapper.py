@@ -12,7 +12,7 @@ import lxml.etree as etree
 # from diplomacy.map_parser.vector import config_svg as svgcfg
 
 from DiploGM.map_parser.vector.utils import (
-    clear_svg_element, get_element_color, find_svg_element,
+    clear_svg_element, get_element_color, find_svg_element, get_coordinates,
     get_unit_coordinates, get_sc_coordinates, initialize_province_resident_data,
     NAMESPACE, SVG_CONFIG_KEY
 )
@@ -138,7 +138,7 @@ class Mapper:
                 new_locs = []
                 dest_coords = order.destination.all_coordinates
                 if len(dest_coords) == 0:
-                    e_list = [UnitLocation((0, 0), (0, 0))]
+                    e_list = [UnitLocation(complex(0), complex(0))]
                 elif order.destination_coast and order.destination_coast in dest_coords:
                     e_list = dest_coords[order.destination_coast]
                 elif unit.unit_type.name not in dest_coords:
@@ -146,7 +146,7 @@ class Mapper:
                 else:
                     e_list = dest_coords.get(unit.unit_type.name,
                                              dest_coords.get(UnitType.ARMY.name,
-                                                             {UnitLocation((0, 0), (0, 0))}))
+                                                             {UnitLocation(complex(0), complex(0))}))
 
                 for endpoint in e_list:
                     new_locs += [self.utils.normalize(
@@ -233,22 +233,21 @@ class Mapper:
             raise ValueError("SVG root is None")
         sidebar_layer = find_svg_element(self._moves_svg, "sidebar", self.board_svg_data)
         if sidebar_layer is not None and len(sidebar_layer) > 0:
-            fx = float(sidebar_layer[0].get("x", "0"))
-            fy = float(sidebar_layer[0].get("y", "0"))
+            sidebar_corner = get_coordinates(sidebar_layer[0])
             trans = TransGL3(sidebar_layer) * TransGL3(sidebar_layer[0])
-            order_list_xy = trans.transform((fx, fy))
+            order_list_xy = trans.transform(sidebar_corner) + complex(100.0, 20.0)
             order_list = etree.SubElement(root,
                 "{http://www.w3.org/2000/svg}text",
                 {
                     "id": "order_list_textbox",
-                    "x": str(order_list_xy[0] + 100.0),
-                    "y": str(order_list_xy[1] + 20.0),
+                    "x": str(order_list_xy.real),
+                    "y": str(order_list_xy.imag),
                     "style": "font-size:32px;fill:#000000;font-family:sans-serif",
                 },
             )
             anchor = etree.SubElement(order_list,
                 "{http://www.w3.org/2000/svg}tspan",
-                {"x": str(order_list_xy[0] + 100.0), "y": str(order_list_xy[1] + 20.0)})
+                {"x": str(order_list_xy.real), "y": str(order_list_xy.imag)})
             anchor.text = " "
 
         clear_svg_element(self._moves_svg, "sidebar", self.board_svg_data)
@@ -267,10 +266,10 @@ class Mapper:
                 coast = province.unit.coast
             else:
                 unit_type = UnitType.FLEET if province.type == ProvinceType.SEA else UnitType.ARMY
-            locdict[province.name] = list(province.get_unit_coordinates(unit_type, coast))
+            locdict[province.name] = province.get_unit_coordinates(unit_type, coast)
             for coast in province.get_multiple_coasts():
-                locdict[province.get_name(coast)] = list(province.get_unit_coordinates(UnitType.FLEET, coast))
-
+                locdict[province.get_name(coast)] = province.get_unit_coordinates(UnitType.FLEET, coast)
+        locdict = {k: [v.real, v.imag] for k, v in locdict.items()}
         script = etree.Element("script")
 
         coast_to_province = {}
@@ -312,11 +311,11 @@ class Mapper:
         root.append(script)
 
         coasts = find_svg_element(root, "coast_markers", self.board_svg_data)
-        def get_text_coordinate(e : etree.Element) -> tuple[float, float]:
+        def get_text_coordinate(e : etree.Element) -> complex:
             trans = TransGL3(e)
             x, y = e.attrib["x"], e.attrib["y"]
             assert x is not None and y is not None
-            return trans.transform(tuple([float(x), float(y)] + np.array([3.25, -3.576 / 2])))
+            return trans.transform(complex(float(x), float(y)) + complex(3.25, -3.576 / 2))
 
         def match(p: Province, e: Element, _:str | None):
             e.set("onclick", f'obj_clicked(event, "{p} {e[0].text}", false)')
@@ -549,12 +548,8 @@ class Mapper:
                 self.utils.color_element(center_element, element_color)
             if province.name in capital_provinces and capital_marker is not None:
                 capital_copy = copy.deepcopy(capital_marker)
-                capital_coord = get_sc_coordinates(capital_copy)
-                center_coord = get_sc_coordinates(center_element)
-                if capital_coord[0] is None or capital_coord[1] is None or center_coord[0] is None or center_coord[1] is None:
-                    print(f"Could not find coordinates for capital marker or center {province.name}, skipping translation", file=sys.stderr)
-                    continue
-                capital_copy.set("transform", f"translate({center_coord[0] - capital_coord[0]}, {center_coord[1] - capital_coord[1]})")
+                translation = get_sc_coordinates(center_element) - get_sc_coordinates(capital_copy)
+                capital_copy.set("transform", f"translate({translation.real}, {translation.imag})")
                 for elem in capital_copy:
                     if get_element_color(elem) != "000000":
                         self.utils.color_element(elem, element_color)
@@ -576,7 +571,7 @@ class Mapper:
             if unit.province.name in self.adjacent_provinces:
                 self._draw_unit(unit)
 
-    def _get_unit_coordinates(self, unit: Unit, is_retreats: bool) -> set[tuple[float, float]]:
+    def _get_unit_coordinates(self, unit: Unit, is_retreats: bool) -> set[complex]:
         province_coordinates = unit.province.all_coordinates
         if unit.coast:
             if unit.coast in province_coordinates:
@@ -596,7 +591,7 @@ class Mapper:
             return {loc.retreat_coordinate if is_retreats else loc.primary_coordinate
                     for loc in next(iter(province_coordinates.values()))}
         logger.warning("No coordinates found for province %s, using (0, 0) as fallback", unit.province.name)
-        return {(0, 0)}
+        return {complex(0, 0)}
 
     def _draw_unit(self, unit: Unit, use_moves_svg=False):
         player_name = unit.player.name if unit.player else "Neutral"
@@ -608,7 +603,6 @@ class Mapper:
                 self.utils.color_element(path, self.player_colors[player_name])
         province = unit.province
 
-
         current_coords = get_unit_coordinates(unit_element)
         current_coords = TransGL3(unit_element).transform(current_coords)
 
@@ -616,11 +610,9 @@ class Mapper:
 
         for desired_coords in coord_list:
             elem = copy.deepcopy(unit_element)
+            distance = desired_coords - current_coords
 
-            dx = desired_coords[0] - current_coords[0]
-            dy = desired_coords[1] - current_coords[1]
-
-            trans = TransGL3(elem) * TransGL3().init(x_c=dx, y_c=dy)
+            trans = TransGL3(elem) * TransGL3().init(x_c=distance.real, y_c=distance.imag)
 
             elem.set("transform", str(trans))
             p = province.get_name(unit.coast)
@@ -660,14 +652,14 @@ class Mapper:
 
         for retreat_province, retreat_coast in unit.retreat_options:
             new_locs = []
-            if unit.unit_type not in retreat_province.all_coordinates:
+            if unit.unit_type.name not in retreat_province.all_coordinates:
                 e_list = next(iter(retreat_province.all_coordinates.values()))
             elif retreat_coast:
                 e_list = retreat_province.all_coordinates[retreat_coast]
             else:
                 e_list = retreat_province.all_coordinates.get(
                     unit.unit_type.name,
-                    retreat_province.all_coordinates.get(UnitType.ARMY.name, {UnitLocation((0, 0), (0, 0))}))
+                    retreat_province.all_coordinates.get(UnitType.ARMY.name, {UnitLocation(complex(0), complex(0))}))
 
             # Unspecified coast, so default to army location
             for endpoint in e_list:
