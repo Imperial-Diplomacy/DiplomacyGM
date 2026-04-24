@@ -67,6 +67,7 @@ load_on_startup = [
     "schedule",
     "slash_substitute",
     "spectator",
+    "variant_development"
 ]
 
 [colours]

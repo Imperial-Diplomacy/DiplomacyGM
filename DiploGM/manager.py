@@ -64,13 +64,6 @@ class Manager(metaclass=SingletonMeta):
 
         return True, f"{self._boards[server_id].data['name']} game created"
 
-    def generate_layers(self, variant: str) -> tuple[bytes, str]:
-        """Generates the SVG layers for a variant and returns them as bytes."""
-        if not os.path.isdir(parse_variant_path(variant)):
-            raise ValueError(f"Game {variant} does not exist.")
-        board: Board = get_parser(variant).parse()
-        return get_parser(variant).generate_layers(), f"{board.data['name']}.svg"
-
     def get_spec_request(self, server_id: int, user_id: int) -> SpecRequest | None:
         """Gets a spec request for a user in a server, if it exists."""
         if server_id not in self._spec_requests:
@@ -324,18 +317,6 @@ class Manager(metaclass=SingletonMeta):
 
     def reload_variant(self, variant: str) -> str:
         """Reloads a variant, including adjacencies and all boards."""
-        try:
-            variant_path = parse_variant_path(variant)
-        except ValueError as e:
-            return str(e)
-        if not os.path.isdir(variant_path):
-            return f"Variant {variant} does not exist."
-
-        # Remove adjacency cache to force a reload
-        if os.path.isfile(f"assets/{variant}_adjacencies.txt"):
-            os.remove(f"assets/{variant}_adjacencies.txt")
-
-        get_parser(variant, force_refresh=True).parse()
         for server_id, board in self._boards.items():
             if board.datafile == variant:
                 logger.info("Reloading board for server %s", server_id)

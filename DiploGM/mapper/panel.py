@@ -33,7 +33,7 @@ class PanelDrawer:
         if all_power_banners_element is None:
             return
         self.scoreboard_power_locations: list[tuple[float, float]] = []
-        for power_element in all_power_banners_element or []:
+        for power_element in all_power_banners_element:
             destination_pretransform_coordinates = TransGL3(power_element[0]).transform((float(power_element[0].get("x", 0)),
                                                                                          float(power_element[0].get("y", 0))))
             destination_coordinates = TransGL3(power_element).transform(destination_pretransform_coordinates)
