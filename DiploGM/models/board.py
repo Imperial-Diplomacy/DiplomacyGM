@@ -7,10 +7,8 @@ import re
 import time
 from typing import Any, Dict, Optional, TYPE_CHECKING
 
-from discord import Thread, TextChannel
 from rapidfuzz.distance import DamerauLevenshtein
 
-from DiploGM.config import PLAYER_CHANNEL_SUFFIX, is_player_category
 from DiploGM.models.order import NMR, Move, Hold, Support, ConvoyTransport, Core, Transform, RetreatMove, RetreatDisband
 from DiploGM.models.province import ProvinceType
 from DiploGM.models.unit import Unit, UnitType, DPAllocation
@@ -18,7 +16,6 @@ from DiploGM.models.turn import Turn
 from DiploGM.utils.sanitise import parse_variant_path, sanitise_name, simple_player_name
 
 if TYPE_CHECKING:
-    from discord.abc import Messageable
     from DiploGM.models.player import Player
     from DiploGM.models.province import Province
     from DiploGM.models.order import UnitOrder
@@ -256,7 +253,8 @@ class Board:
         return matches
 
     def _suggest_province(self, name: str) -> str | None:
-        """Given a failed province lookup, calculate similarity to all known provinces and coasts and provide a suggestion, or None if no candidate is close enough to be worth suggesting."""
+        """Given a failed province lookup, calculate similarity to all known provinces and coasts
+        and provide a suggestion, or None if no candidate is close enough to be worth suggesting."""
         MAX_DISTANCE = 0.45 # If distance is too high (i.e. very different), no suggestion provided
         CONFIDENT_GAP = 0.20 # Defines how much better a suggestion has to be than any other to confidently conclude it's the intended province
 
@@ -516,7 +514,6 @@ class Board:
         for player in sorted(self.players, key=lambda p: p.name):
             player_data: dict = {
                 "name": player.name,
-                "color": player.render_color,
                 "is_active": player.is_active,
             }
             if player.build_orders:

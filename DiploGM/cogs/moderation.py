@@ -64,7 +64,7 @@ class ModerationCog(commands.Cog):
             if not hub_member:
                 msg = "Not a member of the hub server!"
                 problems.append(msg)
-            elif not discord.utils.find(lambda r: r.name == "ImpDip Verified", hub_member.roles):
+            elif not discord.utils.find(lambda r: r.name == config.HUB_SERVER_VERIFIED_ROLE, hub_member.roles):
                 msg = "Not verified on the hub server!"
                 problems.append(msg)
 

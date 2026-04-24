@@ -4,6 +4,7 @@ from DiploGM.utils import get_keywords
 from DiploGM.mapper.mapper import Mapper
 from DiploGM.models.board import Board
 from DiploGM.db.database import get_connection
+import string
 
 def parse_board_params(message: str, board: Board) -> tuple[str, str, bytes | None, str | None, str | None]:
     """Parses a message containing commands to edit the board parameters,
@@ -43,6 +44,19 @@ def parse_board_params(message: str, board: Board) -> tuple[str, str, bytes | No
         file_name,
         embed_colour,
     )
+
+def _set_game_name(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+    new_name = ' '.join(keywords)
+    if new_name == "None":
+        board.data.pop("game_name", None)
+        board.custom_data.pop("game_name", None)
+        get_connection().execute_arbitrary_sql(
+            "DELETE FROM board_parameters WHERE board_id = ? AND parameter_key = ?",
+            (board.board_id, "game_name")
+        )
+        return None, None
+    board.set_data("game_name", new_name)
+    return "game_name", new_name
 
 def _set_build_options(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     key_name = "build_options"
@@ -116,6 +130,17 @@ def _set_player_name(_, keywords: list[str], board: Board) -> tuple[str | None, 
     board.add_nickname(player, new_name)
     return key_name, new_name
 
+def _set_player_color(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
+    player_name, new_color = (keywords[0].lower(), keywords[1].lower())
+    if not (player := board.get_player(player_name)):
+        raise ValueError(f"Unknown player: {player_name}")
+    if len(new_color) != 6 or not all(c in string.hexdigits for c in new_color):
+        raise ValueError(f"Unknown hexadecimal color: {new_color}")
+    # TODO: Move render color to board params
+    board.set_data(["players", player.name, "custom_color"], new_color)
+    key_name = f"players/{player.name}/custom_color"
+    return key_name, new_color
+
 def _hide_player(_, keywords: list[str], board: Board) -> tuple[str | None, str | None]:
     player_name, is_hidden = (keywords[0].lower(), keywords[1].lower())
     if not (player := board.get_player(player_name)):
@@ -155,6 +180,7 @@ def _toggle_game_option(command: str, keywords: list[str], board: Board) -> tupl
     return key_name, new_value
 
 function_list = {
+    "game name": _set_game_name,
     "building": _set_build_options,
     "convoyable islands": _toggle_game_option,
     "supportable cores": _toggle_game_option,
@@ -166,6 +192,7 @@ function_list = {
     "vscc": _set_vscc,
     "capital": _set_capital,
     "player name": _set_player_name,
+    "player color": _set_player_color,
     "hide player": _hide_player,
     "add player": _add_player
 }

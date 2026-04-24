@@ -1,3 +1,18 @@
+1.9.2
+=====
+
+Contributors:
+- Golden Kumquat
+
+# Quality of Life
+- Moved set_game_name and set_player_color to `.edit_game` for consistency's sake
+
+# Bugfixes
+- `.view_gui` should hopefully work again
+
+# Developer Chnages
+- Moved fish, name, and custom color to board_parameters instead of player and board tables
+
 1.9.1
 =====
 

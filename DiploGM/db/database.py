@@ -60,22 +60,19 @@ class _DatabaseConnection:
             board_data = cursor.execute("SELECT * FROM boards").fetchall()
 
         board_keys = [(row[0], row[1]) for row in board_data]
-        logger.info(f"Loading {len(board_data)} boards from DB")
+        logger.info("Loading %s boards from DB", len(board_data))
         boards: dict[int, Board] = {}
         for board_row in board_data:
-            board_id, phase_string, data_file, fish, name = board_row
+            board_id, phase_string, data_file, _, _ = board_row
 
             current_turn = Turn.turn_from_string(phase_string)
             if current_turn is None:
-                logger.warning(f"Could not parse turn string '{phase_string}' for board {board_id}")
+                logger.warning("Could not parse turn string '%s' for board %s", phase_string, board_id)
                 continue
             if (board_id, str(current_turn.get_next_turn())) in board_keys:
                 continue
 
-            if fish is None:
-                fish = 0
-
-            board = self._get_board(board_id, current_turn, fish, name, data_file, cursor)
+            board = self._get_board(board_id, current_turn, data_file, cursor)
             board.turn = Turn(board.data["year"] + board.turn.year, board.turn.phase, board.data["year"])
 
             boards[board_id] = board
@@ -86,14 +83,12 @@ class _DatabaseConnection:
 
     def get_old_board(self, board: Board, turn: Turn) -> Board | None:
         """Finds an older board from that same game"""
-        return self.get_board(board.board_id, turn, board.data.get("fish", 0), board.data.get("game_name"), board.datafile)
+        return self.get_board(board.board_id, turn, board.datafile)
 
     def get_board(
         self,
         board_id: int,
         turn: Turn,
-        fish: int,
-        name: str | None,
         data_file: str,
         clear_status: bool = False,
     ) -> Board | None:
@@ -110,7 +105,7 @@ class _DatabaseConnection:
             cursor.close()
             return None
 
-        board = self._get_board(board_id, turn, fish, name, data_file, cursor, clear_status=clear_status)
+        board = self._get_board(board_id, turn, data_file, cursor, clear_status=clear_status)
         cursor.close()
         return board
 
@@ -230,7 +225,7 @@ class _DatabaseConnection:
         province, coast = board.get_province_and_coast(location)
         owner_player = None
         if owner is not None and (owner_player := board.get_player(owner)) is None:
-            logger.warning(f"Couldn't find corresponding player for {owner} in DB")
+            logger.warning("Couldn't find corresponding player for %s in DB", owner)
             return
         if is_dislodged:
             retreat_ops = cursor.execute(
@@ -272,11 +267,11 @@ class _DatabaseConnection:
         province = board.get_province(location)
         unit = province.unit
         if unit is None:
-            logger.warning(f"Couldn't find unit for DP order at {location}")
+            logger.warning("Couldn't find unit for DP order at %s", location)
             return
         player = board.get_player(player_name)
         if player is None:
-            logger.warning(f"Couldn't find player {player_name} for DP order at {location}")
+            logger.warning("Couldn't find player %s for DP order at %s", player_name, location)
             return
         try:
             dp_order = board.parse_order(order_type, order_destination, order_source)
@@ -289,19 +284,15 @@ class _DatabaseConnection:
         self,
         board_id: int,
         turn: Turn,
-        fish: int,
-        name: str | None,
         data_file: str,
         cursor,
         clear_status: bool = False,
     ) -> Board:
-        logger.info(f"Loading board with ID {board_id}")
+        logger.info("Loading board with ID %s", board_id)
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
         board = get_parser(data_file).parse()
         board.turn = turn
-        # TODO: Move name out of here in the next patch
-        board.set_data("game_name", name)
         board.board_id = board_id
 
         board_params = cursor.execute(
@@ -313,11 +304,6 @@ class _DatabaseConnection:
         for key, value in board_params:
             board.set_data(key.split("/"), value)
 
-        board.set_data("fish", int(board.data.get("fish", fish)))
-        # Temporary to ensure that "fish" and "name" are migrated
-        cursor.execute("INSERT OR IGNORE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)", (board_id, "fish", board.data["fish"]))
-        if board.data.get("game_name") is not None:
-            cursor.execute("INSERT OR IGNORE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)", (board_id, "game_name", board.data["game_name"]))
         if board.data["players"] != "chaos":
             board.update_players()
 
@@ -332,16 +318,20 @@ class _DatabaseConnection:
         name_to_player = {player.name: player for player in board.players}
         for player in board.players:
             if player.name not in player_info_by_name:
-                logger.warning(f"Couldn't find player {player.name} in DB")
+                logger.warning("Couldn't find player %s in DB", player.name)
                 continue
             color, liege, points = player_info_by_name[player.name]
-            player.render_color = color
+            # TODO: Remove once board_params have been updated
+            board.set_data(["players", player.name, "custom_color"], color)
+            cursor.execute("INSERT OR IGNORE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
+                           (board_id, f"players/{player.name}/custom_color", color))
+
             if liege is not None:
                 try:
                     player.liege = name_to_player[liege]
                     player.liege.vassals.append(player)
                 except KeyError:
-                    logger.warning(f"Invalid liege of player {player.name}: {liege}")
+                    logger.warning("Invalid liege of player %s: %s", player.name, liege)
             player.points = points
             player.units = set()
             player.centers = set()
@@ -414,19 +404,12 @@ class _DatabaseConnection:
             (board_id, format(board.turn, "%I %S"), board.datafile, board.data.get("fish", 0), board.data.get("game_name")),
         )
         cursor.executemany(
-            "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT "
-            "DO UPDATE SET "
-            "color = ?, "
-            "liege = ?, "
-            "points = ?",
+            "INSERT OR REPLACE INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?)",
             [
                 (
                     board_id,
                     player.name,
-                    player.render_color,
-                    (None if player.liege is None else str(player.liege)),
-                    player.points,
-                    player.render_color,
+                    board.data["players"][player.name].get("custom_color", player.default_color),
                     (None if player.liege is None else str(player.liege)),
                     player.points,
                 )
@@ -558,7 +541,7 @@ class _DatabaseConnection:
             "UPDATE players SET color=?, liege=?, points=? WHERE board_id=? AND player_name=?",
             [
                 (
-                    player.render_color,
+                    board.data["players"][player.name].get("custom_color", player.default_color),
                     (None if player.liege is None else str(player.liege)),
                     player.points,
                     board_id,

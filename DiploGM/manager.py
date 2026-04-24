@@ -57,7 +57,7 @@ class Manager(metaclass=SingletonMeta):
         if not os.path.isdir(variant_path):
             return False, f"Game {gametype} does not exist."
 
-        logger.info(f"Creating new game in server {server_id}")
+        logger.info("Creating new game in server %s", server_id)
         self._boards[server_id] = get_parser(gametype).parse()
         self._boards[server_id].board_id = server_id
         self._database.save_board(server_id, self._boards[server_id])
@@ -119,9 +119,7 @@ class Manager(metaclass=SingletonMeta):
     def get_board_from_db(self, server_id: int, turn: Turn) -> Board:
         """Loads a fresh board from the database for the given server and turn."""
         cur_board = self.get_board(server_id)
-        board = self._database.get_board(
-            cur_board.board_id, turn, cur_board.data.get("fish", 0), cur_board.data.get("game_name"), cur_board.datafile
-        )
+        board = self._database.get_board(cur_board.board_id, turn, cur_board.datafile)
         if board is None:
             raise RuntimeError(f"There is no {turn} board for this server")
         return board
@@ -187,8 +185,6 @@ class Manager(metaclass=SingletonMeta):
             board = self._database.get_board(
                 cur_board.board_id,
                 turn,
-                cur_board.data.get("fish", 0),
-                cur_board.data.get("game_name"),
                 cur_board.datafile,
             )
             if board is None:
@@ -233,7 +229,7 @@ class Manager(metaclass=SingletonMeta):
             svg, file_name = mapper.draw_current_map()
 
         elapsed = time.time() - start
-        logger.info(f"manager.draw_map_for_board took {elapsed}s")
+        logger.info("manager.draw_map_for_board took %ss", elapsed)
         return svg, file_name
 
     def adjudicate(self, server_id: int, test: bool = False) -> Board:
@@ -241,9 +237,7 @@ class Manager(metaclass=SingletonMeta):
         start = time.time()
 
         board = self.get_board(server_id)
-        old_board = self._database.get_board(
-            server_id, board.turn, board.data.get("fish", 0), board.data.get("game_name"), board.datafile
-        )
+        old_board = self._database.get_board(server_id, board.turn, board.datafile)
         assert old_board is not None
         adjudicator = make_adjudicator(old_board)
         adjudicator.save_orders = not test
@@ -262,7 +256,7 @@ class Manager(metaclass=SingletonMeta):
             self._database.save_board(new_board.board_id, new_board)
 
         elapsed = time.time() - start
-        logger.info(f"manager.adjudicate.{server_id}.{elapsed}s")
+        logger.info("manager.adjudicate.%s.%ss", server_id, elapsed)
         return new_board
 
     def draw_gui_map(
@@ -280,23 +274,16 @@ class Manager(metaclass=SingletonMeta):
         ).draw_gui_map(self._boards[server_id].turn, player_restriction)
 
         elapsed = time.time() - start
-        logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
+        logger.info("manager.draw_moves_map.%s.%ss", server_id, elapsed)
         return svg, file_name
 
     def rollback(self, server_id: int) -> tuple[str, bytes, str]:
         """Rolls back the board to the previous turn."""
-        logger.info(f"Rolling back in server {server_id}")
+        logger.info("Rolling back in server %s", server_id)
         board = self.get_board(server_id)
         last_turn = board.turn.get_previous_turn()
 
-        old_board = self._database.get_board(
-            board.board_id,
-            last_turn,
-            board.data.get("fish", 0),
-            board.data.get("game_name"),
-            board.datafile,
-            clear_status=True,
-        )
+        old_board = self._database.get_board(board.board_id, last_turn, board.datafile, clear_status=True)
         if old_board is None:
             raise ValueError(
                 f"There is no {last_turn} board for this server"
@@ -314,23 +301,15 @@ class Manager(metaclass=SingletonMeta):
         """Gets the previous board for a server. Returns None if it doesn't exist."""
         board = self.get_board(server_id)
         last_turn = board.turn.get_previous_turn()
-        old_board = self._database.get_board(
-            board.board_id,
-            last_turn,
-            board.data.get("fish", 0),
-            board.data.get("game_name"),
-            board.datafile,
-        )
+        old_board = self._database.get_board(board.board_id, last_turn, board.datafile)
         return old_board
 
     def reload(self, server_id: int) -> tuple[str, bytes, str]:
         """Reloads the board for a server."""
-        logger.info(f"Reloading server {server_id}")
+        logger.info("Reloading server %s", server_id)
         board = self.get_board(server_id)
 
-        loaded_board = self._database.get_board(
-            server_id, board.turn, board.data.get("fish", 0), board.data.get("game_name"), board.datafile
-        )
+        loaded_board = self._database.get_board(board.board_id, board.turn, board.datafile)
         if loaded_board is None:
             raise ValueError(
                 f"There is no {board.turn} board for this server"
@@ -359,12 +338,10 @@ class Manager(metaclass=SingletonMeta):
         get_parser(variant, force_refresh=True).parse()
         for server_id, board in self._boards.items():
             if board.datafile == variant:
-                logger.info(f"Reloading board for server {server_id}")
-                loaded_board = self._database.get_board(
-                    server_id, board.turn, board.data.get("fish", 0), board.data.get("game_name"), board.datafile
-                )
+                logger.info("Reloading board for server %s", server_id)
+                loaded_board = self._database.get_board(board.board_id, board.turn, board.datafile)
                 if loaded_board is None:
-                    logger.warning(f"There is no {board.turn} board for this server")
+                    logger.warning("There is no %s board for this server", board.turn)
                     continue
                 self._boards[board.board_id] = loaded_board
         return f"Reloaded variant {variant}"

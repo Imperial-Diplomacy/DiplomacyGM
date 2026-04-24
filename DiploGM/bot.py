@@ -16,8 +16,8 @@ from DiploGM.config import (
     BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID,
     EMBED_STANDARD_COLOUR,
     ERROR_COLOUR,
-    HUB_SERVER_BOT_BUGS_CHANNEL_ID,
-    HUB_SERVER_BOT_FEEDBACK_CHANNEL_ID,
+    GAME_PLAYING,
+    HUB_SERVER_BOT_BUG_REPORT_CHANNEL_MESSAGE,
     HUB_SERVER_ID,
     HUB_SERVER_BOT_STATUS_CHANNEL_ID,
     EXTENSIONS_TO_LOAD_ON_STARTUP,
@@ -81,14 +81,12 @@ class DiploGM(commands.Bot):
         # sync app_commands (slash) commands with all servers
         try:
             synced = await self.tree.sync()
-            logger.info(f"Successfully synched {len(synced)} slash commands.")
-            logger.info(
-                f"Loaded app commands: {[cmd.name for cmd in self.tree.get_commands()]}"
-            )
+            logger.info("Successfully synched %s slash commands.", len(synced))
+            logger.info("Loaded app commands: %s", [cmd.name for cmd in self.tree.get_commands()])
         except discord.app_commands.CommandAlreadyRegistered as e:
-            logger.warning(f"Command already registered: {e}")
+            logger.warning("Command already registered: %s", e)
         except Exception as e:
-            logger.warning(f"Failed to sync commands: {e}", exc_info=True)
+            logger.warning("Failed to sync commands: %s", e, exc_info=True)
 
     async def load_diplogm_extension(self, name: str, *, package: Optional[str] = None):
         await self.load_extension(f"{_EXTENSION_PATH}{name}", package=package)
@@ -116,11 +114,9 @@ class DiploGM(commands.Bot):
         try:
             start = datetime.datetime.now()
             await super().load_extension(f"{name}", package=package)
-            logger.info(
-                f"Successfully loaded Cog: {name} in {datetime.datetime.now() - start}"
-            )
+            logger.info("Successfully loaded Cog: %s in %s", name, datetime.datetime.now() - start)
         except Exception as e:
-            logger.info(f"Failed to load Cog {name}")
+            logger.info("Failed to load Cog %s", name)
             raise e
 
     async def unload_extension(self, name: str, *, package: Optional[str] = None) -> None:
@@ -128,11 +124,9 @@ class DiploGM(commands.Bot):
         try:
             start = datetime.datetime.now()
             await super().unload_extension(f"{name}", package=package)
-            logger.info(
-                f"Successfully unloaded Cog: {name} in {datetime.datetime.now() - start}"
-            )
+            logger.info("Successfully unloaded Cog: %s in %s", name, datetime.datetime.now() - start)
         except Exception as e:
-            logger.info(f"Failed to unload Cog {name}")
+            logger.info("Failed to unload Cog %s", name)
             raise e
 
 
@@ -141,11 +135,9 @@ class DiploGM(commands.Bot):
         try:
             start = datetime.datetime.now()
             await super().reload_extension(f"{name}", package=package)
-            logger.info(
-                f"Successfully reloaded Cog: {name} in {datetime.datetime.now() - start}"
-            )
+            logger.info("Successfully reloaded Cog: %s in %s", name, datetime.datetime.now() - start)
         except Exception as e:
-            logger.info(f"Failed to reload Cog {name}")
+            logger.info("Failed to reload Cog %s", name)
             raise e
 
     @staticmethod
@@ -160,7 +152,7 @@ class DiploGM(commands.Bot):
         try:
             module = importlib.import_module(module_path)
         except Exception as e:
-            logger.error(f"Failed to import {module_path}: {e}")
+            logger.error("Failed to import %s: %s", module_path, e)
             return
 
         for attr in dir(module):
@@ -174,9 +166,9 @@ class DiploGM(commands.Bot):
             try:
                 listener = cls(self)
                 listener.setup(bus)
-                logger.info(f"Loaded event listener: {cls.__name__}")
+                logger.info("Loaded event listener: %s", cls.__name__)
             except Exception as e:
-                logger.error(f"Failed to load event listener: {cls.__name__}: {e.__class__.__name__} - {str(e)}")
+                logger.error("Failed to load event listener: %s: %s - %s", cls.__name__, e.__class__.__name__, str(e))
 
     # TODO: Functionality to unload/reload listeners
 
@@ -197,29 +189,25 @@ class DiploGM(commands.Bot):
     async def on_ready(self):
         """Stuff that happens when the bot has finished starting up."""
         now = datetime.datetime.now(datetime.timezone.utc)
-        logger.info(f"Setup took {now - self.creation_time}")
+        logger.info("Setup took %s", now - self.creation_time)
 
-        logger.info(f"Logged in as {self.user}")
+        logger.info("Logged in as %s", self.user)
 
         # Ensure bot is connected to the correct server
         guild = self.get_guild(HUB_SERVER_ID)
         if not guild:
-            logger.warning(
-                f"Cannot find Hub Server [id={HUB_SERVER_ID}]"
-            )
+            logger.warning("Cannot find Hub Server [id=%s]", HUB_SERVER_ID)
 
         # Get the specific channel
         channel = self.get_channel(HUB_SERVER_BOT_STATUS_CHANNEL_ID)
         if not channel or not isinstance(channel, discord.TextChannel):
-            logger.warning(
-                f"Cannot find Bot Status Channel [id={HUB_SERVER_BOT_STATUS_CHANNEL_ID}]"
-            )
+            logger.warning("Cannot find Bot Status Channel [id=%s]", HUB_SERVER_BOT_STATUS_CHANNEL_ID)
         else:
             message = random.choice(WELCOME_MESSAGES)
             await send_message_and_file(channel=channel, message=message, embed_colour=EMBED_STANDARD_COLOUR)
 
         # Set bot's presence (optional)
-        await self.change_presence(activity=discord.Game(name="Impdip 🔪"))
+        await self.change_presence(activity=discord.Game(name=GAME_PLAYING))
 
     async def close(self):
         logger.info("Shutting down gracefully.")
@@ -235,9 +223,9 @@ class DiploGM(commands.Bot):
                 if inspect.isawaitable(result):
                     await result
 
-                logger.info(f"Closed Cog: {name}")
+                logger.info("Closed Cog: %s", name)
             except Exception as e:
-                logger.warning(f"Failed to close Cog '{name}' safely: {e}")
+                logger.warning("Failed to close Cog '%s' safely: %s", name, e)
 
         await super().close()
 
@@ -252,7 +240,11 @@ class DiploGM(commands.Bot):
             return
 
         logger.debug(
-            f"[{guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'"
+            "[%s][#%s](%s) - '%s'",
+            guild.name,
+            ctx.channel.name,
+            ctx.message.author.name,
+            ctx.message.content
         )
 
         # People input apostrophes that don't match what the province names are, we can catch all of that here
@@ -282,8 +274,12 @@ class DiploGM(commands.Bot):
 
         logger.log(
             level,
-            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-            f"complete in {time_spent}s",
+            "[%s][#%s](%s) - '%s' - complete in %s",
+            ctx.guild.name,
+            ctx.channel.name,
+            ctx.message.author.name,
+            ctx.message.content,
+            time_spent,
         )
 
     async def on_command_error(self, context: commands.Context, exception: Exception):
@@ -325,8 +321,13 @@ class DiploGM(commands.Bot):
 
         if isinstance(original, CommandPermissionError):
             logger.info(
-                f"[{context.guild.name}][#{channel_name}]({context.message.author.name}) - "
-                f"'{context.message.content}' - permission denied in {time_spent}s: {original}",
+                "[%s][#%s](%s) - '%s' - permission denied in %s: %s",
+                context.guild.name,
+                channel_name,
+                context.message.author.name,
+                context.message.content,
+                time_spent,
+                original,
             )
             await send_message_and_file(
                 channel=context.channel,
@@ -337,9 +338,13 @@ class DiploGM(commands.Bot):
 
         logger.log(
             logging.ERROR,
-            f"[{context.guild.name}][#{channel_name}]({context.message.author.name}) - '{context.message.content}' - "
-            f"errored in {time_spent}s\n"
-            f"{''.join(traceback.format_exception(type(exception), exception, exception.__traceback__))}",
+            "[%s][#%s](%s) - '%s' - errored in %s\n%s",
+            context.guild.name,
+            channel_name,
+            context.message.author.name,
+            context.message.content,
+            time_spent,
+            ''.join(traceback.format_exception(type(exception), exception, exception.__traceback__)),
         )
 
         if isinstance(original, discord.Forbidden):
@@ -348,9 +353,7 @@ class DiploGM(commands.Bot):
                 message="I do not have the correct permissions to do this.\n"
                 "I might not be setup correctly.\n"
                 "If this is unexpected please contact a GM or reach out in: "
-                f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_BUGS_CHANNEL_ID}"
-                " or "
-                f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_FEEDBACK_CHANNEL_ID}",
+                + HUB_SERVER_BOT_BUG_REPORT_CHANNEL_MESSAGE,
                 embed_colour=ERROR_COLOUR,
             )
             return
@@ -434,11 +437,7 @@ class DiploGM(commands.Bot):
 
         # Out to Invoking Channel
         unhandled_out = (
-            "Please report this to a bot dev in a feedback channel: "
-            f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_BUGS_CHANNEL_ID}"
-            " or "
-            f"https://discord.com/channels/{HUB_SERVER_ID}/{HUB_SERVER_BOT_FEEDBACK_CHANNEL_ID}"
-            "\n"
+            f"Please report this to a bot dev in a feedback channel: {HUB_SERVER_BOT_BUG_REPORT_CHANNEL_MESSAGE}\n"
         ) + unhandled_out
         await send_message_and_file(
             channel=context.channel,

@@ -17,7 +17,7 @@ const coast_to_province = %s;
 const province_to_unit_type = %s;
 const province_to_province_type = %s;
 
-const arrow_layer = document.getElementById(svg_config["arrow_output"]);
+const arrow_layer = document.getElementById(%s);
 
 const order_colour = "white";
 const dasharray_size = 3.5 * svg_config["order_stroke_width"];
@@ -73,7 +73,7 @@ function make_elem(name, dict) {
 }
 
 function rerender_text() {
-    let textbox = document.getElementById("order_output_textbox");
+    let textbox = document.getElementById("order_list_textbox");
     let box = textbox.children[0];
     textbox.innerHTML = '';
     textbox.append(box);

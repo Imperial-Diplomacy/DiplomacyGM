@@ -346,7 +346,6 @@ class GameManagementCog(commands.Cog):
         * set_core <province_name> <player_name>
         * set_half_core <province_name> <player_name>
         * set_province_owner <province_name> <player_name>
-        * set_player_color <player_name> <hex_code>
         * create_unit {A, F} <player_name> <province_name>
         * create_dislodged_unit {A, F} <player_name> <province_name> <retreat_option1> <retreat_option2>...
         * delete_dislodged_unit <province_name>
@@ -357,7 +356,6 @@ class GameManagementCog(commands.Cog):
         * set_player_points <player_name> <integer>
         * set_player_vassal <liege> <vassal>
         * remove_relationship <player1> <player2>
-        * set_game_name <game_name>
         * load_state <server_id> <spring, fall, winter}_{moves, retreats, builds> <year>
         * apocalypse {all OR army, fleet, core, province} !!! deletes everything specified !!!
         * bulk <command> {<player_name> | nothing if you're using delete_units} <list_of_province_names> {use with commands like set_total_owner to use it repeatedly}
@@ -436,6 +434,7 @@ class GameManagementCog(commands.Cog):
         There must be one and only one command per line.
         Note: you cannot edit immalleable map state (eg. province adjacency).
         The following are the supported parameters and possible values:
+        * game_name <game_name>
         * building ['classic', 'cores', 'control', 'anywhere']
         * convoyable_islands ['disabled', 'enabled']
         * supportable_cores ['disabled', 'enabled']
@@ -447,6 +446,7 @@ class GameManagementCog(commands.Cog):
         * vscc [player] [victory scs] (only used with vscc victory conditions)
         * capital [player] [province]
         * player_name [original name] [new name]
+        * player_color [player_name] [hex_code]
         * hide_player [player] ['true', 'false']
         * add_player [player] [color] (Once added, a player cannot be removed)
         """,

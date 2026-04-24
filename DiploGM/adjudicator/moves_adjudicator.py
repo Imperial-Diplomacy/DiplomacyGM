@@ -37,7 +37,7 @@ class MovesAdjudicator(Adjudicator):
             points_available = player.dp_max
             for unit, allocation in board.get_player_dp_orders(player).items():
                 if allocation.points > points_available:
-                    logger.info(f"Player {player} allocated more DP than they have. Skipping this DP orders")
+                    logger.info("Player %s allocated more DP than they have. Skipping this DP orders", player)
                     unit.dp_allocations.pop(player.name)
                     break
                 points_available -= allocation.points
@@ -91,7 +91,7 @@ class MovesAdjudicator(Adjudicator):
         # TODO clean up mapper info
         valid, reason = order_is_valid(unit.province, unit.order)
         if not is_valid_result(valid):
-            logger.debug(f"Order for {unit} is invalid because {reason}")
+            logger.debug("Order for %s is invalid because %s", unit, reason)
             # Invalid moves are considered unsupportable. This deviates from standard adjudication rules
             # To follow standard rules, set is_support_holdable to true for Invalid moves but false for Mismatched moves
             failed = True
@@ -140,7 +140,7 @@ class MovesAdjudicator(Adjudicator):
         if order.type == OrderType.CORE and order.resolution == Resolution.SUCCEEDS:
             order.source_province.core_data.corer = order.country
         if order.type == OrderType.TRANSFORM and order.resolution == Resolution.SUCCEEDS:
-            logger.debug(f"Transforming {order.base_unit}")
+            logger.debug("Transforming %s", order.base_unit)
             if order.base_unit.unit_type == UnitType.ARMY:
                 order.base_unit.unit_type = UnitType.FLEET
                 order.base_unit.coast = order.destination_coast
@@ -148,7 +148,7 @@ class MovesAdjudicator(Adjudicator):
                 order.base_unit.unit_type = UnitType.ARMY
                 order.base_unit.coast = None
         if order.type == OrderType.MOVE and not order.is_sortie and order.resolution == Resolution.SUCCEEDS:
-            logger.debug(f"Moving {order.source_province} to {order.destination_province}")
+            logger.debug("Moving %s to %s", order.source_province, order.destination_province)
             if order.source_province.unit == order.base_unit:
                 order.source_province.unit = None
             if order.source_province.dislodged_unit == order.base_unit:

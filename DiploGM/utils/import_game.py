@@ -72,7 +72,6 @@ def import_game(board: Board, data: dict) -> str:
         player = board.get_player(player_data["name"])
         if player is None:
             continue
-        player.render_color = player_data.get("color", player.render_color)
         player.is_active = player_data.get("is_active", player.is_active)
 
     # Clear all units
