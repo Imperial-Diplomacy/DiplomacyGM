@@ -32,7 +32,7 @@ class FogOfWarCog(commands.Cog):
     # for fog of war
     async def publish_fow_current(self, ctx: commands.Context):
         await publish_map(
-            ctx, manager, "starting map", lambda m, s, p: m.draw_map(s, False, p, {"fow_player": p})
+            ctx, manager, "starting map", lambda m, s, p: m.draw_map(s, False, p, fow_player=p)
         )
 
     @commands.command(
@@ -59,7 +59,7 @@ class FogOfWarCog(commands.Cog):
             ctx,
             manager,
             "moves map",
-            lambda m, s, p: m.draw_map(s, True, None, {"fow_player": p}),
+            lambda m, s, p: m.draw_map(s, True, None, fow_player=p),
             filter_player,
         )
 

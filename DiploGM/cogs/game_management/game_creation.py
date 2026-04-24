@@ -1,6 +1,7 @@
 """Module within the Game Management cog to handle game creation and exporting/importing game state."""
 import json
 import logging
+import os
 from discord.ext import commands
 
 from DiploGM import config
@@ -101,6 +102,23 @@ async def delete_game(ctx: commands.Context) -> None:
 async def list_variants(ctx: commands.Context) -> None:
     """Lists all variants currently loaded into the bot."""
     assert ctx.guild is not None
-    message = manager.list_variants()
+    variants = os.listdir("variants")
+    loaded_variants = []
+    for v in variants:
+        if not os.path.isdir(os.path.join("variants", v)):
+            continue
+        if os.path.isfile(os.path.join("variants", v, "config.json")):
+            loaded_variants.append(f"* {v}")
+        else:
+            version_list = []
+            variant_versions = os.listdir(os.path.join("variants", v))
+            for vv in variant_versions:
+                if os.path.isdir(os.path.join("variants", v, vv)) \
+                    and os.path.isfile(os.path.join("variants", v, vv, "config.json")):
+                    version_list.append(vv)
+            version_list.sort()
+            loaded_variants.append(f"* {v}:\n    " + "\n    ".join(version_list))
+    loaded_variants.sort()
+    message = "\n".join(loaded_variants)
     log_command(logger, ctx, message=message)
     await send_message_and_file(channel=ctx.channel, title="Currently loaded variants", message=message)
