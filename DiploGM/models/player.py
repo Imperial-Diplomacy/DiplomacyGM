@@ -124,8 +124,9 @@ class Player:
         for unit in units:
             unit_str += f"{bullet}({unit.unit_type.value}) {unit.province.get_name(unit.coast)}"
 
-        color = (bullet + bullet.join([k + ': ' + v for k, v in self.color_dict.items()])
-                if self.color_dict is not None else self.board.data['players'][self.name].get('custom_color', self.default_color))
+        color = (bullet + self.board.data['players'][self.name].get('custom_color', self.default_color) +
+                 (bullet + bullet.join([k + ': ' + v for k, v in self.color_dict.items()])
+                  if self.color_dict is not None else ""))
         out = (
             ""
             + f"Color: {color}\n"

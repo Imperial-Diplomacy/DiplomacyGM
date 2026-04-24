@@ -524,7 +524,8 @@ class Mapper:
             try:
                 province = self._get_province_from_element_by_label(center_element)
             except ValueError as ex:
-                print(f"Error during recoloring centers: {ex}", file=sys.stderr)
+                if "capital marker" not in str(ex).lower():
+                    print(f"Error during recoloring centers: {ex}", file=sys.stderr)
                 continue
 
             if not province.has_supply_center:

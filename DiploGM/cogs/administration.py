@@ -9,7 +9,6 @@ from discord.utils import find as discord_find
 from DiploGM import config
 from DiploGM import perms
 from DiploGM.config import MAP_ARCHIVE_SAS_TOKEN
-from DiploGM.map_parser.adjacencies import verify_adjacencies
 from DiploGM.utils import log_command, parse_season, send_message_and_file, upload_map_to_archive
 from DiploGM.manager import Manager
 from DiploGM.utils.sanitise import remove_prefix
@@ -281,37 +280,6 @@ class AdminCog(commands.Cog):
             args={"turn": season},
         )
         await upload_map_to_archive(ctx, server_id, board, file, season)
-
-    @commands.command(hidden=True)
-    @perms.superuser_only("Checks the adjacencies of a variant to find potential issues")
-    async def verify_adjacencies(self, ctx: commands.Context, arg) -> None:
-        """Checks the adjacencies of a variant to find potential issues."""
-        assert ctx.guild is not None
-        gametype = arg if arg else "classic"
-
-        message = verify_adjacencies(gametype)
-        log_command(logger, ctx, message=message)
-        await send_message_and_file(channel=ctx.channel, message=message)
-
-    @commands.command(hidden=True)
-    @perms.superuser_only("Generates the titles, army and fleet locations for a variant based on the map SVG")
-    async def generate_layers(self, ctx: commands.Context, arg) -> None:
-        """Generates the titles, army and fleet locations for a variant based on the map SVG."""
-        assert ctx.guild is not None
-        gametype = arg if arg else "classic"
-
-        file, filename = manager.generate_layers(gametype)
-        log_command(logger, ctx, message=f"Generated SVG layers for variant {gametype}")
-        await send_message_and_file(channel=ctx.channel, message=f"Generated SVG layers for variant {gametype}", file=file, file_name=filename)
-
-    @commands.command(hidden=True)
-    @perms.superuser_only("Reloads the map parser for a given variant. Useful if a map has been updated.")
-    async def reload_variant(self, ctx: commands.Context, arg) -> None:
-        """Reloads the map parser for a given variant. Useful if a map has been updated."""
-        assert ctx.guild is not None
-        message = manager.reload_variant(arg)
-        log_command(logger, ctx, message=message)
-        await send_message_and_file(channel=ctx.channel, message=message)
 
     @commands.command(
         brief="Execute Arbitrary Python",
