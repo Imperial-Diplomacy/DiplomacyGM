@@ -39,37 +39,36 @@ class MapperUtils:
             return False
         return True
 
-    def normalize(self, point: tuple[float, float]) -> tuple[float, float]:
+    def normalize(self, point: complex) -> complex:
         """Normalizes a point to be within the bounds of the map, wrapping horizontally."""
-        return (point[0] % self.board_svg_data["map_width"], point[1])
+        return complex(point.real % self.board_svg_data["map_width"], point.imag)
 
-    def get_closest_loc(self, possibilities: set[tuple[float, float]],
-                        coord: tuple[float, float]) -> tuple[float, float]:
+    def get_closest_loc(self, possibilities: set[complex], coord: complex) -> complex:
         """Gets the closest point to the given coordinate, accounting for horizontal wrapping of the map."""
         possibilities_list = list(possibilities)
         crossed_pos = []
         crossed = []
         map_width = self.board_svg_data["map_width"]
         for p in possibilities_list:
-            x = p[0]
-            cx = coord[0]
+            x = p.real
+            cx = coord.real
             if abs(x - cx) > map_width / 2:
                 crossed += [1]
                 x += map_width if x < cx else -map_width
             else:
                 crossed += [0]
-            crossed_pos += [(x, p[1])]
+            crossed_pos += [complex(x, p.imag)]
 
         crossed = np.array(crossed)
         crossed_pos = np.array(crossed_pos)
 
-        dists = crossed_pos - coord
+        dists = np.abs(np.array(crossed_pos) - coord)
         # penalty for crossing map is 500 px
-        short_ind = np.argmin(np.linalg.norm(dists, axis=1) + 500 * crossed)
-        return crossed_pos[short_ind].tolist()
+        short_ind = int(np.argmin(dists + 500 * np.array(crossed)))
+        return crossed_pos[short_ind]
 
     def loc_to_point(self, loc: Province, unit_type: UnitType, coast: str | None,
-                    current: tuple[float, float], use_retreats=False) -> tuple[float, float]:
+                    current: complex, use_retreats=False) -> complex:
         """Gets the coordinates to draw a unit in a province, given the unit type and coast.
         If there are multiple possibilities, gets the one closest to the current coordinates."""
         # If we're moving to somewhere that's inhabitted, draw to the proper coast
@@ -89,10 +88,10 @@ class MapperUtils:
 
     def pull_coordinate(
         self,
-        anchor: tuple[float, float],
-        coordinate: tuple[float, float],
+        anchor: complex,
+        coordinate: complex,
         pull=None,
-        limit=0.25) -> tuple[float, float]:
+        limit=0.25) -> complex:
         """
         Pull coordinate toward anchor by a small margin to give unit view breathing room. The pull will be limited to be
         no more than the given percent of the distance because otherwise small province size areas are hard to see.
@@ -100,20 +99,13 @@ class MapperUtils:
         if pull is None:
             pull = 1.5 * self.board_svg_data["unit_radius"]
 
-        ax, ay = anchor
-        cx, cy = coordinate
-        dx = ax - cx
-        dy = ay - cy
-
-        distance = math.sqrt(dx**2 + dy**2)
-        if distance == 0:
+        distance = anchor - coordinate
+        if abs(distance) == 0:
             return coordinate
 
         # if the area is small, the pull can become too large of the percent of the total arrow length
-        pull = min(pull, distance * limit)
-
-        scale = pull / distance
-        return cx + dx * scale, cy + dy * scale
+        pull = min(pull, abs(distance) * limit)
+        return coordinate + pull * distance / abs(distance)
 
     def add_arrow_definition_to_svg(self,
                                     svg: ElementTree,

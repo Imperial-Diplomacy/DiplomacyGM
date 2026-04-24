@@ -41,6 +41,13 @@ SVG_CONFIG_KEY: str = "svg config"
 
 logger = logging.getLogger(__name__)
 
+def get_coordinates(element: Element) -> complex:
+    """Fetches coordinates of an SVG element as a complex number."""
+    x = element.get("x", 0)
+    y = element.get("y", 0)
+    return complex(float(x), float(y))
+
+
 def find_svg_element(svg_root: Element | ElementTree, layer_name: str, config_data: dict) -> Element | None:
     """Given a set of element ids and labels, tries to find a matching element in the SVG or None if none found."""
     layer_id = config_data.get(layer_name)
@@ -77,7 +84,7 @@ def get_element_color(element: Element, prefix="fill:") -> str | None:
 
 def get_unit_coordinates(
     unit_data: Element,
-) -> tuple[float, float]:
+) -> complex:
     """Gets the x, y coordinates of a unit."""
     subpath = unit_data.find("{http://www.w3.org/2000/svg}path")
     path = subpath if subpath is not None else unit_data
@@ -90,34 +97,27 @@ def get_unit_coordinates(
         path = unit_data.findall("{http://www.w3.org/2000/svg}path")[0]
         pathstr = path.get("d")
         assert pathstr is not None
-        coordinates = parse_path(pathstr, TransGL3(path))
-        coordinates = np.array(sum(coordinates, start = []))
-        minp = np.min(coordinates, axis=0)
-        maxp = np.max(coordinates, axis=0)
-        return ((minp + maxp) / 2).tolist()
+        coordinates = sum(parse_path(pathstr, TransGL3(path)), start = [])
+        x_list = [p.real for p in coordinates]
+        y_list = [p.imag for p in coordinates]
+        return complex((min(x_list) + max(x_list)) / 2, (min(y_list) + max(y_list)) / 2)
 
-    x = float(x)
-    y = float(y)
-    return (x, y) if subpath is None else TransGL3(path).transform((x, y))
+    coordinate = complex(float(x), float(y))
+    return coordinate if subpath is None else TransGL3(path).transform(coordinate)
 
-def get_sc_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
+def get_sc_coordinates(supply_center_data: Element) -> complex:
     circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
     if not circles:
-        return None, None
+        logger.warning("SC Coordinate not found")
+        return complex(0)
     cx = circles[0].get("cx")
     cy = circles[0].get("cy")
     if cx is None or cy is None:
-        return None, None
-    base_coordinates = float(cx), float(cy)
+        logger.warning("SC Coordinate not found")
+        return complex(0)
+    base_coordinates = complex(float(cx), float(cy))
     trans = TransGL3(supply_center_data) * TransGL3(circles[0])
     return trans.transform(base_coordinates)
-
-def move_coordinate(
-    former_coordinate: tuple[float, float],
-    coordinate: tuple[float, float],
-) -> tuple[float, float]:
-    """Moves a coordinate by a given offset."""
-    return (former_coordinate[0] + coordinate[0], former_coordinate[1] + coordinate[1])
 
 
 
@@ -126,24 +126,23 @@ def move_coordinate(
 # new former_coordinate (= former_coordinate if not applicable),
 def _parse_path_command(
     command: str,
-    args: tuple[float, float],
-    coordinate: tuple[float, float],
-) -> tuple[float, float]:
+    args: complex,
+    coordinate: complex,
+) -> complex:
     is_absolute = command.isupper()
     command = command.lower()
 
     if command in ["m", "c", "l", "t", "s", "q", "a"]:
-        return args if is_absolute else move_coordinate(coordinate, args)  # Ignore all args except the last
-    if command in ["h", "v"]:
-        coordlist = list(coordinate)
-        index = 0 if command == "h" else 1
-        if is_absolute:
-            coordlist[index] = 0
-        coordlist[index] += args[0]
-        return (coordlist[0], coordlist[1])
+        return args if is_absolute else coordinate + args  # Ignore all args except the last
+    if command == "h":
+        coordinate = complex(0, coordinate.imag) if is_absolute else coordinate
+        return coordinate + complex(args.real, 0)
+    if command == "v":
+        coordinate = complex(coordinate.real, 0) if is_absolute else coordinate
+        return coordinate + complex(0, args.real)
     raise ValueError(f"Unknown SVG path command: {command}")
 
-def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float, float]]]:
+def parse_path(path_string: str, translation: TransGL3) -> list[list[complex]]:
     """Parses an SVG path string into a list of coordinates."""
     province_coordinates = [[]]
     command = None
@@ -153,7 +152,7 @@ def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float
     path: list[str] = re.split(r"[ ,]+", path_string.strip())
 
     start = None
-    coordinate = (0, 0)
+    coordinate = complex(0)
     while current_index < len(path):
         if path[current_index][0].isalpha():
             if len(path[current_index]) != 1:
@@ -189,9 +188,9 @@ def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float
             raise RuntimeError(f"Ran out of arguments for {command}")
 
         if expected_arguments == 1:
-            args = (float(path[current_index]), 0.0)
+            args = complex(float(path[current_index]), 0.0)
         else:
-            args = (float(path[final_index - 2]), float(path[final_index - 1]))
+            args = complex(float(path[final_index - 2]), float(path[final_index - 1]))
 
         coordinate = _parse_path_command(
             command, args, coordinate
@@ -212,7 +211,7 @@ def parse_path(path_string: str, translation: TransGL3) -> list[list[tuple[float
 def initialize_province_resident_data(
     provinces: set[Province],
     resident_dataset: Element | list[Element],
-    get_coordinates: Callable[[Element], tuple[float | None, float | None]],
+    get_coordinates: Callable[[Element], complex],
     resident_data_callback: Callable[[Province, Element, str | None], None],
 ) -> None:
     resident_dataset = list(resident_dataset)
@@ -221,14 +220,13 @@ def initialize_province_resident_data(
 
         # found = False
         for resident_data in resident_dataset:
-            x, y = get_coordinates(resident_data)
+            point = get_coordinates(resident_data)
 
-            if not x or not y:
+            if not point:
                 remove.add(resident_data)
                 continue
 
-            point = Point((x, y))
-            if province.geometry.contains(point):
+            if province.geometry.contains(Point(point.real, point.imag)):
                 # found = True
                 resident_data_callback(province, resident_data, None)
                 remove.add(resident_data)

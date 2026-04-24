@@ -13,8 +13,8 @@ from lxml import etree
 
 from DiploGM.map_parser.vector.transform import TransGL3
 from DiploGM.map_parser.vector.utils import (
-    find_svg_element, get_element_color, get_sc_coordinates, get_unit_coordinates,
-    parse_path, initialize_province_resident_data,
+    get_coordinates, find_svg_element, get_element_color, get_sc_coordinates,
+    get_unit_coordinates, parse_path, initialize_province_resident_data,
     LAYER_DICTIONARY, NAMESPACE, SVG_CONFIG_KEY
 )
 from DiploGM.models.turn import PhaseName, Turn
@@ -298,8 +298,8 @@ class Parser:
         if HIGH_PROVINCES_KEY in self.data["overrides"]:
             provinces = self._add_high_provinces(provinces)
 
-        offset = np.array([self.data[SVG_CONFIG_KEY].get("loc_x_offset", 0),
-                           self.data[SVG_CONFIG_KEY].get("loc_y_offset", 0)])
+        offset = complex(self.data[SVG_CONFIG_KEY].get("loc_x_offset", 0),
+                         self.data[SVG_CONFIG_KEY].get("loc_y_offset", 0))
 
         for name, data in self.data["overrides"].get("provinces", {}).items():
             province = self.name_to_province.get(name)
@@ -325,9 +325,9 @@ class Parser:
             unit_locs = data.get("unit_loc", [])
             retreat_locs = data.get("retreat_unit_loc", [])
             for index, coordinate in enumerate(unit_locs):
-                primary = tuple((np.array(coordinate) + offset).tolist())
+                primary = complex(*coordinate) + offset
                 retreat_coord = retreat_locs[index] if index < len(retreat_locs) else coordinate
-                retreat = tuple((np.array(retreat_coord) + offset).tolist())
+                retreat = complex(*retreat_coord) + offset
                 loc = UnitLocation(primary, retreat)
                 province.all_coordinates.setdefault(UnitType.FLEET.name, set()).add(loc)
                 province.unit_coordinates[UnitType.FLEET.name] = loc
@@ -373,7 +373,7 @@ class Parser:
         # Add a default unit coordinate to provinces without one, just in case
         for province in provinces:
             center = shapely.centroid(province.geometry)
-            center = (center.x, center.y) if center else (0, 0)
+            center = complex(center.x, center.y) if center else complex(0)
             province.unit_coordinates["default"] = UnitLocation(primary_coordinate=center,
                                                                 retreat_coordinate=center)
             for unit in province.unit_coordinates.keys():
@@ -413,9 +413,10 @@ class Parser:
 
         province_coordinates = parse_path(path_string, translation)
         if len(province_coordinates) <= 1:
-            poly = shapely.Polygon(province_coordinates[0])
+            poly = shapely.Polygon([(p.real, p.imag) for p in province_coordinates[0]])
         else:
-            poly = shapely.MultiPolygon(list(map(shapely.Polygon, province_coordinates)))
+            poly = shapely.MultiPolygon(list(map(lambda coords: shapely.Polygon([(p.real, p.imag) for p in coords]),
+                                                 province_coordinates)))
             poly = poly.buffer(0.1)
 
         name = ""
@@ -444,11 +445,6 @@ class Parser:
 
     # Sets province names given the names layer
     def _initialize_province_names(self, provinces: set[Province]) -> None:
-        def get_coordinates(name_data: Element) -> tuple[float, float]:
-            x, y = name_data.get("x"), name_data.get("y")
-            assert(x is not None and y is not None)
-            return float(x), float(y)
-
         def set_province_name(province: Province, name_data: Element, _: str | None) -> None:
             if province.name != "":
                 raise RuntimeError(f"Province already has name: {province.name}")
@@ -523,13 +519,10 @@ class Parser:
 
     # Sets province unit values
     def _initialize_units(self, provinces: set[Province]) -> None:
-        def get_coordinates(unit_data: Element) -> tuple[float | None, float | None]:
-            base_coordinates = tuple(
-                map(float, unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("d").split()[1].split(","))
-            )
-            assert len(base_coordinates) == 2
-            trans = TransGL3(unit_data)
-            return trans.transform(base_coordinates)
+        def get_coordinates(unit_data: Element) -> complex:
+            path = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
+            points = parse_path(path.get("d"), TransGL3(unit_data))
+            return points[0][0]
 
         initialize_province_resident_data(provinces,
                                           self.layer_data["starting_units"],
@@ -660,7 +653,7 @@ class Parser:
             if layer_name != "titles":
                 coordinate = TransGL3(sample_element).transform(get_unit_coordinates(sample_element))
             else:
-                coordinate = (float(sample_element.get("x", "0")), float(sample_element.get("y", "0")))
+                coordinate = get_coordinates(sample_element)
                 sample_element.set("text-anchor", "middle")
             layers[layer_name] = {"layer": layer, "sample_element": sample_element, "coordinate": coordinate}
             existing_objects[layer_name] = set()
@@ -682,13 +675,12 @@ class Parser:
                 if layer_name == "titles":
                     copied_element.text = province.name
                 center = shapely.centroid(province.geometry)
-                center = (center.x, center.y) if center else (0, 0)
-                dx = center[0] - layer_info["coordinate"][0]
-                dy = center[1] - layer_info["coordinate"][1]
+                center = complex(center.x, center.y) if center else complex(0)
+                distance = center - layer_info["coordinate"]
                 if layer_name in {"retreat_army", "retreat_fleet"}:
-                    dx -= self.data[SVG_CONFIG_KEY].get("unit_radius", 20) / 2
-                    dy -= self.data[SVG_CONFIG_KEY].get("unit_radius", 20) / 2
-                trans = TransGL3(copied_element) * TransGL3().init(x_c = dx, y_c = dy)
+                    distance -= complex((self.data[SVG_CONFIG_KEY].get("unit_radius", 20) / 2),
+                                        (self.data[SVG_CONFIG_KEY].get("unit_radius", 20) / 2))
+                trans = TransGL3(copied_element) * TransGL3().init(x_c = distance.real, y_c = distance.imag)
                 copied_element.set("transform", str(trans))
                 layer_info["layer"].append(copied_element)
 
