@@ -321,7 +321,11 @@ class _DatabaseConnection:
                 logger.warning("Couldn't find player %s in DB", player.name)
                 continue
             color, liege, points = player_info_by_name[player.name]
-            player.render_color = color
+            # TODO: Remove once board_params have been updated
+            board.set_data(["players", player.name, "custom_color"], color)
+            cursor.execute("INSERT OR IGNORE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
+                           (board_id, f"players/{player.name}/custom_color", color))
+
             if liege is not None:
                 try:
                     player.liege = name_to_player[liege]
@@ -400,19 +404,12 @@ class _DatabaseConnection:
             (board_id, format(board.turn, "%I %S"), board.datafile, board.data.get("fish", 0), board.data.get("game_name")),
         )
         cursor.executemany(
-            "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT "
-            "DO UPDATE SET "
-            "color = ?, "
-            "liege = ?, "
-            "points = ?",
+            "INSERT OR REPLACE INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?)",
             [
                 (
                     board_id,
                     player.name,
-                    player.render_color,
-                    (None if player.liege is None else str(player.liege)),
-                    player.points,
-                    player.render_color,
+                    board.data["players"][player.name].get("custom_color", player.default_color),
                     (None if player.liege is None else str(player.liege)),
                     player.points,
                 )
@@ -544,7 +541,7 @@ class _DatabaseConnection:
             "UPDATE players SET color=?, liege=?, points=? WHERE board_id=? AND player_name=?",
             [
                 (
-                    player.render_color,
+                    board.data["players"][player.name].get("custom_color", player.default_color),
                     (None if player.liege is None else str(player.liege)),
                     player.points,
                     board_id,

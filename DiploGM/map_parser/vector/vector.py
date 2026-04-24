@@ -110,16 +110,12 @@ class Parser:
         for layer in LAYER_NAMES:
             l = find_svg_element(svg_root, layer, self.layers)
             if l is None:
-                # TODO: Move to per-variant optional config
-                if layer in {"island_borders", "island_fill_layer", "island_ring_layer", "background", "other_fills", "season", "power_banners", "symbol_templates"}:
-                    logger.warning("Layer %s not found in SVG, but it might not be necessary", layer)
-                    continue
                 if layer in {"retreat_army", "retreat_fleet"}:
                     logger.warning("Layer %s not found in SVG. Duplicating army/fleet layer.", layer)
                     l = self._create_retreat_layer(svg_root, layer, self.layers)
                 else:
-                    raise ValueError(f"Layer {layer} not found in SVG")
-            layer_data[layer] = l
+                    logger.warning("Layer %s not found in SVG", layer)
+            layer_data[layer] = Element("empty") if l is None else l
 
         # If there are starting units in the map, get that layer as well
         if self.layers["detect_starting_units"]:
@@ -655,10 +651,10 @@ class Parser:
             layer = find_svg_element(svg_root, layer_name, self.layers)
             if layer is None:
                 if layer_name in {"retreat_army", "retreat_fleet"}:
-                    logger.warning(f"Layer {layer_name} not found in SVG. Duplicating army/fleet layer.")
+                    logger.warning("Layer %s not found in SVG. Duplicating army/fleet layer.", layer_name)
                     layer = self._create_retreat_layer(svg_root, layer_name, self.layers)
                 else:
-                    logger.warning(f"Layer {layer_name} not found in SVG, skipping...")
+                    logger.warning("Layer %s not found in SVG, skipping...", layer_name)
                     continue
             sample_element = copy.deepcopy(layer[0])
             if layer_name != "titles":
@@ -707,7 +703,7 @@ def get_parser(name: str, force_refresh: bool=False) -> Parser:
     creating a new one if it doesn't already exist or if force_refresh is True."""
     name = parse_variant_path(name, as_filename=False)
     if force_refresh or name not in parsers:
-        logger.info(f"Creating new Parser for board named {name}")
+        logger.info("Creating new Parser for board named %s", name)
         new_parser = Parser(name)
         errors = new_parser.verify_svg()
         if not errors:

@@ -67,6 +67,12 @@ class TestParseBoardParams(unittest.TestCase):
         # Should be findable by new name
         self.assertIsNotNone(b.board.get_player("Gaul"))
 
+    def test_set_player_color(self):
+        """Tests the set_player_color command."""
+        b = BoardBuilder()
+        _parse_command("set_player_color Italy FF5733", b.board)
+        self.assertEqual(b.board.data["players"]["Italy"]["custom_color"], "FF5733", "Failed to set Italy's color")
+
     def test_hide_player(self):
         """Tests that a player can be hidden correctly."""
         b = BoardBuilder()

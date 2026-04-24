@@ -33,7 +33,7 @@ bot_wizard = 1424487941857611837
 verified_role = "ImpDip Verified"
 
 # Messages
-bug_report_channel = "https://discord.com/channels/1201167737163104376/1286027175048253573 or https://discord.com/channels/1201167737163104376/1280587781638459528",
+bug_report_channel = "https://discord.com/channels/1201167737163104376/1286027175048253573 or https://discord.com/channels/1201167737163104376/1280587781638459528"
 
 [dev_hub]
 id = 1262215477237645314

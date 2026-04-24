@@ -29,6 +29,7 @@ LAYER_DICTIONARY = {
     "other_fills": {"Other Fills", "OTHER FILLS (High Seas)", "OTHER FILLS (Impassables and High Seas)"},
     "season": {"Season Title"},
     "power_banners": {"Power Banners"},
+    "sidebar": {"Sidebar"}
 }
 LAYER_NAMES = set(LAYER_DICTIONARY.keys())
 NAMESPACE: dict[str, str] = {
