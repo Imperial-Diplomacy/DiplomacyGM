@@ -111,10 +111,10 @@ class Parser:
             l = find_svg_element(svg_root, layer, self.layers)
             if l is None:
                 if layer in {"retreat_army", "retreat_fleet"}:
-                    logger.warning("Layer %s not found in SVG. Duplicating army/fleet layer.", layer)
+                    logger.info("Layer %s not found in SVG. Duplicating army/fleet layer.", layer)
                     l = self._create_retreat_layer(svg_root, layer, self.layers)
                 else:
-                    logger.warning("Layer %s not found in SVG", layer)
+                    logger.debug("Layer %s not found in SVG", layer)
             layer_data[layer] = Element("empty") if l is None else l
 
         # If there are starting units in the map, get that layer as well
@@ -304,7 +304,7 @@ class Parser:
         for name, data in self.data["overrides"].get("provinces", {}).items():
             province = self.name_to_province.get(name)
             if not province:
-                logger.warning(f"Province {name} in overrides not found in map, skipping...")
+                logger.debug("Province %s in overrides not found in map, skipping...", name)
                 continue
             # Add/remove adjacencies and coasts
             # TODO: Some way to specify whether or not to clear other adjacencies?
