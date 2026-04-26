@@ -107,17 +107,17 @@ async def list_variants(ctx: commands.Context) -> None:
     for v in variants:
         if not os.path.isdir(os.path.join("variants", v)):
             continue
-        if os.path.isfile(os.path.join("variants", v, "config.json")):
-            loaded_variants.append(f"* {v}")
-        else:
-            version_list = []
-            variant_versions = os.listdir(os.path.join("variants", v))
-            for vv in variant_versions:
-                if os.path.isdir(os.path.join("variants", v, vv)) \
-                    and os.path.isfile(os.path.join("variants", v, vv, "config.json")):
-                    version_list.append(vv)
-            version_list.sort()
+        version_list = []
+        variant_versions = os.listdir(os.path.join("variants", v))
+        for vv in variant_versions:
+            if os.path.isdir(os.path.join("variants", v, vv)) \
+                and os.path.isfile(os.path.join("variants", v, vv, "config.json")):
+                version_list.append(vv)
+        version_list.sort()
+        if len(version_list) > 0:
             loaded_variants.append(f"* {v}:\n    " + "\n    ".join(version_list))
+        elif os.path.isfile(os.path.join("variants", v, "config.json")):
+            loaded_variants.append(f"* {v}")
     loaded_variants.sort()
     message = "\n".join(loaded_variants)
     log_command(logger, ctx, message=message)

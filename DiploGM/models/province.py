@@ -245,7 +245,7 @@ class Province():
                     # if (province2.get_name(coast2) not in self.nonadjacent_coasts
                     #     and Province.detect_coastal_connection(self, province2, coast2)):
                         self.adjacency_data.fleet_adjacent.add((province2, coast2))
-            elif self.type != ProvinceType.LAND:
+            elif self.type != ProvinceType.LAND or province2.type != ProvinceType.LAND:
                 self.adjacency_data.fleet_adjacent.add((province2, None))
             elif (province2.adjacency_data.fleet_adjacent
                   and province2.get_name() not in self.adjacency_data.nonadjacent_coasts
