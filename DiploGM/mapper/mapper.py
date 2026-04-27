@@ -5,7 +5,6 @@ import sys
 from xml.etree.ElementTree import ElementTree, Element, register_namespace
 from xml.etree.ElementTree import tostring as elementToString
 
-import numpy as np
 import lxml.etree as etree
 
 # from diplomacy.adjudicator import utils
@@ -19,12 +18,12 @@ from DiploGM.map_parser.vector.utils import (
 from DiploGM.db.database import logger
 from DiploGM.mapper.order_drawer import OrderDrawer
 from DiploGM.mapper.panel import PanelDrawer
-from DiploGM.mapper.utils import MapperUtils
+import DiploGM.mapper.utils as MapperUtils
 from DiploGM.models import turn
 from DiploGM.models.board import Board
 from DiploGM.models.order import Move, Support, RetreatMove, Build, PlayerOrder
 from DiploGM.models.player import Player
-from DiploGM.models.province import ProvinceType, Province, UnitLocation
+from DiploGM.models.province import ProvinceType, Province
 from DiploGM.models.unit import Unit, UnitType
 
 from DiploGM.map_parser.vector.transform import TransGL3
@@ -44,7 +43,6 @@ class Mapper:
 
         self.board: Board = board
         self.board_svg_data: dict = board.data[SVG_CONFIG_KEY]
-        self.utils = MapperUtils(self.board_svg_data)
         self.current_turn: turn.Turn = board.turn
         self.board_svg: ElementTree = etree.parse(self.board.data["file"])
         self.player_restriction: str | None = restriction.name if restriction else None
@@ -55,9 +53,8 @@ class Mapper:
         if color_mode is not None:
             self.replace_colors(color_mode)
 
-        self.panel_drawer = PanelDrawer(self.utils, self.board_svg, self.board, self.player_colors, restriction)
-
-        self.utils.add_arrow_definition_to_svg(self.board_svg, self.board, self.player_colors)
+        self.panel_drawer = PanelDrawer(self.board_svg, self.board, self.player_colors, restriction)
+        MapperUtils.add_arrow_definition_to_svg(self.board_svg, self.board, self.player_colors)
 
         clear_svg_element(self.board_svg, "starting_units", self.board_svg_data)
 
@@ -84,14 +81,14 @@ class Mapper:
         self.adjacent_provinces: set[str] = {p.name for p in visible_provinces}
 
         # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
-        self._draw_units()
+        for unit in [unit for unit in self.board.units if unit.province.name in self.adjacent_provinces]:
+            self._draw_unit(unit)
         self._color_provinces()
         self._color_centers()
         self.panel_drawer.draw_side_panel(self.board_svg)
 
-
         self._moves_svg = copy.deepcopy(self.board_svg)
-        self.order_drawer = OrderDrawer(self.utils, self._moves_svg, self.board_svg_data, self.adjacent_provinces)
+        self.order_drawer = OrderDrawer(self._moves_svg, self.board_svg_data, self.adjacent_provinces)
         self.cached_elements["unit_output_moves"] = find_svg_element(
             self._moves_svg, "unit_output", self.board_svg_data
         )
@@ -110,10 +107,10 @@ class Mapper:
         """Draws move and retreat arrows."""
         units = sorted(self.board.units, key=lambda unit: 0 if unit.order is None else unit.order.display_priority)
         for unit in units:
-            if not self.order_drawer.utils.is_moveable(unit,
-                                                       self.adjacent_provinces,
-                                                       self.player_restriction,
-                                                       current_turn.is_retreats()):
+            if not MapperUtils.is_moveable(unit,
+                                           self.adjacent_provinces,
+                                           self.player_restriction,
+                                           current_turn.is_retreats()):
                 continue
 
             # Only show moves that succeed if requested
@@ -121,7 +118,8 @@ class Mapper:
                 isinstance(unit.order, (RetreatMove, Move)) and not unit.order.has_failed):
                 continue
 
-            unit_locs = self._get_unit_coordinates(unit, current_turn.is_retreats())
+            unit_locs = MapperUtils.get_unit_coordinates(
+                unit.province, unit.unit_type, unit.coast, retreat=current_turn.is_retreats())
 
             if unit.order is None and unit.dp_allocations:
                 if self.player_restriction is not None and self.player_restriction in unit.dp_allocations:
@@ -135,23 +133,12 @@ class Mapper:
 
             # TODO: Maybe there's a better way to handle convoys?
             if isinstance(order, (RetreatMove, Move, Support)):
-                new_locs = []
-                dest_coords = order.destination.all_coordinates
-                if len(dest_coords) == 0:
-                    e_list = [UnitLocation(complex(0), complex(0))]
-                elif order.destination_coast and order.destination_coast in dest_coords:
-                    e_list = dest_coords[order.destination_coast]
-                elif unit.unit_type.name not in dest_coords:
-                    e_list = next(iter(dest_coords.values()))
-                else:
-                    e_list = dest_coords.get(unit.unit_type.name,
-                                             dest_coords.get(UnitType.ARMY.name,
-                                                             {UnitLocation(complex(0), complex(0))}))
-
-                for endpoint in e_list:
-                    new_locs += [self.utils.normalize(
-                        self.utils.get_closest_loc(unit_locs, endpoint.primary_coordinate))]
-                unit_locs = new_locs
+                dest_coords = MapperUtils.get_unit_coordinates(
+                    order.destination, unit.unit_type, order.destination_coast)
+                unit_locs = [MapperUtils.get_closest_loc(unit_locs,
+                                                         endpoint,
+                                                         self.board_svg_data["map_width"])
+                             for endpoint in dest_coords]
             try:
                 for loc in unit_locs:
                     val = self.order_drawer.draw_order(unit, order, loc, current_turn)
@@ -198,7 +185,7 @@ class Mapper:
                 # Since we draw supports before moves, we need to find convoy routes first
                 # so the supports can know where to draw support arrows
                 if (isinstance(unit.order, Move)
-                    and self.utils.is_moveable(unit, self.adjacent_provinces, self.player_restriction)):
+                    and MapperUtils.is_moveable(unit, self.adjacent_provinces, self.player_restriction)):
                     self.order_drawer.find_convoy_path(unit.province, unit.order.destination)
             self.draw_moves_and_retreats(arrow_layer, current_turn, movement_only)
         else:
@@ -304,7 +291,7 @@ class Mapper:
 
         immediate = [unit.province.get_name(unit.coast)
                      for unit in self.board.units
-                     if self.order_drawer.utils.is_moveable(unit, self.adjacent_provinces, self.player_restriction)]
+                     if MapperUtils.is_moveable(unit, self.adjacent_provinces, self.player_restriction)]
 
         script.text = js % (str(locdict), self.board_svg_data, coast_to_province, province_to_unit_type,
                             province_to_province_type, repr(arrow_layer.get("id")), immediate)
@@ -414,9 +401,9 @@ class Mapper:
             color = get_element_color(element)
             if color in self.replacements:
                 if color_mode in self.replacements[color]:
-                    self.utils.color_element(element, self.replacements[color][color_mode])
+                    MapperUtils.color_element(element, self.replacements[color][color_mode])
             elif color_mode == "dark":
-                self.utils.color_element(element, "ffffff")
+                MapperUtils.color_element(element, "ffffff")
 
 
 
@@ -483,7 +470,7 @@ class Mapper:
             else:
                 color = self.player_colors[province.owner.name] if province.owner else self.neutral_color
 
-            self.utils.color_element(province_element, color)
+            MapperUtils.color_element(province_element, color)
 
         # Try to combine this with the code above? A lot of repeated stuff here
         for island_ring in island_ring_layer:
@@ -500,7 +487,7 @@ class Mapper:
             else:
                 color = self.player_colors[province.owner.name] if province.owner else self.neutral_color
 
-            self.utils.color_element(island_ring, color, key="stroke")
+            MapperUtils.color_element(island_ring, color, key="stroke")
 
         for province in self.board.provinces:
             if province.name not in visited_provinces:
@@ -543,16 +530,16 @@ class Mapper:
             element_color = f"url(#{halfname}_{corename})" if half_color != core_color else core_color
 
             for elem in center_element:
-                self.utils.color_element(elem, element_color)
+                MapperUtils.color_element(elem, element_color)
             if len(center_element) == 0:
-                self.utils.color_element(center_element, element_color)
+                MapperUtils.color_element(center_element, element_color)
             if province.name in capital_provinces and capital_marker is not None:
                 capital_copy = copy.deepcopy(capital_marker)
                 translation = get_sc_coordinates(center_element) - get_sc_coordinates(capital_copy)
                 capital_copy.set("transform", f"translate({translation.real}, {translation.imag})")
                 for elem in capital_copy:
                     if get_element_color(elem) != "000000":
-                        self.utils.color_element(elem, element_color)
+                        MapperUtils.color_element(elem, element_color)
                 centers_layer.append(capital_copy)
         if capital_marker is not None:
             centers_layer.remove(capital_marker)
@@ -566,33 +553,6 @@ class Mapper:
             raise ValueError(f"Could not find province for label {province_name}")
         return province
 
-    def _draw_units(self) -> None:
-        for unit in self.board.units:
-            if unit.province.name in self.adjacent_provinces:
-                self._draw_unit(unit)
-
-    def _get_unit_coordinates(self, unit: Unit, is_retreats: bool) -> set[complex]:
-        province_coordinates = unit.province.all_coordinates
-        if unit.coast:
-            if unit.coast in province_coordinates:
-                return {loc.retreat_coordinate if is_retreats else loc.primary_coordinate
-                        for loc in province_coordinates[unit.coast]}
-        else:
-            if unit.unit_type.name in province_coordinates:
-                return {loc.retreat_coordinate if is_retreats else loc.primary_coordinate
-                        for loc in province_coordinates[unit.unit_type.name]}
-
-        logger.warning(
-            "Could not find coordinates for %s in province %s. Trying to find another coordinate to use",
-            unit.unit_type,
-            unit.province.name,
-        )
-        if len(province_coordinates) > 0:
-            return {loc.retreat_coordinate if is_retreats else loc.primary_coordinate
-                    for loc in next(iter(province_coordinates.values()))}
-        logger.warning("No coordinates found for province %s, using (0, 0) as fallback", unit.province.name)
-        return {complex(0, 0)}
-
     def _draw_unit(self, unit: Unit, use_moves_svg=False):
         player_name = unit.player.name if unit.player else "Neutral"
         if (copied_symbol := self.cached_symbols.get(unit.unit_type, {}).get(player_name)) is not None:
@@ -600,13 +560,14 @@ class Mapper:
         else:
             unit_element = self._get_element_for_unit_type(unit.unit_type)
             for path in unit_element:
-                self.utils.color_element(path, self.player_colors[player_name])
+                MapperUtils.color_element(path, self.player_colors[player_name])
         province = unit.province
 
         current_coords = get_unit_coordinates(unit_element)
         current_coords = TransGL3(unit_element).transform(current_coords)
 
-        coord_list = self._get_unit_coordinates(unit, unit == province.dislodged_unit)
+        coord_list = MapperUtils.get_unit_coordinates(
+            unit.province, unit.unit_type, unit.coast, unit == province.dislodged_unit)
 
         for desired_coords in coord_list:
             elem = copy.deepcopy(unit_element)
@@ -647,23 +608,15 @@ class Mapper:
                 None, None, unit.province.get_unit_coordinates(unit.unit_type, unit.coast, True), None, svg)
             return
 
-        # TODO: Move into helper function along with logic in draw_moves_and_retreats
-        unit_locs = self._get_unit_coordinates(unit, True)
+        unit_locs = MapperUtils.get_unit_coordinates(unit.province, unit.unit_type, unit.coast, True)
 
         for retreat_province, retreat_coast in unit.retreat_options:
-            new_locs = []
-            if unit.unit_type.name not in retreat_province.all_coordinates:
-                e_list = next(iter(retreat_province.all_coordinates.values()))
-            elif retreat_coast:
-                e_list = retreat_province.all_coordinates[retreat_coast]
-            else:
-                e_list = retreat_province.all_coordinates.get(
-                    unit.unit_type.name,
-                    retreat_province.all_coordinates.get(UnitType.ARMY.name, {UnitLocation(complex(0), complex(0))}))
-
-            # Unspecified coast, so default to army location
-            for endpoint in e_list:
-                new_locs += [self.utils.normalize(self.utils.get_closest_loc(unit_locs, endpoint.primary_coordinate))]
+            dest_coords = MapperUtils.get_unit_coordinates(
+                retreat_province, unit.unit_type, retreat_coast)
+            new_locs = [MapperUtils.get_closest_loc(unit_locs,
+                                                    endpoint,
+                                                    self.board_svg_data["map_width"])
+                        for endpoint in dest_coords]
 
             for loc in new_locs:
                 root.append(

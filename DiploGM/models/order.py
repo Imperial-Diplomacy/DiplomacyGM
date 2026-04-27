@@ -171,6 +171,10 @@ class Support(UnitOrder):
     def get_destination_str(self) -> str:
         return f"{self.destination}" + (f" {self.destination_coast}" if self.destination_coast else "")
 
+    def is_support_hold(self) -> bool:
+        """Whether this support is a support hold."""
+        return self.source == self.destination
+
 
 class RetreatMove(UnitOrder):
     """For unit retreats."""

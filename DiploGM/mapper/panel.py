@@ -4,23 +4,21 @@ import re
 from typing import TYPE_CHECKING
 from xml.etree.ElementTree import ElementTree, Element
 
+import DiploGM.mapper.utils as MapperUtils
 from DiploGM.map_parser.vector.utils import get_coordinates, get_element_color, find_svg_element
 from DiploGM.map_parser.vector.transform import TransGL3
 
 if TYPE_CHECKING:
     from DiploGM.models.board import Board
     from DiploGM.models.player import Player
-    from DiploGM.mapper.utils import MapperUtils
 
 class PanelDrawer:
     """Class responsible for drawing the panel on the map."""
     def __init__(self,
-                 utils: MapperUtils,
                  board_svg: ElementTree,
                  board: Board,
                  player_colors: dict[str, str],
                  restriction: Player | None = None):
-        self.utils = utils
         self.board_svg = board_svg
         self.board = board
         self.board_svg_data = board.data["svg config"]
@@ -69,7 +67,7 @@ class PanelDrawer:
         iscc_index = self.board_svg_data.get("power_iscc_index", 6)
         vscc_index = self.board_svg_data.get("power_vscc_index", 7)
 
-        self.utils.color_element(power_element[0], self.player_colors[player.name])
+        MapperUtils.color_element(power_element[0], self.player_colors[player.name])
         if self.board_svg_data.get("scoreboard", {}).get("sort", True):
             new_translation = self.scoreboard_power_locations[banner_index] - initial_pretransform_coordinates
             power_element.set("transform", f"translate({new_translation.real}, {new_translation.imag})")
