@@ -12,7 +12,8 @@ if TYPE_CHECKING:
     from DiploGM.models.board import Board
     from DiploGM.models.unit import Unit
 
-def get_build_orders(player: Player,
+def get_build_orders(board: Board,
+                     player: Player,
                      player_restriction: Player | None,
                      ctx: Context,
                      tags: ViewOrdersTags) -> tuple[str | None, str | None]:
@@ -43,10 +44,23 @@ def get_build_orders(player: Player,
 
     build_count = len(player.centers) - len(player.units)
     order_count = len(player.build_orders) + player.waived_orders
+    open_core_count = sum(province.can_build(board.data.get("build_options", "classic")) for province in player.centers)
 
-    title = f"**{player_name}**: ({len(player.centers)}) " + \
-            f"({'+' if build_count >= 0 else ''}" + \
-            f"{build_count})" + f" ({order_count})"
+    center_count_label = "`SCs=`" if tags.explain else ''
+    entered_count_label = "`Orders entered=`" if tags.explain else ''
+    if tags.explain:
+        if build_count >= 0: build_count_label = "`Builds available=`"
+        else: build_count_label = "`Disbands required=`"
+    else: build_count_label = ''
+    
+    open_core_count_label = "`Open cores=`" if tags.explain else ''
+
+    title = (
+        f"**{player_name}**: ({center_count_label}{len(player.centers)})"
+        + f"({entered_count_label}{order_count}/{build_count_label}{'+' if build_count >= 0 else ''}{build_count})"
+        + (f" ({open_core_count_label}{open_core_count} °)" if tags.open_cores and build_count > 0 else '')
+    )
+
     body = ""
     if tags.blind:
         return title, ""
@@ -103,12 +117,16 @@ def _get_move_orders(board: Board,
         if total_unit_count == len(ordered):
             return None, None
 
-    title = f"**{player_name}** ({len(ordered)}/{total_unit_count})"
+    ordered_count_label = "`Orders entered=`" if tags.explain else ''
+    unit_count_label = "`Orders required=`" if tags.explain else ''
+    forced_disband_count_label = "`Forced disband count=`" if tags.explain else ''
+
+    title = f"**{player_name}** ({ordered_count_label}{len(ordered)}/{unit_count_label}{total_unit_count})"
     if board.data.get("dp", "False").lower() in ("true", "enabled"):
         title += f" ({board.get_dp_spent(player)}/{player.dp_max} DP)"
 
     if is_retreats and tags.forced == ForcedDisbandOption.MARK_FORCED and forced_disband_count > 0:
-        title += rf" ({forced_disband_count} \*)"
+        title += rf" {forced_disband_count_label}({forced_disband_count} \*)"
 
     body = ""
     if tags.blind:
@@ -136,8 +154,8 @@ def get_orders(
     board: Board,
     player_restriction: Player | None,
     ctx: Context,
+    tags: ViewOrdersTags,
     fields: bool = False,
-    tags: ViewOrdersTags | None = None
 ) -> str | List[Tuple[str, str]]:
     """Returns a text representation of players' orders with the specific criteria.
     If no orders match the criteria for a player, that player is hidden."""
@@ -145,9 +163,6 @@ def get_orders(
         response = []
     else:
         response = ""
-
-    if tags is None:
-        tags = ViewOrdersTags.get_default()
 
     if player_restriction is None:
         players = board.players
@@ -158,7 +173,7 @@ def get_orders(
         if board.is_player_hidden(player):
             continue
         if board.turn.is_builds():
-            title, body = get_build_orders(player, player_restriction, ctx, tags)
+            title, body = get_build_orders(board, player, player_restriction, ctx, tags)
         else:
             title, body = _get_move_orders(board, player, player_restriction, ctx, tags,
                                           board.turn.is_retreats())
