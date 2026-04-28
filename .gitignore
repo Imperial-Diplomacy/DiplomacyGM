@@ -12,7 +12,6 @@ __pycache__
 *.py[cod]
 *.svg
 !variants/**/*.svg
-variants/eraofsolitude/**/*.svg
 *.sqlite
 *.out.sql
 *.zip
