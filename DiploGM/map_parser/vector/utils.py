@@ -28,6 +28,7 @@ LAYER_DICTIONARY = {
     "background": {"Background"},
     "other_fills": {"Other Fills", "OTHER FILLS (High Seas)", "OTHER FILLS (Impassables and High Seas)"},
     "season": {"Season Title"},
+    "year": {"Year Title"},
     "power_banners": {"Power Banners"},
 }
 LAYER_NAMES = set(LAYER_DICTIONARY.keys())

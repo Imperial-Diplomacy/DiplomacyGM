@@ -151,3 +151,13 @@ class PanelDrawer:
             name_text += format(self.board.turn, "%Y %S")
         # TODO: this is hacky; I don't know a better way
         date[0][0].text = name_text
+
+        # if "year_format" is present in the json config it'll put that in the year layer
+        if (year_format := self.board_svg_data.get("year_format")) is not None:
+            year = find_svg_element(svg, "year", self.board_svg_data)
+            year_text = format(self.board.turn, year_format)
+            year_text = year_text.replace("%N", game_name if game_name else "")
+
+            # TODO: I copied the hacky solution; I also don't know a better way
+            year[0][0].text = year_text
+

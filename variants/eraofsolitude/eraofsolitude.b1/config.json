@@ -8,14 +8,14 @@
     "province_labels": true,
     "center_labels": true,
     "default_sea_color": "18638f",
-    "border_margin_hint": 0.5,
+    "border_margin_hint": 5,
     "map_width": 6000,
     "unit_radius": 32,
     "order_stroke_width": 5,
     "neutral": "808080",
     "neutral_sc": "ffffff",
-    "loc_x_offset": 7.7655,
-    "loc_y_offset": 7.033,
+    "loc_x_offset": 24.957,
+    "loc_y_offset": 22.6035,
     "delete_layer": [
       "army",
       "retreat_army",
@@ -29,7 +29,8 @@
         "1": "__name__"
       }
     },
-    "season_format": "%Y"
+    "season_format": "%Z",
+    "year_format": "%Y"
   },
   "year": 1167,
   "build_options": "cores",
@@ -37,32 +38,84 @@
   "victory_count": 20,
   "convoyable_islands": "enabled",
   "overrides": {
-    "Western Frostlands": {
-      "coasts": {
-        "nc": [
-          "Karanak",
-          "Mevan Bay",
-          "Kharbranth"
-        ],
-        "sc": [
-          "Kharbranth",
-          "Sea of Kharbranth",
+    "provinces": {
+      "Klna": {
+        "adjacencies": [
+          "Amydlatn",
+          "East Thaylen Archipelago",
           "Longbrow's Straits",
-          "Thla"
+          "Thaylen City"
         ]
-      }
-    },
-    "Iriali Highlands": {
-      "coasts": {
-        "wc": [
-          "Kasitor",
-          "Iriali Coast",
-          "Rall Elorim"
+      },
+      "Western Frostlands": {
+        "coasts": {
+          "nc": [
+            "Karanak",
+            "Mevan Bay",
+            "Kharbranth"
+          ],
+          "sc": [
+            "Kharbranth",
+            "Sea of Kharbranth",
+            "Longbrow's Straits",
+            "Thla"
+          ]
+        }
+      },
+      "Iriali Highlands": {
+        "coasts": {
+          "wc": [
+            "Kasitor",
+            "Iriali Coast",
+            "Rall Elorim"
+          ],
+          "ec": [
+            "Rall Elorim",
+            "Western Reshi Sea",
+            "Iriali Lowlands"
+          ]
+        }
+      },
+      "OS1": {
+        "unit_loc": [
+          [
+            5725.924,
+            810.390
+          ]
         ],
-        "ec": [
-          "Rall Elorim",
-          "Western Reshi Sea",
-          "Iriali Lowlands"
+        "retreat_unit_loc": [
+          [
+            5773.933,
+            832.453
+          ]
+        ]
+      },
+      "OS2": {
+        "unit_loc": [
+          [
+            5725.924,
+            1489.213
+          ]
+        ],
+        "retreat_unit_loc": [
+          [
+            5773.933,
+            1511.275
+          ]
+        ]
+      },
+      "OS3": {
+        "unit_loc": [
+          [
+            5725.924,
+            2187.834
+          ]
+        ],
+        "retreat_unit_loc": [
+          [
+            5773.933,
+            2209.897
+          ]
         ]
       }
     }
