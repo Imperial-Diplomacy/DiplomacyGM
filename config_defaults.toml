@@ -16,6 +16,8 @@ log_level = "INFO"
 # Command Prefix
 command_prefix = "."
 
+game_playing = "Impdip 🔪"
+
 [hub]
 id = 1201167737163104376
 # Channel ids
@@ -28,6 +30,10 @@ bot_bugs_channel = 1286027175048253573
 bot_feedback_channel = 1280587781638459528
 # Role ids
 bot_wizard = 1424487941857611837
+verified_role = "ImpDip Verified"
+
+# Messages
+bug_report_channel = "https://discord.com/channels/1201167737163104376/1286027175048253573 or https://discord.com/channels/1201167737163104376/1280587781638459528"
 
 [dev_hub]
 id = 1262215477237645314

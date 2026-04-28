@@ -1,6 +1,8 @@
-"""Module to parse commands to edit the game state."""
+"""Module to parse commands to edit the game state.
+These commands are designed to make changes to the current board and not for game-wide settings.
+After these commands are executed, the Units, Provinces, Players, and, Retreat Options tables are saved.
+For changes to game-wide settings, see .edit_game in parse_board_params.py."""
 import logging
-import string
 
 from DiploGM.config import ERROR_COLOUR, PARTIAL_ERROR_COLOUR
 from DiploGM.utils import get_unit_type, get_keywords, parse_season
@@ -78,14 +80,7 @@ def _set_province_core(command: str, keywords: list[str], board: Board) -> None:
         province.core_data.half_core = player
 
 def _set_player_color(_, keywords: list[str], board: Board) -> None:
-    player = board.get_player(keywords[0])
-    if not player:
-        raise ValueError(f"Unknown player: {keywords[0]}")
-    color = keywords[1].lower()
-    if len(color) != 6 or not all(c in string.hexdigits for c in color):
-        raise ValueError(f"Unknown hexadecimal color: {color}")
-
-    player.render_color = color
+    raise NotImplementedError("set_player_color has been moved to `.edit_game`.")
 
 
 def _set_province_owner(command: str, keywords: list[str], board: Board) -> None:
@@ -212,13 +207,7 @@ def _remove_player_vassal(_, keywords: list[str], board: Board) -> None:
 
 
 def _set_game_name(_, parameter_str: str, board: Board) -> None:
-    newname = None if parameter_str == "None" else parameter_str
-    board.data["name"] = newname
-    board.custom_data["name"] = newname
-    get_connection().execute_arbitrary_sql(
-        "INSERT OR REPLACE INTO board_parameters (board_id, key, value) VALUES (?, ?, ?)",
-        (board.board_id, "name", newname)
-    )
+    raise NotImplementedError("set_game_name has been moved to `.edit_game`.")
 
 def _apocalypse(_, keywords: list[str], board: Board) -> None:
     """
@@ -284,7 +273,7 @@ function_list = {
     "set player points": _set_player_points
 }
 
-def _bulk(keywords: list[str], board: Board) -> None:
+def _bulk(_, keywords: list[str], board: Board) -> None:
     player = keywords[1]
     if keywords[0] in ["set core", "set half core", "set province owner", "set total owner", "delete unit"]:
         for i in keywords[2:]:

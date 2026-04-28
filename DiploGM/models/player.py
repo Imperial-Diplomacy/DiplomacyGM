@@ -45,11 +45,9 @@ class Player:
         if isinstance(color, dict):
             self.color_dict = color
             self.default_color = color["standard"]
-            self.render_color = color["standard"]
         else:
             self.color_dict = None
             self.default_color = color
-            self.render_color = color
 
         self.centers: set[province.Province] = centers
         self.units: set[unit.Unit] = units
@@ -103,7 +101,7 @@ class Player:
             centers = ((bullet + bullet.join([center.name for center in centers]))
                       if len(centers) > 0 else 'None')
             out = (
-                f"Color: #{self.render_color}\n"
+                f"Color: #{self.board.data['players'][self.name].get('custom_color', self.default_color)}\n"
                 + f"Points: {self.points}\n"
                 + f"Vassals: {', '.join(map(str,self.vassals))}\n"
                 + f"Liege: {self.liege if self.liege else 'None'}\n"
@@ -127,7 +125,7 @@ class Player:
             unit_str += f"{bullet}({unit.unit_type.value}) {unit.province.get_name(unit.coast)}"
 
         color = (bullet + bullet.join([k + ': ' + v for k, v in self.color_dict.items()])
-                if self.color_dict is not None else self.render_color)
+                if self.color_dict is not None else self.board.data['players'][self.name].get('custom_color', self.default_color))
         out = (
             ""
             + f"Color: {color}\n"

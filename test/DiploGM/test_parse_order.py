@@ -1,9 +1,9 @@
 import unittest
 
-from DiploGM.models.order import ConvoyTransport, Core, Hold, Move, Support
+from test.utils import BoardBuilder
+from DiploGM.models.order import ConvoyTransport, Hold, Move, Support
 from DiploGM.models.unit import UnitType
 from DiploGM.parse_order import parse_order, parse_remove_order
-from test.utils import BoardBuilder
 
 class TestParseOrder(unittest.TestCase):
     def test_order(self):

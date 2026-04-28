@@ -145,12 +145,12 @@ def parse_variant_path(variant: str, as_filename: bool = True, return_parent: bo
     if os.path.isdir(f"variants/{variant}"):
         if return_parent:
             return f"variants/{variant}"
-        if os.path.isfile(f"variants/{variant}/config.json"):
-            return f"variants/{variant}" if as_filename else variant
         variant_list = sorted(os.listdir(f"variants/{variant}"), reverse=True)
         for v in variant_list:
             if os.path.isdir(f"variants/{variant}/{v}") and os.path.isfile(f"variants/{variant}/{v}/config.json"):
                 return f"variants/{variant}/{v}" if as_filename else v
+        if os.path.isfile(f"variants/{variant}/config.json"):
+            return f"variants/{variant}" if as_filename else variant
     elif "." in variant:
         variant_name, _ = variant.split(".", 1)
         variant_path = f"variants/{variant_name}/{variant}"
@@ -166,7 +166,8 @@ def remove_prefix(ctx: commands.Context) -> str:
 
 def get_colour_option(board, args) -> str | None:
     """Gets the colour option from the arguments, defaulting to None."""
-    color_options = board.data["svg config"].get("color_options", {"standard"})
+    color_options: list[str] = board.data["svg config"].get("color_options", ["standard"])
+    color_options.append("custom")
     if (color_arguments := list(set(color_options) & set(args))):
         return color_arguments[0]
     return None

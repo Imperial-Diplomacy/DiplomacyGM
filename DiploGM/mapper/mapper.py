@@ -164,8 +164,8 @@ class Mapper:
                         # copy it 3 times (-1, 0, +1)
                         lval = copy.deepcopy(path)
                         rval = copy.deepcopy(path)
-                        lval.attrib["transform"] = f"translate({-self.board.data['svg config']['map_width']}, 0)"
-                        rval.attrib["transform"] = f"translate({self.board.data['svg config']['map_width']}, 0)"
+                        lval.attrib["transform"] = f"translate({-self.board_svg_data['map_width']}, 0)"
+                        rval.attrib["transform"] = f"translate({self.board_svg_data['map_width']}, 0)"
 
                         arrow_layer.append(lval)
                         arrow_layer.append(rval)
@@ -231,8 +231,30 @@ class Mapper:
         root = self._moves_svg.getroot()
         if root is None:
             raise ValueError("SVG root is None")
+        sidebar_layer = find_svg_element(self._moves_svg, "sidebar", self.board_svg_data)
+        if sidebar_layer is not None and len(sidebar_layer) > 0:
+            fx = float(sidebar_layer[0].get("x", "0"))
+            fy = float(sidebar_layer[0].get("y", "0"))
+            trans = TransGL3(sidebar_layer) * TransGL3(sidebar_layer[0])
+            order_list_xy = trans.transform((fx, fy))
+            order_list = etree.SubElement(root,
+                "{http://www.w3.org/2000/svg}text",
+                {
+                    "id": "order_list_textbox",
+                    "x": str(order_list_xy[0] + 100.0),
+                    "y": str(order_list_xy[1] + 20.0),
+                    "style": "font-size:32px;fill:#000000;font-family:sans-serif",
+                },
+            )
+            anchor = etree.SubElement(order_list,
+                "{http://www.w3.org/2000/svg}tspan",
+                {"x": str(order_list_xy[0] + 100.0), "y": str(order_list_xy[1] + 20.0)})
+            anchor.text = " "
+
         clear_svg_element(self._moves_svg, "sidebar", self.board_svg_data)
         clear_svg_element(self._moves_svg, "power_banners", self.board_svg_data)
+        clear_svg_element(self._moves_svg, "season", self.board_svg_data)
+
         with open("DiploGM/mapper/mapper.js", 'r', encoding='utf-8') as f:
             js = f.read()
 
@@ -277,12 +299,16 @@ class Mapper:
                 raise ValueError(f"Unknown province type {province.type} for province {province.name}")
             province_to_province_type[province.name] = province_type
 
+        arrow_layer = find_svg_element(self._moves_svg, "arrow_output", self.board_svg_data)
+        if arrow_layer is None:
+            raise ValueError("Arrow output layer not found in SVG")
+
         immediate = [unit.province.get_name(unit.coast)
                      for unit in self.board.units
                      if self.order_drawer.utils.is_moveable(unit, self.adjacent_provinces, self.player_restriction)]
 
-        script.text = js % (str(locdict), self.board_svg_data, coast_to_province,
-                            province_to_unit_type, province_to_province_type, immediate)
+        script.text = js % (str(locdict), self.board_svg_data, coast_to_province, province_to_unit_type,
+                            province_to_province_type, repr(arrow_layer.get("id")), immediate)
         root.append(script)
 
         coasts = find_svg_element(root, "coast_markers", self.board_svg_data)
@@ -314,7 +340,7 @@ class Mapper:
         for layer_name in ("land_layer", "island_borders", "island_ring_layer", "island_fill_layer", "sea_borders"):
             layer = find_svg_element(root, layer_name, self.board_svg_data)
             if layer is None:
-                raise ValueError(f"Layer {layer_name} not found in SVG")
+                continue
             for province_data in layer:
                 name = Parser.get_province_name(province_data)
                 province_data.set("onclick", f'obj_clicked(event, "{name}", false)')
@@ -334,7 +360,7 @@ class Mapper:
             if color_mode is not None and player.color_dict and color_mode in player.color_dict:
                 color = player.color_dict[color_mode]
             elif color_mode == "custom":
-                color = player.render_color
+                color = self.board.data["players"][player.name].get("custom_color", player.default_color)
             else:
                 color = player.default_color
             self.player_colors[player.name] = color
@@ -439,6 +465,7 @@ class Mapper:
         island_ring_layer = island_ring_layer if island_ring_layer is not None else []
 
         visited_provinces: set[str] = set()
+        sea_elements = set(sea_layer) | set(island_layer)
 
         for province_element in itertools.chain(province_layer, island_fill_layer, sea_layer, island_layer):
             try:
@@ -452,7 +479,7 @@ class Mapper:
                 color = self.impassable_color
             elif province.name not in self.adjacent_provinces:
                 color = self.board_svg_data["unknown"]
-            elif province_element in (island_layer, sea_layer):
+            elif province_element in sea_elements:
                 color = self.clear_seas_color
             else:
                 color = self.player_colors[province.owner.name] if province.owner else self.neutral_color

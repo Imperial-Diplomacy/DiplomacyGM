@@ -5,12 +5,10 @@ import logging
 import os
 import re
 import time
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
-from discord import Thread, TextChannel
 from rapidfuzz.distance import DamerauLevenshtein
 
-from DiploGM.config import PLAYER_CHANNEL_SUFFIX, is_player_category
 from DiploGM.models.order import NMR, Move, Hold, Support, ConvoyTransport, Core, Transform, RetreatMove, RetreatDisband
 from DiploGM.models.province import ProvinceType
 from DiploGM.models.unit import Unit, UnitType, DPAllocation
@@ -18,7 +16,6 @@ from DiploGM.models.turn import Turn
 from DiploGM.utils.sanitise import parse_variant_path, sanitise_name, simple_player_name
 
 if TYPE_CHECKING:
-    from discord.abc import Messageable
     from DiploGM.models.player import Player
     from DiploGM.models.province import Province
     from DiploGM.models.order import UnitOrder
@@ -48,7 +45,7 @@ class Board:
         }
         self.orders_enabled: bool = True
         self.data: dict = data
-        self.data["fish"] = int(self.data.get("fish", 0))
+        self.data.setdefault("fish", 0)
         self.custom_data: dict = {}
         self.datafile = datafile
 
@@ -76,14 +73,11 @@ class Board:
         self.name_to_player[sanitise_name(name.lower())] = new_player
         self.name_to_player[simple_player_name(name)] = new_player
         if name not in self.data["players"]:
-            self.data["players"][name] = {"color": color}
-            self.custom_data.setdefault("players", {})[name] = {"color": color}
+            self.set_data(["players", name], {"color": color})
         if "iscc" not in self.data["players"][name]:
-            self.data["players"][name]["iscc"] = 1
-            self.custom_data["players"][name]["iscc"] = 1
+            self.set_data(["players", name, "iscc"], 1)
         if "vscc" not in self.data["players"][name]:
-            self.data["players"][name]["vscc"] = self.data["victory_count"]
-            self.custom_data["players"][name]["vscc"] = self.data["victory_count"]
+            self.set_data(["players", name, "vscc"], self.data["victory_count"])
 
     def run_variant_scripts(self):
         """Runs the variant's scripts.py if it exists, in a sandboxed environment."""
@@ -148,8 +142,7 @@ class Board:
             self.name_to_player.pop(sanitise_name(old_nick.lower()), None)
             self.name_to_player.pop(simple_player_name(old_nick), None)
 
-        self.data["players"][player.name]["nickname"] = nickname
-        self.custom_data.setdefault("players", {}).setdefault(player.name, {})["nickname"] = nickname
+        self.set_data(["players", player.name, "nickname"], nickname)
         self.name_to_player[nickname.lower()] = player
         self.name_to_player[cleaned_name] = player
         self.name_to_player[simple_name] = player
@@ -260,7 +253,8 @@ class Board:
         return matches
 
     def _suggest_province(self, name: str) -> str | None:
-        """Given a failed province lookup, calculate similarity to all known provinces and coasts and provide a suggestion, or None if no candidate is close enough to be worth suggesting."""
+        """Given a failed province lookup, calculate similarity to all known provinces and coasts
+        and provide a suggestion, or None if no candidate is close enough to be worth suggesting."""
         MAX_DISTANCE = 0.45 # If distance is too high (i.e. very different), no suggestion provided
         CONFIDENT_GAP = 0.20 # Defines how much better a suggestion has to be than any other to confidently conclude it's the intended province
 
@@ -436,11 +430,17 @@ class Board:
         affiliations = self.data["players"][player1.name].get("affiliates", [])
         return player2.name in affiliations
 
-    def get_year_str(self) -> str:
-        """Gets the string representation of the current year, accounting for BC/AD."""
-        if self.turn.year <= 0:
-            return f"{str(1-self.turn.year)} BC"
-        return str(self.turn.year)
+    def set_data(self, keys: str | list[str], value: Any) -> None:
+        """Sets a value in the board's data dictionary and custom dictionary."""
+        data = self.data
+        custom_data = self.custom_data
+        if isinstance(keys, str):
+            keys = [keys]
+        for key in keys[:-1]:
+            data = data.setdefault(key, {})
+            custom_data = custom_data.setdefault(key, {})
+        data[keys[-1]] = value
+        custom_data[keys[-1]] = value
 
     def is_chaos(self) -> bool:
         """Checks to see if this is a Chaos game."""
@@ -514,7 +514,6 @@ class Board:
         for player in sorted(self.players, key=lambda p: p.name):
             player_data: dict = {
                 "name": player.name,
-                "color": player.render_color,
                 "is_active": player.is_active,
             }
             if player.build_orders:
@@ -551,7 +550,5 @@ class Board:
             "provinces": provinces,
             "parameters": params,
         }
-        if self.data.get("name"):
-            export["name"] = self.data["name"]
 
         return json.dumps(export, indent=2)

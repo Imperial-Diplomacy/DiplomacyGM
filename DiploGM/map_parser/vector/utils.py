@@ -17,7 +17,7 @@ LAYER_DICTIONARY = {
     "province_names": {"Titles", "Region Names"},
     "supply_center_icons": {"Supply Centers", "SC Markers", "SC markers"},
     "titles": {"Titles", "Labels", "Region Names"},
-    "symbol_templates": {"Symbol Templates"},
+    "symbol_templates": {"Symbol Templates"}, # TODO: Add Capitals and change documentation
     "army": {"Army Locations"},
     "retreat_army": {"Army Retreat Locations", "Army Locations (Retreats)"},
     "fleet": {"Fleet Locations"},
@@ -30,6 +30,7 @@ LAYER_DICTIONARY = {
     "season": {"Season Title"},
     "year": {"Year Title"},
     "power_banners": {"Power Banners"},
+    "sidebar": {"Sidebar"}
 }
 LAYER_NAMES = set(LAYER_DICTIONARY.keys())
 NAMESPACE: dict[str, str] = {

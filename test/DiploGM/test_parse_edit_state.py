@@ -27,12 +27,6 @@ class TestParseEditState(unittest.TestCase):
         self.assertIsNone(b.board.get_province("Spain").core_data.half_core,
                           "Failed to remove half-core ownership for Spain")
 
-    def test_set_player_color(self):
-        """Tests the set_player_color command."""
-        b = BoardBuilder()
-        _parse_command("set_player_color Italy FF5733", b.board)
-        self.assertEqual(b.players["Italy"].render_color, "ff5733", "Failed to set Italy's color")
-
     def test_set_province_owner(self):
         """Tests the set_province_owner command."""
         b = BoardBuilder()

@@ -63,7 +63,7 @@ def import_game(board: Board, data: dict) -> str:
             board.turn = new_turn
 
     if "fish" in data:
-        board.data["fish"] = int(data["fish"])
+        board.set_data("fish", int(data["fish"]))
 
     # Update player data
     for player_data in data.get("players", []):
@@ -72,7 +72,6 @@ def import_game(board: Board, data: dict) -> str:
         player = board.get_player(player_data["name"])
         if player is None:
             continue
-        player.render_color = player_data.get("color", player.render_color)
         player.is_active = player_data.get("is_active", player.is_active)
 
     # Clear all units
@@ -90,7 +89,6 @@ def import_game(board: Board, data: dict) -> str:
     # Apply custom parameters
     if "parameters" in data:
         for key, value in data["parameters"].items():
-            board.data[key] = value
-        board.custom_data = data["parameters"]
+            board.set_data(key.split("/"), value)
 
     return "Successfully imported board."
