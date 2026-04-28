@@ -23,7 +23,7 @@ class VassalType(Enum):
 
 
 class PlayerClass(Enum):
-    """Used for Chaos. Can be ignored otherwise."""
+    """Used for World of Chaos vassals. Can be ignored otherwise."""
     DUCHY = 0
     KINGDOM = 1
     EMPIRE = 2
@@ -151,7 +151,7 @@ class Player:
         return num_builds
 
     def get_class(self) -> PlayerClass:
-        """Gets the player's rank. Used for Chaos."""
+        """Gets the player's rank. Used for World of Chaos."""
         scs = len(self.centers)
         if scs >= 6:
             return PlayerClass.EMPIRE
