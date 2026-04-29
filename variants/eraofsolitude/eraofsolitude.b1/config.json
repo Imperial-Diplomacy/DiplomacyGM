@@ -1,0 +1,165 @@
+{
+  "name": "Era of Solitude",
+  "file": "eraofsolitude.b1.svg",
+  "svg config": {
+    "detect_starting_units": true,
+    "unit_type_labeled": false,
+    "unit_labels": true,
+    "province_labels": true,
+    "center_labels": true,
+    "default_sea_color": "18638f",
+    "border_margin_hint": 5,
+    "map_width": 6000,
+    "unit_radius": 32,
+    "order_stroke_width": 5,
+    "neutral": "808080",
+    "neutral_sc": "ffffff",
+    "loc_x_offset": 24.957,
+    "loc_y_offset": 22.6035,
+    "delete_layer": [
+      "army",
+      "retreat_army",
+      "fleet",
+      "retreat_fleet"
+    ],
+    "scoreboard": {
+      "sort": true,
+      "indexes": {
+        "2": "__score__",
+        "1": "__name__"
+      }
+    },
+    "season_format": "%Z",
+    "year_format": "%Y"
+  },
+  "year": 1167,
+  "build_options": "cores",
+  "victory_conditions": "classic",
+  "victory_count": 20,
+  "convoyable_islands": "enabled",
+  "overrides": {
+    "provinces": {
+      "Klna": {
+        "adjacencies": [
+          "Amydlatn",
+          "East Thaylen Archipelago",
+          "Longbrow's Straits",
+          "Thaylen City"
+        ]
+      },
+      "Western Frostlands": {
+        "coasts": {
+          "nc": [
+            "Karanak",
+            "Mevan Bay",
+            "Kharbranth"
+          ],
+          "sc": [
+            "Kharbranth",
+            "Sea of Kharbranth",
+            "Longbrow's Straits",
+            "Thla"
+          ]
+        }
+      },
+      "Iriali Highlands": {
+        "coasts": {
+          "wc": [
+            "Kasitor",
+            "Iriali Coast",
+            "Rall Elorim"
+          ],
+          "ec": [
+            "Rall Elorim",
+            "Western Reshi Sea",
+            "Iriali Lowlands"
+          ]
+        }
+      },
+      "OS1": {
+        "unit_loc": [
+          [
+            5725.924,
+            810.390
+          ]
+        ],
+        "retreat_unit_loc": [
+          [
+            5773.933,
+            832.453
+          ]
+        ]
+      },
+      "OS2": {
+        "unit_loc": [
+          [
+            5725.924,
+            1489.213
+          ]
+        ],
+        "retreat_unit_loc": [
+          [
+            5773.933,
+            1511.275
+          ]
+        ]
+      },
+      "OS3": {
+        "unit_loc": [
+          [
+            5725.924,
+            2187.834
+          ]
+        ],
+        "retreat_unit_loc": [
+          [
+            5773.933,
+            2209.897
+          ]
+        ]
+      }
+    }
+  },
+  "players": {
+    "Alethkar": {
+      "color": "23436d",
+      "iscc": 4
+    },
+    "Azir": {
+      "color": "c9aa58",
+      "iscc": 3
+    },
+    "Iri": {
+      "color": "e09c4e",
+      "iscc": 3
+    },
+    "Jah Keved": {
+      "color": "b0a4d1",
+      "iscc": 4
+    },
+    "Listeners": {
+      "color": "404040",
+      "iscc": 3
+    },
+    "Marat": {
+      "color": "4e9038",
+      "iscc": 3
+    },
+    "Shinovar": {
+      "color": "692a33",
+      "iscc": 3
+    },
+    "Thaylenah": {
+      "color": "895d50",
+      "iscc": 3
+    },
+    "Tukar": {
+      "color": "b56750",
+      "iscc": 3
+    },
+    "Yulay": {
+      "color": "58a89f",
+      "iscc": 3
+    }
+  }
+}

@@ -231,17 +231,13 @@ class DiploGM(commands.Bot):
 
     async def before_any_command(self, ctx: commands.Context):
         """Before any command, log the command and thumbs-up the message."""
-        if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)):
+        if isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) or not ctx.guild:
             return
         assert isinstance(ctx.guild, discord.Guild)
 
-        guild = ctx.guild
-        if not guild:
-            return
-
         logger.debug(
             "[%s][#%s](%s) - '%s'",
-            guild.name,
+            ctx.guild.name,
             ctx.channel.name,
             ctx.message.author.name,
             ctx.message.content
