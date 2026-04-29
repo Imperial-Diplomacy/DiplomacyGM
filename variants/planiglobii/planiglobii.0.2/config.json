@@ -32,40 +32,42 @@
   "build_options": "classic",
   "victory_conditions": "vscc",
   "overrides": {
-    "Aqui": {
-      "coasts": {
-        "ec": ["Provence", "Ligurian Sea", "Barcelona"],
-        "sc": ["Bordeaux", "Bay of Biscay", "Galicia"]
-      }
-    },
-    "Hano": {
-      "coasts": {
-        "ec": ["Denmark", "Baltic Sea", "Berlin"],
-        "wc": ["Amst", "Heli Bight", "Denmark"]
-      }
-    },
-    "Italy": {
-      "coasts": {
-        "ec": ["Croatia", "Adri Sea", "Napl"],
-        "wc": ["Napl", "West Med", "Ligurian Sea", "Provence"]
-      }
-    },
-    "Leeds": {
-      "coasts": {
-        "ec": ["Scot", "North Sea", "London"],
-        "wc": ["Scot", "Ireland", "Wales"]
-      }
-    },
-    "Song": {
-      "coasts": {
-        "ec": ["Bangkok", "South China Sea", "Johor"],
-        "wc": ["Johor", "Andaman Sea", "Pegu"]
-      }
-    },
-    "St. Petersburg": {
-      "coasts": {
-        "nc": ["Nordland", "Arctic Ocean", "Yugra"],
-        "sc": ["Finland", "Gulf of Bothnia", "Baltics"]
+    "provinces": {
+      "Aqui": {
+        "coasts": {
+          "ec": ["Provence", "Ligurian Sea", "Barcelona"],
+          "sc": ["Bordeaux", "Bay of Biscay", "Galicia"]
+        }
+      },
+      "Hano": {
+        "coasts": {
+          "ec": ["Denmark", "Baltic Sea", "Berlin"],
+          "wc": ["Amst", "Heli Bight", "Denmark"]
+        }
+      },
+      "Italy": {
+        "coasts": {
+          "ec": ["Croatia", "Adri Sea", "Naples"],
+          "wc": ["Naples", "West Med", "Ligurian Sea", "Provence"]
+        }
+      },
+      "Leeds": {
+        "coasts": {
+          "ec": ["Scot", "North Sea", "London"],
+          "wc": ["Scot", "Ireland", "Wales"]
+        }
+      },
+      "Song": {
+        "coasts": {
+          "ec": ["Bangkok", "South China Sea", "Johor"],
+          "wc": ["Johor", "Andaman Sea", "Pegu"]
+        }
+      },
+      "St. Petersburg": {
+        "coasts": {
+          "nc": ["Nordland", "Arctic Ocean", "Yugra"],
+          "sc": ["Finland", "Gulf of Bothnia", "Baltics"]
+        }
       }
     }
   },

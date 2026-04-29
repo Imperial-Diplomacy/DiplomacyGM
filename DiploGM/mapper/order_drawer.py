@@ -10,6 +10,7 @@ from DiploGM.models.order import (
     Build, Disband, TransformBuild, RetreatMove, RetreatDisband
 )
 from DiploGM.models.unit import UnitType
+import DiploGM.mapper.utils as MapperUtils
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
@@ -17,17 +18,14 @@ if TYPE_CHECKING:
     from DiploGM.models.unit import Unit
     from DiploGM.models.turn import Turn
     from DiploGM.models.order import UnitOrder, PlayerOrder
-    from DiploGM.mapper.utils import MapperUtils
 
 class OrderDrawer:
     """Class to draw orders on the map."""
     def __init__(self,
-                 utils: MapperUtils,
                  moves_svg: ElementTree,
                  board_svg_data: dict[str, Any],
                  adjacent_provinces: set[str],
                  player_restriction: str | None = None):
-        self.utils = utils
         self.moves_svg: ElementTree = moves_svg
         self.board_svg_data = board_svg_data
         self.adjacent_provinces = adjacent_provinces
@@ -37,7 +35,7 @@ class OrderDrawer:
     def draw_order(self,
                    unit: Unit,
                    order: UnitOrder | None,
-                   coordinate: tuple[float, float],
+                   coordinate: complex,
                    current_turn: Turn) -> list[Element] | None:
         """Draws a specific order on the map.
         If the order can potentially go off-board (i.e. move/support),
@@ -84,14 +82,14 @@ class OrderDrawer:
         else:
             logger.error("Could not draw player order %s", order)
 
-    def _draw_hold(self, _, __, coordinate: tuple[float, float], has_failed: bool) -> None:
+    def _draw_hold(self, _, __, coordinate: complex, has_failed: bool) -> None:
         element = self.moves_svg.getroot()
         assert element is not None
-        drawn_order = self.utils.create_element(
+        drawn_order = MapperUtils.create_element(
             "circle",
             {
-                "cx": coordinate[0],
-                "cy": coordinate[1],
+                "cx": coordinate.real,
+                "cy": coordinate.imag,
                 "r": self.board_svg_data["unit_radius"],
                 "fill": "none",
                 "stroke": "red" if has_failed else "black",
@@ -100,32 +98,32 @@ class OrderDrawer:
         )
         element.append(drawn_order)
 
-    def _draw_core(self, _, __, coordinate: tuple[float, float], has_failed: bool) -> None:
+    def _draw_core(self, _, __, coordinate: complex, has_failed: bool) -> None:
         element = self.moves_svg.getroot()
         assert element is not None
-        drawn_order = self.utils.create_element(
+        drawn_order = MapperUtils.create_element(
             "rect",
             {
-                "x": coordinate[0] - self.board_svg_data["unit_radius"],
-                "y": coordinate[1] - self.board_svg_data["unit_radius"],
+                "x": coordinate.real - self.board_svg_data["unit_radius"],
+                "y": coordinate.imag - self.board_svg_data["unit_radius"],
                 "width": self.board_svg_data["unit_radius"] * 2,
                 "height": self.board_svg_data["unit_radius"] * 2,
                 "fill": "none",
                 "stroke": "red" if has_failed else "black",
                 "stroke-width": self.board_svg_data["order_stroke_width"],
-                "transform": f"rotate(45 {coordinate[0]} {coordinate[1]})",
+                "transform": f"rotate(45 {coordinate.real} {coordinate.imag})",
             },
         )
         element.append(drawn_order)
 
-    def _draw_transform(self, _, __, coordinate: tuple[float, float], has_failed: bool) -> None:
+    def _draw_transform(self, _, __, coordinate: complex, has_failed: bool) -> None:
         element = self.moves_svg.getroot()
         assert element is not None
-        drawn_order = self.utils.create_element(
+        drawn_order = MapperUtils.create_element(
             "rect",
             {
-                "x": coordinate[0] - self.board_svg_data["unit_radius"],
-                "y": coordinate[1] - self.board_svg_data["unit_radius"],
+                "x": coordinate.real - self.board_svg_data["unit_radius"],
+                "y": coordinate.imag - self.board_svg_data["unit_radius"],
                 "width": self.board_svg_data["unit_radius"] * 2,
                 "height": self.board_svg_data["unit_radius"] * 2,
                 "fill": "none",
@@ -137,17 +135,23 @@ class OrderDrawer:
 
     def draw_retreat_move(self, unit: Unit,
                           order: RetreatMove,
-                          coordinate: tuple[float, float],
+                          coordinate: complex,
                           _) -> list[Element]:
         """Draws a retreat move on the map, returning the elements to be copied across the board if necessary.
         This is a public method since we need to draw potential retreats on the current map."""
-        destination = self.utils.loc_to_point(order.destination, unit.unit_type, order.destination_coast, coordinate)
+        destination = MapperUtils.loc_to_point(order.destination,
+                                               unit.unit_type,
+                                               order.destination_coast,
+                                               coordinate,
+                                               self.board_svg_data["map_width"])
         if order.destination.unit:
-            destination = self.utils.pull_coordinate(coordinate, destination)
-        order_path = self.utils.create_element(
+            destination = MapperUtils.pull_coordinate(coordinate,
+                                                      destination,
+                                                      1.5 * self.board_svg_data["unit_radius"])
+        order_path = MapperUtils.create_element(
             "path",
             {
-                "d": f"M {coordinate[0]},{coordinate[1]} L {destination[0]},{destination[1]}",
+                "d": f"M {coordinate.real},{coordinate.imag} L {destination.real},{destination.imag}",
                 "fill": "none",
                 "stroke": "red",
                 "stroke-width": self.board_svg_data["order_stroke_width"],
@@ -189,7 +193,7 @@ class OrderDrawer:
         return list(map((lambda t: [current] + t), options))
 
     def _draw_path(self, d: str, marker_end="arrow", stroke_color="black") -> Element:
-        order_path = self.utils.create_element(
+        order_path = MapperUtils.create_element(
             "path",
             {
                 "d": d,
@@ -222,13 +226,10 @@ class OrderDrawer:
     def _draw_convoyed_move(self,
                             unit: Unit,
                             order: Move,
-                            coordinate: tuple[float, float],
+                            coordinate: complex,
                             has_failed: bool) -> list[Element]:
-        def f(point: tuple[float, float]):
-            return " ".join(map(str, point))
-
-        def norm(point: tuple[float, float]) -> tuple[float, float]:
-            return point / ((np.sum(np.array(point)**2)) ** 0.5)
+        def f(point: complex):
+            return f"{point.real},{point.imag}"
 
         valid_convoys = self.convoy_paths.get(unit.province, [[unit.province, order.destination]])
         latest_paths = []
@@ -236,21 +237,21 @@ class OrderDrawer:
             p = [coordinate]
             start = coordinate
             for loc in path[1:]:
-                p += [self.utils.loc_to_point(loc, unit.unit_type, order.destination_coast, start)]
+                p += [MapperUtils.loc_to_point(loc, unit.unit_type, order.destination_coast, start, self.board_svg_data["map_width"])]
                 start = p[-1]
 
             if path[-1].unit:
-                p[-1] = self.utils.pull_coordinate(p[-2], p[-1])
+                p[-1] = MapperUtils.pull_coordinate(p[-2], p[-1], 1.5 * self.board_svg_data["unit_radius"])
 
             p = np.array(p)
 
             # given surrounding points, generate a control point
-            def g(point: np.ndarray) -> tuple[float, float]:
+            def g(point: np.ndarray) -> complex:
                 centered = point[::2] - point[1]
 
                 # TODO: possible div / 0 if the two convoyed points are in a straight line with the convoyer on one side
-                vec = tuple(np.subtract(centered[0], norm(centered[1])))
-                return norm(vec) * 30 + point[1]
+                vec = centered[0] - centered[1] / abs(centered[1])
+                return vec / abs(vec) * 30 + point[1]
 
             # this is a bit weird, because the loop is in-between two values
             # (S LO)(OP LO)(OP E)
@@ -267,12 +268,13 @@ class OrderDrawer:
     def _draw_support(self,
                       unit: Unit,
                       order: Support,
-                      coordinate: tuple[float, float],
+                      coordinate: complex,
                       has_failed: bool) -> list[Element]:
         source: Province = order.source
         if source.unit is None:
             raise ValueError("Support order has no source unit")
-        source_coord = self.utils.loc_to_point(source, unit.unit_type, source.unit.coast, coordinate)
+        source_coord = MapperUtils.loc_to_point(source, unit.unit_type, source.unit.coast,
+                                                coordinate, self.board_svg_data["map_width"])
         if (isinstance(source.unit.order, Move)
             and source.unit.order.destination == order.destination
             and (not order.destination_coast
@@ -280,23 +282,22 @@ class OrderDrawer:
             dest_coast = source.unit.order.destination_coast
             # If the supported move is a convoy, draw the support arrow from the last fleet instead
             if source in self.convoy_paths:
-                source_coord = self.utils.loc_to_point(self.convoy_paths[source][0][-2],
-                                                       UnitType.FLEET, None, coordinate)
+                source_coord = MapperUtils.loc_to_point(self.convoy_paths[source][0][-2],
+                                                       UnitType.FLEET, None, coordinate,
+                                                       self.board_svg_data["map_width"])
         else:
             dest_coast = order.destination_coast
-        dest_coord = self.utils.loc_to_point(order.destination, source.unit.unit_type, dest_coast, source_coord)
+        dest_coord = MapperUtils.loc_to_point(order.destination, source.unit.unit_type, dest_coast, source_coord, self.board_svg_data["map_width"])
         marker_start = ""
-        ball_type = "redball" if has_failed else "ball"
-        arrow_type = "redarrow" if has_failed else "arrow"
         if order.destination.unit:
-            if order.source == order.destination:
-                dest_coord = self.utils.pull_coordinate(coordinate, dest_coord)
+            if order.is_support_hold():
+                dest_coord = MapperUtils.pull_coordinate(coordinate, dest_coord, 1.5 * self.board_svg_data["unit_radius"])
             else:
-                dest_coord = self.utils.pull_coordinate(source_coord, dest_coord)
+                dest_coord = MapperUtils.pull_coordinate(source_coord, dest_coord, 1.5 * self.board_svg_data["unit_radius"])
             # Draw hold around unit that can be support-held
-            if (order.source == order.destination
+            if (order.is_support_hold()
                 and isinstance(source.unit.order, (ConvoyTransport, Support))
-                and self.utils.is_moveable(source.unit, self.adjacent_provinces, self.player_restriction)):
+                and MapperUtils.is_moveable(source.unit, self.adjacent_provinces, self.player_restriction)):
                 for coord in source.all_coordinates[source.unit.coast if source.unit.coast else source.unit.unit_type.name]:
                     self._draw_hold(None, None, coord.primary_coordinate, False)
 
@@ -305,8 +306,9 @@ class OrderDrawer:
 
             if (
                 isinstance(destorder, Support)
-                and destorder.source == destorder.destination == unit.province
-                and order.source == order.destination
+                and destorder.is_support_hold()
+                and order.is_support_hold()
+                and destorder.source == unit.province
                 and (self.player_restriction is None
                      or order.destination.unit.player.name == self.player_restriction)
             ):
@@ -314,38 +316,38 @@ class OrderDrawer:
                 # it doesn't matter which one is the origin & which is the dest
                 if id(order.destination.unit) < id(unit):
                     return []
-                marker_start = f"url(#{ball_type})"
+                marker_start = f"url(#{'red' if has_failed else ''}ball)"
                 # doesn't matter that v3 has been pulled, as it's still collinear
-                coordinate = source_coord = self.utils.pull_coordinate(
+                coordinate = source_coord = MapperUtils.pull_coordinate(
                     dest_coord, coordinate, self.board_svg_data["unit_radius"]
                 )
 
         dasharray_size = 2.5 * self.board_svg_data["order_stroke_width"]
-        drawn_order = self.utils.create_element(
+        drawn_order = MapperUtils.create_element(
             "path",
             {
-                "d": f"M {coordinate[0]},{coordinate[1]} " + \
-                     f"Q {source_coord[0]},{source_coord[1]} " \
-                     f"{dest_coord[0]},{dest_coord[1]}",
+                "d": f"M {coordinate.real},{coordinate.imag} " + \
+                     f"Q {source_coord.real},{source_coord.imag} " \
+                     f"{dest_coord.real},{dest_coord.imag}",
                 "fill": "none",
                 "stroke": "red" if has_failed else "black",
                 "stroke-dasharray": f"{dasharray_size} {dasharray_size}",
                 "stroke-width": self.board_svg_data["order_stroke_width"],
                 "stroke-linecap": "round",
                 "marker-start": marker_start,
-                "marker-end": f"url(#{ball_type if order.source == order.destination else arrow_type})",
+                "marker-end": f"url(#{'red' if has_failed else ''}{'ball' if order.is_support_hold() else 'arrow'})",
             },
         )
         return [drawn_order]
 
-    def _draw_convoy(self, _, __, coordinate: tuple[float, float], has_failed: bool) -> None:
+    def _draw_convoy(self, _, __, coordinate: complex, has_failed: bool) -> None:
         element = self.moves_svg.getroot()
         assert element is not None
-        drawn_order = self.utils.create_element(
+        drawn_order = MapperUtils.create_element(
             "circle",
             {
-                "cx": coordinate[0],
-                "cy": coordinate[1],
+                "cx": coordinate.real,
+                "cy": coordinate.imag,
                 "r": self.board_svg_data["unit_radius"] / 2,
                 "fill": "none",
                 "stroke": "red" if has_failed else "black",
@@ -358,11 +360,11 @@ class OrderDrawer:
         element = self.moves_svg.getroot()
         assert element is not None
         build_location = order.province.get_unit_coordinates(order.unit_type, order.coast)
-        drawn_order = self.utils.create_element(
+        drawn_order = MapperUtils.create_element(
             "circle",
             {
-                "cx": build_location[0],
-                "cy": build_location[1],
+                "cx": build_location.real,
+                "cy": build_location.imag,
                 "r": self.board_svg_data["unit_radius"],
                 "fill": "none",
                 "stroke": "green",
@@ -371,13 +373,13 @@ class OrderDrawer:
         )
         element.append(drawn_order)
 
-    def _draw_disband(self, coordinate: tuple[float, float], svg) -> None:
+    def _draw_disband(self, coordinate: complex, svg) -> None:
         element = svg.getroot()
-        drawn_order = self.utils.create_element(
+        drawn_order = MapperUtils.create_element(
             "circle",
             {
-                "cx": coordinate[0],
-                "cy": coordinate[1],
+                "cx": coordinate.real,
+                "cy": coordinate.imag,
                 "r": self.board_svg_data["unit_radius"],
                 "fill": "none",
                 "stroke": "red",
@@ -386,7 +388,7 @@ class OrderDrawer:
         )
         element.append(drawn_order)
 
-    def draw_force_disband(self, _, __, coordinate: tuple[float, float], ___, svg = None) -> None:
+    def draw_force_disband(self, _, __, coordinate: complex, ___, svg = None) -> None:
         """Draws a disband order on the map.
         This method is public since we need to forced disbands on the current map."""
         element = (svg if svg is not None else self.moves_svg).getroot()
@@ -401,8 +403,8 @@ class OrderDrawer:
             ]
         )
         rotate_90 = np.array([[0, -1], [1, 0]])
-        points = np.concatenate((init, init @ rotate_90, -init, -init @ rotate_90)) + coordinate
-        drawn_order = self.utils.create_element(
+        points = np.concatenate((init, init @ rotate_90, -init, -init @ rotate_90)) + np.array([coordinate.real, coordinate.imag])
+        drawn_order = MapperUtils.create_element(
             "polygon",
             {
                 "points": " ".join(map(lambda a: ",".join(map(str, a)), points)),

@@ -64,13 +64,6 @@ class Manager(metaclass=SingletonMeta):
 
         return True, f"{self._boards[server_id].data['name']} game created"
 
-    def generate_layers(self, variant: str) -> tuple[bytes, str]:
-        """Generates the SVG layers for a variant and returns them as bytes."""
-        if not os.path.isdir(parse_variant_path(variant)):
-            raise ValueError(f"Game {variant} does not exist.")
-        board: Board = get_parser(variant).parse()
-        return get_parser(variant).generate_layers(), f"{board.data['name']}.svg"
-
     def get_spec_request(self, server_id: int, user_id: int) -> SpecRequest | None:
         """Gets a spec request for a user in a server, if it exists."""
         if server_id not in self._spec_requests:
@@ -144,33 +137,12 @@ class Manager(metaclass=SingletonMeta):
         self._database.total_delete(self._boards[server_id])
         del self._boards[server_id]
 
-    def list_variants(self) -> str:
-        """Lists all available variants."""
-        variants = os.listdir("variants")
-        loaded_variants = []
-        for v in variants:
-            if not os.path.isdir(os.path.join("variants", v)):
-                continue
-            if os.path.isfile(os.path.join("variants", v, "config.json")):
-                loaded_variants.append(f"* {v}")
-            else:
-                version_list = []
-                variant_versions = os.listdir(os.path.join("variants", v))
-                for vv in variant_versions:
-                    if os.path.isdir(os.path.join("variants", v, vv)) \
-                       and os.path.isfile(os.path.join("variants", v, vv, "config.json")):
-                        version_list.append(vv)
-                version_list.sort()
-                loaded_variants.append(f"* {v}:\n    " + "\n    ".join(version_list))
-        loaded_variants.sort()
-        return "\n".join(loaded_variants)
-
     def draw_map(
         self,
         server_id: int,
         draw_moves: bool = False,
         player_restriction: Player | None = None,
-        args: dict = {},
+        **kwargs,
     ) -> tuple[bytes, str]:
         """Gets the map for a server.
         draw_moves: whether to draw the moves on the map
@@ -179,7 +151,7 @@ class Manager(metaclass=SingletonMeta):
         turn: whether to draw the map for a previous turn (defaults to current turn)
         movement_only: whether to only draw succcessful moves (used mainly for Carnage)"""
         cur_board = self.get_board(server_id)
-        if (turn := args.get("turn")) is None:
+        if (turn := kwargs.get("turn")) is None:
             board = cur_board
         else:
             board = self._database.get_board(
@@ -196,7 +168,7 @@ class Manager(metaclass=SingletonMeta):
                 or (board.turn.year == cur_board.turn.year
                     and board.turn.phase.value < cur_board.turn.phase.value)
             ):
-                if (is_severance := args.get("is_severance")):
+                if kwargs.get("is_severance"):
                     board = cur_board
                 else:
                     player_restriction = None
@@ -204,7 +176,7 @@ class Manager(metaclass=SingletonMeta):
             board,
             player_restriction=player_restriction,
             draw_moves=draw_moves,
-            args=args,
+            **kwargs,
         )
         return svg, file_name
 
@@ -213,17 +185,16 @@ class Manager(metaclass=SingletonMeta):
         board: Board,
         player_restriction: Player | None = None,
         draw_moves: bool = False,
-        args: dict | None = None,
+        **kwargs,
     ) -> tuple[bytes, str]:
         """Gets the current map for a board."""
         start = time.time()
-        args = args or {}
-        mapper = Mapper(board, restriction=args.get("fow_player"), color_mode=args.get("color_mode"))
+        mapper = Mapper(board, restriction=kwargs.get("fow_player"), color_mode=kwargs.get("color_mode"))
 
         if draw_moves:
             svg, file_name = mapper.draw_moves_map(board.turn,
                                                    player_restriction=player_restriction,
-                                                   movement_only=args.get("movement_only", False),
+                                                   movement_only=kwargs.get("movement_only", False),
             )
         else:
             svg, file_name = mapper.draw_current_map()
@@ -324,18 +295,6 @@ class Manager(metaclass=SingletonMeta):
 
     def reload_variant(self, variant: str) -> str:
         """Reloads a variant, including adjacencies and all boards."""
-        try:
-            variant_path = parse_variant_path(variant)
-        except ValueError as e:
-            return str(e)
-        if not os.path.isdir(variant_path):
-            return f"Variant {variant} does not exist."
-
-        # Remove adjacency cache to force a reload
-        if os.path.isfile(f"assets/{variant}_adjacencies.txt"):
-            os.remove(f"assets/{variant}_adjacencies.txt")
-
-        get_parser(variant, force_refresh=True).parse()
         for server_id, board in self._boards.items():
             if board.datafile == variant:
                 logger.info("Reloading board for server %s", server_id)

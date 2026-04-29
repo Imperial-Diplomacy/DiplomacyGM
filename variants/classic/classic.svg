@@ -24,15 +24,15 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="5.6568542"
-     inkscape:cx="261.27596"
-     inkscape:cy="448.39409"
+     inkscape:zoom="7.9999999"
+     inkscape:cx="319.125"
+     inkscape:cy="61.937501"
      inkscape:window-width="2496"
      inkscape:window-height="1630"
      inkscape:window-x="-11"
      inkscape:window-y="-11"
      inkscape:window-maximized="1"
-     inkscape:current-layer="g914"
+     inkscape:current-layer="layer4-1"
      inkscape:lockguides="true" />
   <g
      id="MapLayer"
@@ -12372,6 +12372,16 @@
          id="tspan2"
          x="4004.7717"
          y="111.56048">Spring 1901</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:26.6667px;line-height:0.8;font-family:serif;-inkscape-font-specification:'serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-decoration-color:#000000;letter-spacing:0px;text-anchor:middle;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.55;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal;stop-color:#000000"
+       x="4004.7717"
+       y="145.38863"
+       id="text65215-1"><tspan
+         sodipodi:role="line"
+         id="tspan2-4"
+         x="4004.7717"
+         y="145.38863">Classic Diplomacy</tspan></text>
   </g>
   <g
      inkscape:groupmode="layer"

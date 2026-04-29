@@ -1,3 +1,25 @@
+1.9.3
+=====
+
+Contributors:
+- Ianic
+- Golden Kumquat
+
+# New features
+- Added the Era of Solitude variant
+
+# Quality of Life
+- The bot will no longer wait to give you a thumbs-up before starting doing whatever it's supposed to do
+- Added more flexibility for displaying seasons on the map
+- Included more sample elements in Classic's config.json
+
+# Bugfixes
+- Minor fixes for Planiglobii
+
+# Developer Chnages
+- Moved variant creation commands to their own cog
+- Now stores coordinates as complex numbers instead of tuples
+
 1.9.2
 =====
 

@@ -2,11 +2,18 @@
     "name": "Classic",
     "file": "classic.svg",
     "svg config": {
-		"year": 1901,
-		
-		"power_sc_index": 2,
-		"power_iscc_index": -1,
-		"power_vscc_index": -1,
+        "scoreboard": {
+            "sort": true,
+            "indexes": {
+                "2": "__score__",
+                "ignored_sample": "__name__",
+                "ignored_sample_2": "__iscc__/__vscc__"
+            }
+        },
+        "season_format": {
+            "0": "%Y %S",
+            "1": "%N"
+        },
 
         "detect_starting_units": true,
         "unit_type_labeled": false,
@@ -28,9 +35,16 @@
         "loc_y_offset": 7.033,
         "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
     },
+    "first_season": "Spring",
     "build_options": "classic",
 	"victory_conditions": "classic",
 	"victory_count": 18,
+    "convoyable_islands": "disabled",
+    "supportable_cores": "disabled",
+    "transformation": "disabled",
+    "dp": "disabled",
+    "fow": "disabled",
+    "vassals": "disabled",
 	"abbreviations": {
 		"bot": "Gulf of Bothnia",
 		"ems": "Eastern Mediterranean Sea",

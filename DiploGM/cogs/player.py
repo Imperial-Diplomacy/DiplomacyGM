@@ -204,11 +204,7 @@ class PlayerCog(commands.Cog):
             {"true", "t", "svg", "s"} & set(arguments)
         )   
         board = manager.get_board(ctx.guild.id)
-        args = {"color_mode": get_colour_option(board, arguments),
-                "movement_only": "movement" in arguments,
-                "turn": parse_season(arguments, board.turn),
-                "is_severance": ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID],
-                "fow_player": player if board.data.get("fow", "disabled") == "enabled" else None}
+        season = parse_season(arguments, board.turn)
 
         if player and show_moves and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
@@ -218,9 +214,13 @@ class PlayerCog(commands.Cog):
         try:
             file, file_name = manager.draw_map(
                 ctx.guild.id,
-                draw_moves = show_moves,
-                player_restriction = player,
-                args = args,
+                draw_moves=show_moves,
+                player_restriction=player,
+                color_mode=get_colour_option(board, arguments),
+                movement_only="movement" in arguments,
+                turn=season,
+                is_severance=ctx.guild.id in [SEVERENCE_A_ID, SEVERENCE_B_ID],
+                fow_player=player if board.data.get("fow", "disabled") == "enabled" else None,
             )
         except Exception as err:
             logger.error(err, exc_info=True)
@@ -238,14 +238,15 @@ class PlayerCog(commands.Cog):
             message = ("`.vm true` and `.vm t` have been deprecated and will soon be disabled.\n"
                        "Please use `.vm svg` instead")
 
+        display_season = season or board.turn
         log_command(
             logger,
             ctx,
-            message=f"Generated {'moves' if show_moves else 'current'} map for {args.get('turn', board.turn)}",
+            message=f"Generated {'moves' if show_moves else 'current'} map for {display_season}",
         )
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{args.get('turn', board.turn)} {'Orders' if show_moves else 'Current'} Map",
+            title=f"{display_season} {'Orders' if show_moves else 'Current'} Map",
             message=message,
             file=file,
             file_name=file_name,
