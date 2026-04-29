@@ -171,7 +171,7 @@ class SlashSubstituteCog(commands.Cog):
             "so that they know you want to join the game!"
         )
         file, file_name = manager.draw_map_for_board(
-            board, player_restriction=None, draw_moves=False, args={"color_mode": "standard"}
+            board, player_restriction=None, draw_moves=False, color_mode="standard"
         )
 
         link = await send_message_and_file(

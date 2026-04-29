@@ -308,7 +308,7 @@ class OrderDrawer:
                 isinstance(destorder, Support)
                 and destorder.is_support_hold()
                 and order.is_support_hold()
-                and destorder.source == source
+                and destorder.source == unit.province
                 and (self.player_restriction is None
                      or order.destination.unit.player.name == self.player_restriction)
             ):
