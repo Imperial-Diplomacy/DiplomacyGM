@@ -29,8 +29,7 @@
         "1": "__name__"
       }
     },
-    "season_format": "%Z",
-    "year_format": "%Y"
+    "season_format": {"0": "%Z", "1": "%Y"}
   },
   "year": 1167,
   "build_options": "cores",

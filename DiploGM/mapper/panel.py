@@ -74,8 +74,12 @@ class PanelDrawer:
 
         if "scoreboard" in self.board_svg_data:
             for index, value in self.board_svg_data["scoreboard"].get("indexes", {}).items():
+                if not index.isnumeric():
+                    continue
                 value = value.replace("__name__", player.get_name())
                 value = value.replace("__score__", str(len(player.centers)))
+                value = value.replace("__iscc__", str(player_data["iscc"]))
+                value = value.replace("__vscc__", str(player_data["vscc"]))
                 power_element[int(index)][0].text = value
             return True
 
@@ -138,21 +142,15 @@ class PanelDrawer:
         if date is None:
             return
         game_name = self.board.data.get("game_name")
-        if (season_format := self.board_svg_data.get("season_format")) is not None:
-            name_text = format(self.board.turn, season_format)
-            name_text = name_text.replace("%N", game_name if game_name else "")
-        else:
-            name_text = "" if game_name is None else f"{game_name} — "
-            name_text += format(self.board.turn, "%Y %S")
-        # TODO: this is hacky; I don't know a better way
-        date[0][0].text = name_text
-
-        # if "year_format" is present in the json config it'll put that in the year layer
-        if (year_format := self.board_svg_data.get("year_format")) is not None:
-            year = find_svg_element(svg, "year", self.board_svg_data)
-            year_text = format(self.board.turn, year_format)
-            year_text = year_text.replace("%N", game_name if game_name else "")
-
-            # TODO: I copied the hacky solution; I also don't know a better way
-            year[0][0].text = year_text
-
+        season_format = self.board_svg_data.get("season_format", "%N( - )?%Y %S")
+        if isinstance(season_format, str):
+            season_format = {"0": season_format}
+        for key, value in season_format.items():
+            name_text = format(self.board.turn, value)
+            if game_name:
+                name_text = name_text.replace("%N", game_name)
+                name_text = re.sub(r"\((.*?)\)\?", r"\1", name_text)
+            else:
+                name_text = name_text.replace("%N", "")
+                name_text = re.sub(r"\((.*?)\)\?", "", name_text)
+            date[int(key)][0].text = name_text

@@ -211,7 +211,7 @@ class Parser:
 
         self.data["year"] = self.data.get("year", 1901)
         initial_turn = Turn(self.data["year"], PhaseName.SPRING_MOVES, self.data["year"])
-        if self.data.get("first_season") == "winter":
+        if self.data.get("first_season", "spring").lower() == "winter":
             initial_turn = initial_turn.get_previous_turn()
 
         if "victory_count" not in self.data:

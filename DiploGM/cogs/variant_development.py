@@ -19,6 +19,7 @@ class VariantDevelopmentCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    @commands.command(brief="Checks the adjacencies of a variant to find potential issues")
     @perms.superuser_only("Checks the adjacencies of a variant to find potential issues")
     async def verify_adjacencies(self, ctx: commands.Context, arg) -> None:
         """Checks the adjacencies of a variant to find potential issues."""
@@ -29,6 +30,7 @@ class VariantDevelopmentCog(commands.Cog):
         log_command(logger, ctx, message=message)
         await send_message_and_file(channel=ctx.channel, message=message)
 
+    @commands.command(brief="Generates the titles, army and fleet locations for a variant based on the map SVG")
     @perms.superuser_only("Generates the titles, army and fleet locations for a variant based on the map SVG")
     async def generate_layers(self, ctx: commands.Context, arg) -> None:
         """Generates the titles, army and fleet locations for a variant based on the map SVG."""
@@ -46,6 +48,7 @@ class VariantDevelopmentCog(commands.Cog):
                                     file=file,
                                     file_name=filename)
 
+    @commands.command(brief="Reloads the map parser for a given variant. Useful if a map has been updated.")
     @perms.superuser_only("Reloads the map parser for a given variant. Useful if a map has been updated.")
     async def reload_variant(self, ctx: commands.Context, arg) -> None:
         """Reloads the map parser for a given variant. Useful if a map has been updated."""
@@ -65,3 +68,9 @@ class VariantDevelopmentCog(commands.Cog):
 
         log_command(logger, ctx, message=message)
         await send_message_and_file(channel=ctx.channel, message=message)
+
+
+async def setup(bot):
+    cog = VariantDevelopmentCog(bot)
+    await bot.add_cog(cog)
+
