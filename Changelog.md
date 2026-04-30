@@ -2,7 +2,7 @@
 =====
 
 Contributors:
-- Ianic
+- ianic
 - Golden Kumquat
 
 # New features
@@ -16,7 +16,7 @@ Contributors:
 # Bugfixes
 - Minor fixes for Planiglobii
 
-# Developer Chnages
+# Developer Changes
 - Moved variant creation commands to their own cog
 - Now stores coordinates as complex numbers instead of tuples
 
@@ -32,7 +32,7 @@ Contributors:
 # Bugfixes
 - `.view_gui` should hopefully work again
 
-# Developer Chnages
+# Developer Changes
 - Moved fish, name, and custom color to board_parameters instead of player and board tables
 
 1.9.1
@@ -74,7 +74,7 @@ Contributors
   - `.verify_svg()` now returns a list of issues instead of simply logging them
   - Removed warn_missing_coordinates() as the board is better at handling them
 
-# Developer Chnages
+# Developer Changes
 - Refactored the game_management cog into smaller, more manageable modules based on function
 - Moved fow, fish, and name parametres into board.data
 - Split up some large methods into smaller chunks
