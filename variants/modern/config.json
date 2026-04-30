@@ -2,11 +2,11 @@
     "name": "Modern",
     "file": "modern.svg",
     "svg config": {
-		"year": 1994,
-		
-		"power_sc_index": -1,
-		"power_iscc_index": -1,
-		"power_vscc_index": -1,
+        "scoreboard": {
+            "sort": true,
+            "indexes": {
+            }
+        },
 
         "detect_starting_units": true,
         "unit_type_labeled": false,
@@ -26,6 +26,7 @@
         "impassable": "a69f8f",
         "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
     },
+    "year": 1994,
     "build_options": "classic",
 	"victory_conditions": "classic",
     "players": {

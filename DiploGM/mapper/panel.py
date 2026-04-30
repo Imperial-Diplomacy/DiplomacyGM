@@ -61,58 +61,35 @@ class PanelDrawer:
             power_element.clear()
             return True
 
-       # TODO: Add support for chaos "points" and perhaps simplify this whole thing
-        name_index = self.board_svg_data.get("power_name_index", 1)
-        sc_index = self.board_svg_data.get("power_sc_index", 5)
-        iscc_index = self.board_svg_data.get("power_iscc_index", 6)
-        vscc_index = self.board_svg_data.get("power_vscc_index", 7)
-
         MapperUtils.color_element(power_element[0], self.player_colors[player.name])
         if self.board_svg_data.get("scoreboard", {}).get("sort", True):
             new_translation = self.scoreboard_power_locations[banner_index] - initial_pretransform_coordinates
             power_element.set("transform", f"translate({new_translation.real}, {new_translation.imag})")
 
-        if "scoreboard" in self.board_svg_data:
-            for index, value in self.board_svg_data["scoreboard"].get("indexes", {}).items():
-                if not index.isnumeric():
-                    continue
-                value = value.replace("__name__", player.get_name())
-                value = value.replace("__score__", str(len(player.centers)))
-                value = value.replace("__iscc__", str(player_data["iscc"]))
-                value = value.replace("__vscc__", str(player_data["vscc"]))
-                power_element[int(index)][0].text = value
-            return True
+        for index, value in self.board_svg_data["scoreboard"].get("indexes", {}).items():
+            if not index.isnumeric() or int(index) >= len(power_element):
+                continue
+            if value == "__name__" and not high_player_count and not player_data.get("nickname"):
+                continue
 
-        if high_player_count or player_data.get("nickname"):
-            power_element[name_index][0].text = player.get_name()
             # Fix for Poland-Lithuanian Commonwealth
-            if len(power_element[name_index]) > 1:
-                power_element[name_index][1].text = ""
-                power_element[name_index].set("y", "237.67107")
-                power_element[name_index][0].set("y", "237.67107")
-                style = power_element[name_index].get("style")
+            if index == 1 and len(power_element[index]) > 1:
+                power_element[index][1].text = ""
+                power_element[index].set("y", "237.67107")
+                power_element[index][0].set("y", "237.67107")
+                style = power_element[index].get("style")
                 assert style is not None
                 style = re.sub(r"font-size:[0-9.]+px", "font-size:42.6667px", style)
-                power_element[name_index].set("style", style)
-        power_element[sc_index][0].text = (str(len(player.centers))
-            if (self.restriction is None or self.restriction == player) else "???")
-        if iscc_index > -1:
-            power_element[iscc_index][0].text = str(player_data["iscc"])
-        if self.board.data["victory_conditions"] == "classic" and vscc_index > -1:
-            power_element[vscc_index][0].text = str(self.board.data["victory_count"])
-        elif vscc_index > -1:
-            power_element[vscc_index][0].text = str(player_data["vscc"])
+                power_element[index].set("style", style)
+
+            value = value.replace("__name__", player.get_name())
+            value = value.replace("__score__", str(len(player.centers)))
+            value = value.replace("__iscc__", str(player_data["iscc"]))
+            value = value.replace("__vscc__", str(player_data["vscc"]))
+            power_element[int(index)][0].text = value
         return True
 
     def _draw_side_panel_scoreboard(self, svg: ElementTree) -> None:
-        """
-        format is a list of each power; for each power, its children nodes are as follows:
-        0: colored rectangle
-        1: full name ("Dutch Empire", ...)
-        2-4: "current", "victory", "start" text labels in that order
-        5-7: SC counts in that same order
-        """
-
         root = svg.getroot()
         if root is None:
             raise ValueError("SVG root is None")
@@ -142,7 +119,7 @@ class PanelDrawer:
         if date is None:
             return
         game_name = self.board.data.get("game_name")
-        season_format = self.board_svg_data.get("season_format", "%N( - )?%Y %S")
+        season_format = self.board_svg_data.get("season_format", "%N( - )?%B %S")
         if isinstance(season_format, str):
             season_format = {"0": season_format}
         for key, value in season_format.items():

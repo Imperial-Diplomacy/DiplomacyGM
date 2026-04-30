@@ -38,12 +38,14 @@
   "convoyable_islands": "enabled",
   "overrides": {
     "provinces": {
-      "Klna": {
+      "Arak": {
         "adjacencies": [
-          "Amydlatn",
-          "East Thaylen Archipelago",
-          "Longbrow's Straits",
-          "Thaylen City"
+          "Nightstream Sea"
+        ]
+      },
+      "Nightstream Sea": {
+        "adjacencies": [
+          "Arak"
         ]
       },
       "Western Frostlands": {
