@@ -188,7 +188,7 @@ class Board:
         name = name.lower()
 
         # Legacy back-compatibility for coasts
-        if name.endswith(" coast"):
+        if name.endswith(" coast") and name not in self.name_to_province:
             name = name[:-6]
 
         if "abbreviations" in self.data and name in self.data["abbreviations"]:

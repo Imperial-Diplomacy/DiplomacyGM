@@ -457,7 +457,7 @@ class Mapper:
             try:
                 province = self._get_province_from_element_by_label(province_element)
             except ValueError as ex:
-                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                print(f"[{self.board.datafile}] Error during recoloring provinces: {ex}", file=sys.stderr)
                 continue
 
             visited_provinces.add(province.name)
@@ -477,7 +477,7 @@ class Mapper:
             try:
                 province = self._get_province_from_element_by_label(island_ring)
             except ValueError as ex:
-                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                print(f"[{self.board.datafile}] Error during recoloring provinces: {ex}", file=sys.stderr)
                 continue
 
             if province.is_impassable:
@@ -491,7 +491,7 @@ class Mapper:
 
         for province in self.board.provinces:
             if province.name not in visited_provinces:
-                print(f"Warning: Province {province.name} was not recolored by mapper!")
+                print(f"[{self.board.datafile}] Warning: Province {province.name} was not recolored by mapper!")
 
     def _color_centers(self) -> None:
         centers_layer = find_svg_element(self.board_svg, "supply_center_icons", self.board_svg_data)
@@ -511,11 +511,11 @@ class Mapper:
                 province = self._get_province_from_element_by_label(center_element)
             except ValueError as ex:
                 if "capital marker" not in str(ex).lower():
-                    print(f"Error during recoloring centers: {ex}", file=sys.stderr)
+                    print(f"[{self.board.datafile}] Error during recoloring centers: {ex}", file=sys.stderr)
                 continue
 
             if not province.has_supply_center:
-                print(f"Province {province.name} says it has no supply center, but it does", file=sys.stderr)
+                print(f"[{self.board.datafile}] Province {province.name} says it has no supply center, but it does", file=sys.stderr)
                 continue
 
             if province.name not in self.adjacent_provinces:

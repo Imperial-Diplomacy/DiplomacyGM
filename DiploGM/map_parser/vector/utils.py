@@ -9,11 +9,11 @@ from DiploGM.map_parser.vector.transform import TransGL3
 from DiploGM.models.province import Province
 
 LAYER_DICTIONARY = {
-    "land_layer": {"Region Colors", "Region Fills"},
-    "island_borders": {"Island Adjacencies"},
-    "island_fill_layer": {"Island Fills"},
+    "land_layer": {"Region Colors", "Region Fills", "Provinces"},
+    "island_borders": {"Island Adjacencies", "Hybrid Adjacencies"},
+    "island_fill_layer": {"Island Fills", "Hybrid Fills"},
     "island_ring_layer": {"Island Rings"},
-    "sea_borders": {"Sea Adjacencies"},
+    "sea_borders": {"Sea Adjacencies", "Sea Provinces"},
     "province_names": {"Titles", "Region Names"},
     "supply_center_icons": {"Supply Centers", "SC Markers", "SC markers"},
     "titles": {"Titles", "Labels", "Region Names"},
