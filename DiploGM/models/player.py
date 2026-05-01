@@ -173,7 +173,5 @@ class ViewOrdersTags:
     subset: OrdersSubsetOption
     blind: bool
     forced: ForcedDisbandOption
-
-    @classmethod
-    def get_default(cls):
-        return ViewOrdersTags(subset=OrdersSubsetOption.FULL, blind=False, forced=ForcedDisbandOption.UNMARKED)
+    open_cores: bool
+    explain: bool

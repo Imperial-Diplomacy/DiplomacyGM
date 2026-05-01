@@ -22,6 +22,8 @@ SUBMITTED_ALIASES = ["submitted", "submit", "sub", "s"]
 BLIND_ALIASES = ["blind", "b"]
 FORCED_RETREAT_ALIASES = ["forced-disband", "forced", "force", "disband", "pop", "f"]
 FREE_RETREAT_ALIASES = ["free-retreats", "free-retreat", "free", "retreats", "retreat", "r"]
+OPEN_CORES_ALIASES = ["open-cores", "open", "cores", "core", "c"]
+EXPLAIN_VIEW_MOVES_OUTPUT = ["explain"]
 
 class PlayerCog(commands.Cog):
     def __init__(self, bot):
@@ -143,14 +145,17 @@ class PlayerCog(commands.Cog):
         brief="Outputs your current submitted orders.",
         description=f"""Outputs your current submitted orders.
         Use .view_map to view a sample moves map of your orders. 
-        Use the 'missing' or 'submitted' argument to view only units without orders or only submitted orders. 
+        Use the '{MISSING_ALIASES[0]}' or '{SUBMITTED_ALIASES[0]}' argument to view only units without orders or only submitted orders. 
         \tAliases: {MISSING_ALIASES}; {SUBMITTED_ALIASES}
-        Use the 'blind' argument to view only the number of orders submitted.
+        Use the '{BLIND_ALIASES[0]}' argument to view only the number of orders submitted.
         \tAliases: {BLIND_ALIASES}
-        Use the 'forced-disband' argument to view how many dislodged units have no valid retreat locations and must disband. (Only in retreat phases)
+        Use the '{FORCED_RETREAT_ALIASES[0]}' argument to view how many dislodged units have no valid retreat locations and must disband. (Only in retreat phases)
         \t Aliases: {FORCED_RETREAT_ALIASES}
-        Alternatively, use the 'free-retreat' argument to view only dislodged units which are able to retreat. (Only in retreat phases)
-        \tAliases: {FREE_RETREAT_ALIASES}""",
+        Alternatively, use the '{FREE_RETREAT_ALIASES[0]}' argument to view only dislodged units which are able to retreat. (Only in retreat phases)
+        \tAliases: {FREE_RETREAT_ALIASES}
+        Use the '{OPEN_CORES_ALIASES[0]}' argument to view the number of cores have no occupying unit and can be built in. (Only in winter phases)
+        \tAliases: {OPEN_CORES_ALIASES}
+        Use the '{EXPLAIN_VIEW_MOVES_OUTPUT[0]}' argument to augment the output with explanations of each column.""",
         aliases=["v", "view", "vieworders", "view-orders"],
     )
     @perms.player("view orders")
@@ -169,6 +174,8 @@ class PlayerCog(commands.Cog):
             forced=ForcedDisbandOption.MARK_FORCED if any_alias_in_args(FORCED_RETREAT_ALIASES)
                 else ForcedDisbandOption.ONLY_FREE if any_alias_in_args(FREE_RETREAT_ALIASES)
                 else ForcedDisbandOption.UNMARKED,
+            open_cores=any_alias_in_args(OPEN_CORES_ALIASES),
+            explain=any_alias_in_args(EXPLAIN_VIEW_MOVES_OUTPUT)
         )
 
         try:
