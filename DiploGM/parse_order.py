@@ -362,6 +362,8 @@ def _check_for_warnings(unit: Unit) -> str | None:
         if (unit.order.source != unit.order.destination
             and not unit.order.source.adjacencies.get(unit.order.destination)):
             return "This support is between two non-adjacent provinces, and will fail unless there is a convoy."
+    if isinstance(unit.order, order.Build):
+        pass
     return None
 
 def _handle_individual_order(current_order: str,
@@ -371,14 +373,16 @@ def _handle_individual_order(current_order: str,
     logger.debug(current_order)
     cmd = parser.parse(current_order.strip().lower() + " ")
     ordered_unit: Unit = generator.transform(cmd)
-    if board.turn.is_builds():
-        return f"\u001b[0;32m{current_order}", None, None
-    movement = ordered_unit
     if (warning := _check_for_warnings(ordered_unit)) is not None:
         warning = f"`{current_order}`: {warning}"
         color = "\u001b[0;33m"
     else:
         color = "\u001b[0;32m"
+
+    if board.turn.is_builds():
+        return f"{color}{current_order}", None, warning
+
+    movement = ordered_unit
     if ((ordered_unit.player is None or not ordered_unit.player.is_active)
         and player_restriction is not None):
         if (dp_order := ordered_unit.dp_allocations.get(player_restriction.name)) is not None:
