@@ -363,7 +363,8 @@ def _check_for_warnings(unit: Unit) -> str | None:
             and not unit.order.source.adjacencies.get(unit.order.destination)):
             return "This support is between two non-adjacent provinces, and will fail unless there is a convoy."
     if isinstance(unit.order, order.Build):
-        pass
+        if unit.unit_type == UnitType.FLEET && unit.order.destination.is_landlocked():
+            return "Destination province does not have a coast, building a fleet will fail."
     return None
 
 def _handle_individual_order(current_order: str,
