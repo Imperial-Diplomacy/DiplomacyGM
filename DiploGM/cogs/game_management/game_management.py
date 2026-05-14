@@ -91,6 +91,19 @@ class GameManagementCog(commands.Cog):
         """
         await channel_management.setup_server(ctx)
 
+    @commands.command(hidden=True)
+    @perms.superuser_only("delete channels and roles")
+    async def reset_server(self, ctx: commands.Context) -> None:
+        """Deletes channels and roles for a variant.
+
+        Usage:
+            `.reset_server`
+
+        Note:
+            This command is very dangerous and should be used with caution.
+        """
+        await channel_management.reset_server(ctx)
+
     @commands.command(brief="Archives a comms category")
     @perms.gm_only("archive the category")
     async def archive(self, ctx: commands.Context) -> None:

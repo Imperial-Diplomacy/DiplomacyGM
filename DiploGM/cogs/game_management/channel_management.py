@@ -82,14 +82,14 @@ async def setup_server(ctx: commands.Context) -> None:
                 overwrites = {ctx.guild.default_role: PermissionOverwrite(send_messages = False)})
     order_channel_names = {channel.name for channel in orders_category.text_channels}
     for player in players:
-        if player.get_name() not in order_channel_names:
-            await orders_category.create_text_channel(name = player.get_name(),
+        if (order_channel := f"{player.get_name().lower()}-orders") not in order_channel_names:
+            await orders_category.create_text_channel(name = order_channel,
                 overwrites = {ctx.guild.default_role: PermissionOverwrite(view_channel = False),
                               order_roles[player.name]: PermissionOverwrite(view_channel = True)})
     void_channel_names = {channel.name for channel in voids_category.text_channels}
     for player in players:
-        if player.get_name() not in void_channel_names:
-            await voids_category.create_text_channel(name = player.get_name(),
+        if (void_channel := f"{player.get_name().lower()}-void") not in void_channel_names:
+            await voids_category.create_text_channel(name = void_channel,
                 overwrites = {ctx.guild.default_role: PermissionOverwrite(view_channel = False),
                               spectator_role: PermissionOverwrite(view_channel = True, send_messages = False),
                               player_roles[player.name]: PermissionOverwrite(view_channel = True, pin_messages = True),
@@ -98,6 +98,25 @@ async def setup_server(ctx: commands.Context) -> None:
     log_command(logger, ctx, message="Categories and channels created")
     await send_message_and_file(channel=ctx.channel, message="Categories and channels created")
     await send_message_and_file(channel=ctx.channel, message="Server setup complete")
+
+async def reset_server(ctx: commands.Context) -> None:
+    """Resets roles and channels. Very dangerous and thus is superuser only."""
+    assert ctx.guild is not None
+    if "confirm" not in remove_prefix(ctx).lower():
+        return
+
+    player_names = {c.name[:-7] for c in ctx.guild.channels if c.name.endswith("-orders")}
+    for category in ctx.guild.categories:
+        if category.name.lower().startswith("comms ") or category.name.lower() in ("orders", "voids"):
+            for channel in category.channels:
+                await channel.delete()
+            await category.delete()
+
+    for role in ctx.guild.roles:
+        if role.name.lower().replace("orders-", "") in player_names:
+            await role.delete()
+    log_command(logger, ctx, message="Deleted roles and channels")
+    await send_message_and_file(channel=ctx.channel, message="Server reset complete")
 
 async def archive(ctx: commands.Context) -> None:
     """Set all channels within a category to read-only, during game close"""
