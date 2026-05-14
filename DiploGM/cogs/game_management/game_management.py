@@ -78,6 +78,19 @@ class GameManagementCog(commands.Cog):
     async def list_variants(self, ctx: commands.Context) -> None:
         await game_creation.list_variants(ctx)
 
+    @commands.command(brief="Creates channels and roles for a variant")
+    @perms.gm_only("create channels and roles")
+    async def setup_server(self, ctx: commands.Context) -> None:
+        """Creates channels and roles for a variant.
+
+        Usage:
+            `.setup_server <variant>`
+
+        Note:
+            Only one set of channels and roles per variant can be created.
+        """
+        await channel_management.setup_server(ctx)
+
     @commands.command(brief="Archives a comms category")
     @perms.gm_only("archive the category")
     async def archive(self, ctx: commands.Context) -> None:
