@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import re
 from discord.ext import commands
+from packaging.version import Version, InvalidVersion
 from typing import Optional, Sequence, TYPE_CHECKING
 
 from DiploGM.models.turn import PhaseName, Turn
@@ -122,10 +123,16 @@ def find_discord_role(user: Player,
 
 def parse_variant_path(variant: str, as_filename: bool = True, return_parent: bool = False) -> str:
     """Parses the variant path to get the correct path for the parser."""
+    def _version_key(v: str) -> Version:
+        try:
+            return Version(v.split(".", 1)[1])
+        except (InvalidVersion, IndexError):
+            return Version("0")
+
     if os.path.isdir(f"variants/{variant}"):
         if return_parent:
             return f"variants/{variant}"
-        variant_list = sorted(os.listdir(f"variants/{variant}"), reverse=True)
+        variant_list = sorted(os.listdir(f"variants/{variant}"), key=_version_key, reverse=True)
         for v in variant_list:
             if os.path.isdir(f"variants/{variant}/{v}") and os.path.isfile(f"variants/{variant}/{v}/config.json"):
                 return f"variants/{variant}/{v}" if as_filename else v

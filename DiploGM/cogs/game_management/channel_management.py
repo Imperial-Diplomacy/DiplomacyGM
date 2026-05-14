@@ -21,6 +21,22 @@ manager = Manager()
 
 async def setup_server(ctx: commands.Context) -> None:
     """Sets up the server for a game, creating categories, channels, and roles as needed."""
+    async def _create_role(name: str, **kwargs) -> Role:
+        assert ctx.guild is not None
+        if (role := discord.utils.get(ctx.guild.roles, name=name)) is None:
+            role = await ctx.guild.create_role(name=name, **kwargs)
+        return role
+
+    async def _create_category(name: str, **kwargs) -> CategoryChannel:
+        assert ctx.guild is not None
+        if (category := discord.utils.get(ctx.guild.categories, name=name)) is None:
+            category = await ctx.guild.create_category(name=name, **kwargs)
+        return category
+
+    async def _create_channel(name: str, category: CategoryChannel, **kwargs):
+        if discord.utils.get(category.channels, name=name) is None:
+            await category.create_text_channel(name=name, **kwargs)
+
     assert ctx.guild is not None
     gametype = remove_prefix(ctx) or "classic"
     try:
@@ -32,68 +48,47 @@ async def setup_server(ctx: commands.Context) -> None:
         return
 
     players = sorted(list(board.players), key=lambda p: p.get_name())
-    player_roles = {}
-    order_roles = {}
+    roles = {}
 
-    if (country_spectator_role := discord.utils.get(ctx.guild.roles, name="Country Spectator")) is None:
-        country_spectator_role = await ctx.guild.create_role(name = "Country Spectator",
-                                                             color=discord.Color.from_str("#96dfff"))
+    roles["cspec"] = await _create_role(name = "Country Spectator", color = discord.Color.from_str("#96dfff"))
     for player in players:
-        if (cur_player_role := discord.utils.get(ctx.guild.roles, name = player.get_name())) is None:
-            color = discord.Color.from_str(f"#{player.default_color}")
-            cur_player_role = await ctx.guild.create_role(name = player.get_name(), color = color,
-                                                          mentionable = True, hoist = True)
-        player_roles[player.name] = cur_player_role
-    if not discord.utils.get(ctx.guild.roles, name="Dead"):
-        await ctx.guild.create_role(name = "Dead", color = discord.Color.from_str("#0b2f68"), hoist = True)
-    if (player_role := discord.utils.get(ctx.guild.roles, name="Player")) is None:
-        player_role = await ctx.guild.create_role(name = "Player",
-                                                  permissions = discord.Permissions(send_messages=True,
-                                                                                    add_reactions=True))
+        roles[player.name] = await _create_role(name = player.get_name(),
+                                                color = discord.Color.from_str(f"#{player.default_color}"),
+                                                mentionable = True, hoist = True)
+    await _create_role(name = "Dead", color = discord.Color.from_str("#0b2f68"), hoist = True)
+    roles["Player"] = await _create_role(name = "Player",
+                                     permissions = discord.Permissions(send_messages=True, add_reactions=True))
     for player in players:
-        role_name = f"orders-{player.get_name().lower()}"
-        if (cur_order_role := discord.utils.get(ctx.guild.roles, name=role_name)) is None:
-            cur_order_role = await ctx.guild.create_role(name = role_name)
-        order_roles[player.name] = cur_order_role
-    if (spectator_role := discord.utils.get(ctx.guild.roles, name="Spectator")) is None:
-        spectator_role = await ctx.guild.create_role(name = "Spectator",
-                                                     color = discord.Color.from_str("#2ecc71"), hoist = True)
+        roles[f"orders-{player.name.lower()}"] = await _create_role(name = f"orders-{player.name.lower()}")
+    roles["Spectator"] = await _create_role(name = "Spectator",
+                                        color = discord.Color.from_str("#2ecc71"), hoist = True)
     log_command(logger, ctx, message="Created roles for all players and spectators")
     await send_message_and_file(channel=ctx.channel, message="Roles created for all players and spectators")
 
-    categories = {category.name for category in ctx.guild.categories}
-    if (gm_channel_category := discord.utils.get(ctx.guild.categories, name="GM Channels")) is None:
-        gm_channel_category = await ctx.guild.create_category(name = "GM Channels",
-            overwrites = {ctx.guild.default_role: PermissionOverwrite(send_messages = False)})
-    if (orders_category := discord.utils.get(ctx.guild.categories, name="Orders")) is None:
-        orders_category = await ctx.guild.create_category(name = "Orders",
-            overwrites = {ctx.guild.default_role: PermissionOverwrite(view_channel = False)})
-    if (voids_category := discord.utils.get(ctx.guild.categories, name="Voids")) is None:
-        voids_category = await ctx.guild.create_category(name = "Voids")
-    for i in range(1, ceil(1.5 * len(players) * (len(players) - 1) / 100) + 1):
-        if f"Comms {i}" not in categories:
-            await ctx.guild.create_category(name = f"Comms {i}",
-                overwrites = {player_role: PermissionOverwrite(manage_channels = True)})
+    gm_channel_category = await _create_category(name="GM Channels",
+        overwrites={ctx.guild.default_role: PermissionOverwrite(send_messages=False)})
 
-    gm_channel_names = {channel.name for channel in gm_channel_category.text_channels}
     for channel_name in "announcements", "orders-log", "maps":
-        if channel_name not in gm_channel_names:
-            await gm_channel_category.create_text_channel(name = channel_name,
-                overwrites = {ctx.guild.default_role: PermissionOverwrite(send_messages = False)})
-    order_channel_names = {channel.name for channel in orders_category.text_channels}
+        await _create_channel(name = channel_name, category=gm_channel_category,
+            overwrites = {ctx.guild.default_role: PermissionOverwrite(send_messages = False)})
+
+    orders_category = await _create_category(name="Orders",
+        overwrites={ctx.guild.default_role: PermissionOverwrite(view_channel=False)})
+    voids_category = await _create_category(name="Voids")
     for player in players:
-        if (order_channel := f"{player.get_name().lower()}-orders") not in order_channel_names:
-            await orders_category.create_text_channel(name = order_channel,
-                overwrites = {ctx.guild.default_role: PermissionOverwrite(view_channel = False),
-                              order_roles[player.name]: PermissionOverwrite(view_channel = True)})
-    void_channel_names = {channel.name for channel in voids_category.text_channels}
-    for player in players:
-        if (void_channel := f"{player.get_name().lower()}-void") not in void_channel_names:
-            await voids_category.create_text_channel(name = void_channel,
-                overwrites = {ctx.guild.default_role: PermissionOverwrite(view_channel = False),
-                              spectator_role: PermissionOverwrite(view_channel = True, send_messages = False),
-                              player_roles[player.name]: PermissionOverwrite(view_channel = True, pin_messages = True),
-                              country_spectator_role: PermissionOverwrite(send_messages = False, add_reactions = True)})
+        await _create_channel(name = f"{player.get_name().lower()}-orders", category=orders_category,
+            overwrites = {ctx.guild.default_role: PermissionOverwrite(view_channel = False),
+                          roles[f"orders-{player.name.lower()}"]: PermissionOverwrite(view_channel = True)})
+        await _create_channel(name = f"{player.get_name().lower()}-void", category=voids_category,
+            overwrites = {ctx.guild.default_role: PermissionOverwrite(view_channel = False),
+                          roles["Spectator"]: PermissionOverwrite(view_channel = True, send_messages = False),
+                          roles[player.name]: PermissionOverwrite(view_channel = True, pin_messages = True),
+                          roles["cspec"]: PermissionOverwrite(send_messages = True, add_reactions = True)})
+
+    for i in range(1, ceil(1.5 * len(players) * (len(players) - 1) / 100) + 1):
+        comms_category = await _create_category(name=f"Comms {i}",
+            overwrites = {roles["Player"]: PermissionOverwrite(manage_channels = True)})
+        await _create_channel(name = f"comms-{i}", category=comms_category)
 
     log_command(logger, ctx, message="Categories and channels created")
     await send_message_and_file(channel=ctx.channel, message="Categories and channels created")
