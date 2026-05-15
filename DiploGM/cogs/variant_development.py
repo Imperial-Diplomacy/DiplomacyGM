@@ -43,8 +43,12 @@ class VariantDevelopmentCog(commands.Cog):
             if os.path.isfile(f"assets/{arg}_adjacencies.txt"):
                 os.remove(f"assets/{arg}_adjacencies.txt")
 
-            get_parser(arg, force_refresh=True).parse()
-            message = manager.reload_variant(arg)
+            parser_result = get_parser(arg, force_refresh=True)
+            if isinstance(parser_result, str):
+                message = parser_result
+            else:
+                parser_result.parse()
+                message = manager.reload_variant(arg)
         except ValueError as e:
             message = str(e)
 

@@ -132,7 +132,10 @@ def verify_adjacencies(variant: str) -> str:
     Returns a string listing any warnings found."""
     if not os.path.isdir(parse_variant_path(variant)):
         return f"Game {variant} does not exist."
-    board: Board = get_parser(variant).parse()
+    parser_result = get_parser(variant)
+    if isinstance(parser_result, str):
+        return parser_result
+    board: Board = parser_result.parse()
 
     global _override_adjacencies
     _override_adjacencies = set()

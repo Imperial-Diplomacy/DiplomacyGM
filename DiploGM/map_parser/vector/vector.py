@@ -169,7 +169,7 @@ class Parser:
             for element in layer:
                 name = element.get(INKSCAPE_LABEL)
                 if not name:
-                    error = f"[{layer_name}] Element has no name: {etree.tostring(element, encoding='unicode')[:120]}"
+                    error = f"[{layer_name}] Element has no name: {element.get('id')}"
                     logger.error(error)
                     errors.append(error)
                     continue
@@ -188,7 +188,7 @@ class Parser:
             for element in layer:
                 name = element.get(INKSCAPE_LABEL)
                 if not name:
-                    error = f"[{layer_name}] Element has no name: {etree.tostring(element, encoding='unicode')[:120]}"
+                    error = f"[{layer_name}] Element has no name: {element.get('id')}"
                     logger.error(error)
                     errors.append(error)
                     continue
@@ -661,7 +661,7 @@ class Parser:
 parsers = {}
 
 
-def get_parser(name: str, force_refresh: bool=False) -> Parser:
+def get_parser(name: str, force_refresh: bool=False) -> Parser | str:
     """Gets the Parser for the given variant,
     creating a new one if it doesn't already exist or if force_refresh is True."""
     name = parse_variant_path(name, as_filename=False)
@@ -672,5 +672,6 @@ def get_parser(name: str, force_refresh: bool=False) -> Parser:
         if not errors:
             parsers[name] = new_parser
         else:
-            raise ValueError(f"SVG verification failed for {name}:\n* {'\n* '.join(errors)}")
+            logger.error("SVG verification failed for %s:\n* %s", name, "\n* ".join(errors))
+            return f"SVG verification failed for {name}:" + "\n* " + "\n* ".join(errors)
     return parsers[name]

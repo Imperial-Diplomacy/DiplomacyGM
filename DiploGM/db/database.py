@@ -291,7 +291,11 @@ class _DatabaseConnection:
         logger.info("Loading board with ID %s", board_id)
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
-        board = get_parser(data_file).parse()
+        parser_result = get_parser(data_file)
+        if isinstance(parser_result, str):
+            logger.error("Failed to load board %s: %s", board_id, parser_result)
+            raise ValueError(f"Failed to load board {board_id}: {parser_result}")
+        board = parser_result.parse()
         board.turn = turn
         board.board_id = board_id
 

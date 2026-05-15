@@ -40,7 +40,13 @@ async def setup_server(ctx: commands.Context) -> None:
     assert ctx.guild is not None
     gametype = remove_prefix(ctx) or "classic"
     try:
-        board = get_parser(gametype).parse()
+        parser_result = get_parser(gametype)
+        if isinstance(parser_result, str):
+            message = parser_result
+            log_command(logger, ctx, message=message)
+            await send_message_and_file(channel=ctx.channel, message=message)
+            return
+        board = parser_result.parse()
     except ValueError as e:
         message = str(e)
         log_command(logger, ctx, message=message)
