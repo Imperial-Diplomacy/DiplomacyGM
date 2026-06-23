@@ -9,7 +9,7 @@ from DiploGM.cogs.game_management import (adjudication,
                                           deadline_management,
                                           game_creation,
                                           game_editing,
-                                          grace)
+                                          grace, votes)
 from DiploGM import perms
 from DiploGM.utils import send_message_and_file
 from DiploGM.manager import Manager
@@ -446,6 +446,18 @@ class GameManagementCog(commands.Cog):
             You cannot rename a player to have the same name as another existing player.
         """
         await game_editing.rename_player(ctx, old_name, new_name)
+
+    @commands.command(brief="Tallies reactions on a message")
+    @perms.gm_only("tally reactions")
+    async def tally_reacts(self, ctx: commands.Context, message_id: int) -> None:
+        """Tallies reactions on a message, for use in votes to end the game.
+
+        Usage:
+            `.tally_reacts <message_id>`
+        """
+
+        await votes.tally_reactions(ctx, message_id)
+
 
 async def setup(bot):
     cog = GameManagementCog(bot)

@@ -30,6 +30,7 @@ class _DatabaseConnection:
         try:
             self._connection = sqlite3.connect(db_file)
             logger.info("Connection to SQLite DB successful")
+            logger.info("DB stored at %s", db_file)
         except IOError as ex:
             logger.error("Could not open SQLite DB", exc_info=ex)
             self._connection = sqlite3.connect(
@@ -266,6 +267,7 @@ class _DatabaseConnection:
         clear_status: bool = False,
     ) -> Board:
         logger.info("Loading board with ID %s", board_id)
+        logger.info("Loading board from file %s", data_file)
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
         parser_result = get_parser(data_file)
