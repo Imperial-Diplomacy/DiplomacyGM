@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from os.path import isfile
 import re
 from discord.ext import commands
 from packaging.version import Version, InvalidVersion
@@ -137,14 +138,14 @@ def parse_variant_path(variant: str, as_filename: bool = True, return_parent: bo
             return f"variants/{variant}"
         variant_list = sorted(os.listdir(f"variants/{variant}"), key=_version_key, reverse=True)
         for v in variant_list:
-            if os.path.isdir(f"variants/{variant}/{v}") and os.path.isfile(f"variants/{variant}/{v}/config.json"):
+            if os.path.isdir(f"variants/{variant}/{v}") and (os.path.isfile(f"variants/{variant}/{v}/config.toml") or os.path.isfile(f"variants/{variant}/{v}/config.json")):
                 return f"variants/{variant}/{v}" if as_filename else v
         if os.path.isfile(f"variants/{variant}/config.json"):
             return f"variants/{variant}" if as_filename else variant
     elif "." in variant:
         variant_name, _ = variant.split(".", 1)
         variant_path = f"variants/{variant_name}/{variant}"
-        if os.path.isdir(variant_path) and os.path.isfile(f"{variant_path}/config.json"):
+        if os.path.isdir(variant_path) and (os.path.isfile(f"{variant_path}/config.json") or os.path.isfile(f"{variant_path}/config.toml")):
             if return_parent:
                 return f"variants/{variant_name}"
             return variant_path if as_filename else variant

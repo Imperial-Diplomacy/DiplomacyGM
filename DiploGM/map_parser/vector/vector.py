@@ -71,12 +71,19 @@ class Parser:
             ["override"],
             ["override"]
         )
-        with open(f"{parse_variant_path(variant_name)}/config.json", "r", encoding="utf-8") as f:
-            variant_data = json.load(f)
+
+        variant_path = f"{parse_variant_path(variant_name)}/config.toml"
+        use_toml = os.path.isfile(variant_path)
+        if not use_toml:
+            variant_path = variant_path[:-4] + "json"
+        print(use_toml)
+        print(variant_path)
+
+        with open(variant_path, 'rb') as f:
+            variant_data = tomllib.load(f) if use_toml else json.load(f)
         try:
-            with open(f"{parse_variant_path(variant_name, return_parent=True)}/config.json",
-                      "r", encoding="utf-8") as f:
-                data = json.load(f)
+            with open(variant_path, 'rb') as f:
+                data = tomllib.load(f) if use_toml else json.load(f)
                 data = config_merger.merge(data, variant_data)
         except FileNotFoundError:
             data = variant_data
