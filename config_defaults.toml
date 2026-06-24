@@ -44,6 +44,7 @@ unhandled_errors_channel = 1423396664483381258
 gm_category = "gm channels"
 maps_channel = "maps"
 orders_log_channel = "orders_log"
+draw_votes_channel = "draw-votes"
 
 [permissions]
 superusers = [

@@ -449,14 +449,14 @@ class GameManagementCog(commands.Cog):
 
     @commands.command(brief="Tallies reactions on a message")
     @perms.gm_only("tally reactions")
-    async def tally_reacts(self, ctx: commands.Context, message_id: int) -> None:
+    async def tally_reacts(self, ctx: commands.Context, message_id: Optional[int], message_link: Optional[str]) -> None:
         """Tallies reactions on a message, for use in votes to end the game.
 
         Usage:
-            `.tally_reacts <message_id>`
+            `.tally_reacts [message_id] [message_link]`
         """
 
-        await votes.tally_reactions(ctx, message_id)
+        await votes.tally_reacts(ctx, message_id, message_link)
 
 
 async def setup(bot):
