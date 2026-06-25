@@ -9,7 +9,9 @@ from DiploGM.cogs.game_management import (adjudication,
                                           deadline_management,
                                           game_creation,
                                           game_editing,
-                                          grace, votes)
+                                          grace,
+                                          votes,
+                                          )
 from DiploGM import perms
 from DiploGM.utils import send_message_and_file
 from DiploGM.manager import Manager

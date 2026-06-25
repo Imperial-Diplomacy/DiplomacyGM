@@ -2,18 +2,18 @@
 
 import logging
 import re
-from typing import Callable, NamedTuple, Optional
+from typing import Callable, Optional
 
 from discord import Guild, Member, TextChannel, User
 from discord.ext import commands
+from discord.state import Channel
 
 from DiploGM import config
 from DiploGM.manager import Manager
 from DiploGM.models.board import Board
 from DiploGM.models.player import Player
 from DiploGM.utils import send_message
-from DiploGM.utils import sanitise
-from DiploGM.utils.sanitise import find_discord_role, remove_prefix
+from DiploGM.utils.sanitise import find_discord_role
 manager = Manager()
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,9 @@ async def tally_reacts(ctx: commands.Context, message_id: Optional[int], message
     assert ctx.guild is not None
     board = manager.get_board(ctx.guild.id)
 
-    draw_votes_channel = _get_draw_votes_channel(ctx.guild)
-    if draw_votes_channel is None:
-        raise ValueError(f"No known draw votes channel")
+    draw_votes_channel: Optional[Channel] = None
+    if message_id is not None:
+        draw_votes_channel = _get_draw_votes_channel(ctx.guild)
 
     if message_link is not None:
         pattern = r"https://(?:canary\.|ptb\.)?discord\.com/channels/(\d+)/(\d+)/(\d+)"
@@ -41,9 +41,12 @@ async def tally_reacts(ctx: commands.Context, message_id: Optional[int], message
             raise ValueError(f"Invalid link: {message_link}")
 
         _guild_id = int(match.group(1))
-        _channel_id = int(match.group(2))
+        channel_id = int(match.group(2))
         message_id = int(match.group(3))
+        draw_votes_channel = ctx.guild.get_channel(channel_id)
 
+    if not isinstance(draw_votes_channel, TextChannel):
+        raise ValueError(f"No known draw votes channel")
     if message_id is None:
         raise ValueError("No message link provided")
 
@@ -64,7 +67,7 @@ async def tally_reacts(ctx: commands.Context, message_id: Optional[int], message
                 react_group.nonplayers.add(user)
 
         reacts[emoji] = react_group
-    
+
     player_output = ""
     nonplayer_output = ""
 
@@ -77,7 +80,7 @@ async def tally_reacts(ctx: commands.Context, message_id: Optional[int], message
             role = find_discord_role(player, ctx.guild.roles)
             if role is not None: player_mentions.append(role.mention)
             else: player_mentions.append("@" + player.name)
-        
+
         if (player_count := len(players)) > 0:
             player_output += f"{react} ({player_count}): {' '.join(mention for mention in player_mentions)}\n"
         if (nonplayer_count := len(nonplayers)) > 0:
@@ -108,6 +111,7 @@ def _get_draw_votes_channel(guild: Guild) -> TextChannel | None:
     return None
 
 def _get_player_object_for_member_with_orders(guild: Guild, board: Board, user: User | Member) -> Optional[Player]:
+    """WHAT a function name"""
     if isinstance(user, User):
         member = guild.get_member(user.id)
     else:
