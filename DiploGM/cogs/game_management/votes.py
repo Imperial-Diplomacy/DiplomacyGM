@@ -12,6 +12,7 @@ from DiploGM.manager import Manager
 from DiploGM.models.board import Board
 from DiploGM.models.player import Player
 from DiploGM.utils import send_message
+from DiploGM.utils import sanitise
 from DiploGM.utils.sanitise import find_discord_role, remove_prefix
 manager = Manager()
 logger = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ async def tally_reacts(ctx: commands.Context, message_id: Optional[int], message
         emoji = str(react.emoji)
         react_group = ReactGroup()
         async for user in react.users():
-            player = _get_player_object_by_member_or_user(ctx.guild, board, user)
+            player = _get_player_object_for_member_with_orders(ctx.guild, board, user)
             if player is not None:
                 react_group.players.add(player)
             else:
@@ -86,7 +87,9 @@ async def tally_reacts(ctx: commands.Context, message_id: Optional[int], message
     if len(player_output) > 0:
         response += f"**Players**\n{player_output}\n"
     if len(nonplayer_output) > 0:
-        response += f"**Non-players**\n{nonplayer_output}"
+        response += f"""**Non-players**
+        {nonplayer_output}
+        Note: users are only considered players if they have a role formatted like `orders-power-name` where power-name is (exactly) the name of a power, in all lowercase."""
 
     await send_message.send_message_and_file(
         channel=ctx.channel,
@@ -104,7 +107,7 @@ def _get_draw_votes_channel(guild: Guild) -> TextChannel | None:
             return channel
     return None
 
-def _get_player_object_by_member_or_user(guild: Guild, board: Board, user: User | Member) -> Optional[Player]:
+def _get_player_object_for_member_with_orders(guild: Guild, board: Board, user: User | Member) -> Optional[Player]:
     if isinstance(user, User):
         member = guild.get_member(user.id)
     else:
@@ -124,7 +127,9 @@ def _get_player_object_by_member_or_user(guild: Guild, board: Board, user: User 
             player = attempt(member)
         except ValueError:
             pass
-    if "Player" not in (role.name for role in member.roles):
+    if player is None:
+        return None
+    if f"orders-{player.name.lower()}" not in (role.name for role in member.roles):
         return None
 
     return player

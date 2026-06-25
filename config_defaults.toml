@@ -17,7 +17,6 @@ log_level = "INFO"
 command_prefix = "."
 
 game_playing = "Impdip 🔪"
-
 [hub]
 id = 1201167737163104376
 # Channel ids
