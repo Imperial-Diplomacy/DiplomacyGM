@@ -1,3 +1,11 @@
+1.11.2
+======
+
+Contributors:
+- notnot
+
+# Features
+- Added `tally_reacts` to simplify tallying which powers have reacted on a vote to end the game.
 1.11.1
 ======
 
