@@ -25,13 +25,14 @@ loc_x_offset = 0
 loc_y_offset = 0
 delete_layer = ["army", "retreat_army", "fleet", "retreat_fleet"]
 
+season_format.0 = "%Z"
+season_format.1 = "%Y"
+
 ['svg config'.scoreboard]
 sort = true
 indexes.1 = "__name__"
 indexes.2 = "__score__"
 
-season_format.0 = "%Z"
-season_format.1 = "%Y"
 
 [abbreviations]
 kar = "Karanak"
@@ -179,9 +180,9 @@ sc = ["Vstrakl", "Tirsk", "The Shallow Crypts"]
 
 [overrides.provinces]
 OS1.unit_loc = [[5731.345, 811.6]]
-OS1.retreat_unit_loc = [5773.778, 841.763]]
+OS1.retreat_unit_loc = [[5773.778, 841.763]]
 OS2.unit_loc = [[5731.992, 1488.858]]
-OS2.retreat_unit_loc = [5774.425, 1519.022]]
+OS2.retreat_unit_loc = [[5774.425, 1519.022]]
 OS3.unit_loc = [[5731.163, 2190.717]]
 OS3.retreat_unit_loc = [[5773.597, 2220.881]]
 
