@@ -1,0 +1,228 @@
+name = "Era of Solitude"
+file = "eraofsolitude.b1.1.svg"
+year = 1167
+build_options = "cores"
+victory_conditions = "classic"
+victory_count = 20
+convoyable_islands = "enabled"
+
+['svg config']
+detect_starting_units = true
+unit_type_labeled = false
+unit_labels = true
+province_labels = true
+center_labels = true
+default_sea_color = "18638f"
+border_margin_hint = 5
+map_width = 6000
+unit_radius = 26
+order_stroke_width = 5
+
+neutral_sc = "ffffff"
+neutral.standard = "808080"
+
+loc_x_offset = 0
+loc_y_offset = 0
+delete_layer = ["army", "retreat_army", "fleet", "retreat_fleet"]
+
+season_format.0 = "%Z"
+season_format.1 = "%Y"
+
+['svg config'.scoreboard]
+sort = true
+indexes.1 = "__name__"
+indexes.2 = "__score__"
+
+
+[abbreviations]
+kar = "Karanak"
+dum = "Dumadari"
+ved = "Vedenar"
+trx = "triax"
+bar = "Baylan Range"
+tfa = "Tu Fallia"
+cmt = "Central Mountains"
+tba = "Tu Bayla"
+rpt = "Ru Parat"
+gmb = "Gulf of Marabethia"
+ers = "Eastern Reshi Sea"
+kdx = "Kadrix"
+ark = "Arak"
+ela = "Elanar"
+sil = "Silnasen"
+hep = "Horneater Peaks"
+ntg = "Northgrip"
+hdz = "Herdaz"
+evp = "East Veden Plain"
+tts = "Tarat Sea"
+mtl = "Mathl"
+ghx = "Greater Hexi"
+shx = "Strait of Hexi"
+skh = "Sea of Kharbranth"
+khb = "Kharbranth"
+meb = "Mevan Bay"
+dav = "Davinar"
+nnt = "New Natana"
+swo = "Steamwater Ocean"
+rev = "Revolar"
+smt = "Sunmaker Mountains"
+tla = "Thla"
+wfr = "Western Frostlands"
+kln = "Klna"
+lbs = "Longbrow's Strait"
+thc = "Thaylen City"
+thr = "Thaylen Range"
+vkl = "Vklatv"
+amy = "Amydlatn"
+kho = "Kholinar"
+bel = "Bay of Elibath"
+nss = "Nightstream Sea"
+var = "Varikev"
+dec = "Desolate Coast"
+unc = "Unclaimed Hills"
+efr = "Eastern Frostlands"
+vst = "Vstrakl"
+frc = "Frostlands Coast"
+stw = "Storm Winds"
+tir = "Tirsk"
+ooo = "Ocean of Origins"
+ecl = "Eastern Crownlands"
+nfr = "Northern Frostlands"
+drs = "Drying Sea"
+shp = "Shattered Plains"
+tsc = "The Shallow Crypts"
+nai = "Natan Isles"
+ebi = "Eastern Bight"
+mac = "Marati Coast"
+sde = "Southern Depths"
+ctk = "Coast of Tukar"
+seo = "Southern Endless Ocean"
+mas = "Makabaki Strait"
+sst = "Sea of Steen"
+emb = "Emuli Bay"
+mib = "Misted Bay"
+ais = "Aimian Sea"
+neo = "Northern Endless Ocean"
+dcu = "Domain of Cusicesh"
+nde = "Northern Depths"
+wrs = "Western Reshi Sea"
+brr = "Bight of Rira"
+aim = "Aimia"
+sar = "Southern Archipelago"
+ice = "Icewater"
+rqm = "Riqu Mar"
+ldm = "Linder Mar"
+rsd = "Rossen Dar"
+jdr = "Ja Dran"
+mik = "Mikhan"
+dsh = "Dawn's Shadow"
+csc = "Covenant Stone Crossroads"
+ell = "Eastern Lowlands"
+lex = "Lexili"
+tva = "The Valley"
+mur = "Mountains of Ur"
+fna = "Fu Namir"
+epl = "Eastern Purelake"
+mrb = "Marabethia"
+bab = "Babatharnam"
+rir = "Rira"
+irl = "Iriali Lowlands"
+rel = "Rall Elorim"
+kas = "Kasitor"
+bon = "Bondsmith"
+aya = "Ayabiza"
+csh = "Central Shinovar"
+tru = "Truthwatcher"
+mok = "Mokdown"
+kor = "Koring"
+smm = "Southern Misted Mountains"
+lia = "Liafor"
+ste = "Steen"
+ber = "Berizhet"
+tas = "Tashikk"
+yed = "Yeddaw"
+ssd = "Sesemalex Dar"
+trq = "Torriqqam"
+tkp = "Tukar Plain"
+ktz = "Khathazan"
+kri = "Khrishji"
+hol = "Holiqqil"
+zfx = "Zawfix"
+brq = "Berqq"
+dom = "Domistar"
+wpl = "Western Purelake"
+pan = "Panatham"
+eil = "Eila"
+nmm = "Northern Misted Mountains"
+cmm = "Central Misted Mountains"
+yez = "Yezier"
+zdf = "Zodruf"
+azm = "Azimir"
+laq = "Laqqi"
+haz = "Hazzel"
+ben = "Benru"
+ydi = "Yian Dion"
+azr = "Azish Range"
+maz = "Mazzu"
+
+
+[overrides.provinces.'Western Frostlands'.coasts]
+nc = ["Karanak", "Mevan Bay", "Kharbranth"]
+sc = ["Kharbranth", "Sea of Kharbranth", "Longbrow's Straits", "Thla"]
+
+[overrides.provinces.'Iriali Highlands'.coasts]
+wc = ["Kasitor", "Domain of Cusicesh", "Rall Elorim"]
+ec = ["Rall Elorim", "Western Reshi Sea", "Rira"]
+
+[overrides.provinces.'Eastern Frostlands'.coasts]
+wc = ["Vstrakl", "Longbrow's Straits", "Thla"]
+sc = ["Vstrakl", "Tirsk", "The Shallow Crypts"]
+
+[overrides.provinces]
+OS1.unit_loc = [[5731.345, 811.6]]
+OS1.retreat_unit_loc = [[5773.778, 841.763]]
+OS2.unit_loc = [[5731.992, 1488.858]]
+OS2.retreat_unit_loc = [[5774.425, 1519.022]]
+OS3.unit_loc = [[5731.163, 2190.717]]
+OS3.retreat_unit_loc = [[5773.597, 2220.881]]
+
+
+[players.Alethkar]
+iscc = 4
+color.standard = "23436d"
+
+[players.Azir]
+iscc = 3
+color.standard = "c9aa58"
+
+[players.Iri]
+iscc = 3
+color.standard = "d6954a"
+
+[players.'Jah Keved']
+iscc = 4
+color.standard = "b0a4d1"
+
+[players.'New Natanan']
+iscc = 3
+color.standard = "8ad0de"
+
+[players.Marat]
+iscc = 3
+color.standard = "4e9038"
+
+[players.Shinovar]
+iscc = 3
+color.standard = "692a33"
+
+[players.Thaylenah]
+iscc = 3
+color.standard = "7a5348"
+
+[players.Tukar]
+iscc = 3
+color.standard = "b56750"
+
+[players.Yulay]
+iscc = 3
+color.standard = "58a89f"
