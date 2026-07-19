@@ -179,18 +179,17 @@ class CommandCog(commands.Cog):
             else board.get_players_sorted_by_score()
         )
         player_list = [p for p in player_list if not board.is_player_hidden(p)]
-        max_length = max([len(p.name) for p in player_list]) # We set padding based on the longest player name
         year_range = sorted({y for p in player_list for y in p.sc_history}) # Gets all the years from all the powers
-        header = [f"{'Player':<{max_length}}"]
-        header += [str(year) for year in year_range]
+        year_length = {y: 3 if any(p.sc_history.get(y, 0) > 99 for p in player_list) else 2 for y in year_range}
+        header = [f"{'Player':<8}"]
+        header += [f"{str(year)[-2:]:>{year_length[year]}}" for year in year_range]
         response = [" ".join(header)]
         for player in player_list:
-            logger.info(player.sc_history)
-            player_data = [f"{player.name:<{max_length}}"]
+            player_data = [f"{player.name:<8}"] if len(player.name) <= 8 else [f"{player.name[:7]}…"]
             for year in year_range:
                 sc_count = player.sc_history.get(year, "")
                 sc_count = "" if sc_count == 0 else sc_count
-                player_data.append(f"{sc_count:>{len(str(year))}}")
+                player_data.append(f"{sc_count:>{year_length[year]}}")
             response.append(" ".join(player_data))
         await send_message_and_file(
             channel=ctx.channel,
