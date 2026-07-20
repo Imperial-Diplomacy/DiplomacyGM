@@ -78,12 +78,15 @@ class CommandCog(commands.Cog):
         )
 
     @commands.command(name="rng", hidden=True)
-    async def rng(self, ctx: commands.Context, upper: int = 1_000_000_000) -> None:
-        upper = min(abs(upper), 1_000_000_000)
-        number = random.randint(0, upper)
+    async def rng(self, ctx: commands.Context, upper: str = "1000000000") -> None:
+        if not str.isnumeric(upper):
+            await send_message_and_file(channel=ctx.channel, message="Please specify an integer")
+            return
+        upper_int = min(abs(int(upper)), 1_000_000_000)
+        number = random.randint(0, upper_int)
 
         title = "Your selected number was..."
-        out = f"Result: `{number}`\nRange: `0` to `{upper}`"
+        out = f"Result: `{number}`\nRange: `0` to `{upper_int}`"
         await send_message_and_file(channel=ctx.channel, title=title, message=out)
 
     def _generate_scoreboard(
