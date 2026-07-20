@@ -128,6 +128,9 @@ class Turn:
             return True
         return False
 
+    def get_index(self) -> int:
+        return 5 * self.year + self.phase.value
+
     @staticmethod
     def turn_from_string(turn_str: str) -> Turn | None:
         """Creates a Turn object from a string representation."""
