@@ -365,6 +365,7 @@ If the message doesn't contain a %p, the ping will be prepended to the message.
 %F for full and %R for relative are most useful.
 """
 timestamp = "Optional Discord timestamp to display as the deadline reminder."
+message = "Optional message to ping the players with instead of the default"
 
 [publish_orders]
 description = "Publishes orders to the #orders-log channel, uploads the map to archive, and informs players about the phase change."
