@@ -459,10 +459,11 @@ class Parser:
             unit_locs = data.get("unit_loc", [])
             retreat_locs = data.get("retreat_unit_loc", [])
             for index, coordinate in enumerate(unit_locs):
+                unit_name = coordinate[2] if(len(coordinate) > 2) else "Fleet"
                 retreat_coord = retreat_locs[index] if index < len(retreat_locs) else coordinate
-                loc = UnitLocation(complex(*coordinate) + offset, complex(*retreat_coord) + offset)
-                tile.all_coordinates.setdefault("Fleet", set()).add(loc)
-                tile.unit_coordinates["Fleet"] = loc
+                loc = UnitLocation(complex(*coordinate[:2]) + offset, complex(*retreat_coord[:2]) + offset)
+                tile.all_coordinates.setdefault(unit_name, set()).add(loc)
+                tile.unit_coordinates[unit_name] = loc
 
     def _remove_unit_adjacencies(self):
         if "overrides" not in self.data:
