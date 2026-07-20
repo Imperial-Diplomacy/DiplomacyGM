@@ -116,7 +116,7 @@ To release a new version:
 
     1. This drops local changes to unstaged tracked files (Not the database or config.toml)
 6. Run the bot command `.shutdown_the_bot_yes_i_want_to_do_this` to shutdown the bot 
-7. On the server run `sudo systemctl restart DiploGM.service`
+7. On the server run `sudo systemctl restart diplomacygm.service`
 8. Monitor the Bot and ensure it restarts correctly.
 
 ## HotFixes
