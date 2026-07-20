@@ -98,7 +98,7 @@ class AdminCog(commands.Cog):
         args = remove_prefix(ctx).split()
         send_id = "id" in args
         send_invite = "invite" in args
-        for server in ctx.bot.guilds:
+        for server in sorted(ctx.bot.guilds, key=lambda guild: guild.name):
             if server is None:
                 continue
 
@@ -284,6 +284,7 @@ class AdminCog(commands.Cog):
             return
         arguments = remove_prefix(ctx).lower().split()
         server_id = int(arguments[0])
+        await manager.ensure_board_loaded(server_id)
         board = manager.get_board(server_id)
         season = parse_season(arguments[1:], board.turn)
         draw_moves = "results" not in arguments
