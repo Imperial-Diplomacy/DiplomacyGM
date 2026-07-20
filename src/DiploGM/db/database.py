@@ -130,24 +130,11 @@ class _DatabaseConnection:
     def load_board(self, board_id: int) -> Board | None:
         """Gets a specific board from the database."""
         cursor = self._connection.cursor()
-        board_data = cursor.execute("SELECT phase, data_file FROM boards WHERE board_id=?", (board_id,)).fetchall()
-        board_phases = [row[0] for row in board_data]
-        logger.info("Loading %s boards from DB", len(board_data))
-        board = None
-        for board_row in board_data:
-            phase_string, data_file = board_row
-
-            current_turn = Turn.turn_from_string(phase_string)
-            if current_turn is None:
-                logger.warning("Could not parse turn string '%s' for board %s", phase_string, board_id)
-                continue
-            if str(current_turn.get_next_turn()) in board_phases:
-                continue
-            if board is not None and board.turn.is_later(current_turn):
-                continue
-
-            board = self._get_board(board_id, current_turn, data_file, cursor)
-            board.turn = Turn(board.data["year"] + board.turn.year, board.turn.phase, board.data["year"])
+        phase_index, data_file = cursor.execute("SELECT phase_index, data_file FROM boards WHERE board_id=? ORDER BY phase_index DESC", (board_id,)).fetchone()
+        current_turn = Turn.turn_from_int(phase_index)
+        if current_turn is None:
+            raise ValueError("Could not parse turn index '%s' for board %s", phase_index, board_id)
+        board = self._get_board(board_id, current_turn, data_file, cursor)
 
         if board is not None:
             self._load_board_history(board, cursor)
@@ -164,12 +151,11 @@ class _DatabaseConnection:
     ) -> Board | None:
         """Gets a board from the database.
         clear_status is used to wipe out failed order information, which we need to do for rollbacks."""
-        # TODO: Stuff like name should be board parameters
         cursor = self._connection.cursor()
 
         board_data = cursor.execute(
-            "SELECT 1 FROM boards WHERE board_id=? and phase=?",
-            (board_id, format(turn, DATE_STRING_FORMAT)),
+            "SELECT 1 FROM boards WHERE board_id=? and phase_index=?",
+            (board_id, format(turn, "%i")),
         ).fetchone()
         if not board_data:
             cursor.close()
@@ -181,8 +167,8 @@ class _DatabaseConnection:
 
     def _load_builds(self, cursor, board_id: int, board: Board):
         builds_data = cursor.execute(
-            "SELECT player, location, order_type, unit_type, failed_order FROM builds WHERE board_id=? and phase=?",
-            (board_id, format(board.turn, DATE_STRING_FORMAT)),
+            "SELECT player, location, order_type, unit_type, failed_order FROM builds WHERE board_id=? and phase_index=?",
+            (board_id, format(board.turn, "%i")),
         ).fetchall()
 
         player_by_name = {player.name: player for player in board.players}
@@ -247,8 +233,8 @@ class _DatabaseConnection:
         if is_dislodged:
             province.dislodged_unit = unit
             retreat_ops = cursor.execute(
-                "SELECT retreat_loc FROM retreat_options WHERE board_id=? and phase=? and origin=?",
-                (board_id, format(board.turn, DATE_STRING_FORMAT), location),
+                "SELECT retreat_loc FROM retreat_options WHERE board_id=? and phase_index=? and origin=?",
+                (board_id, format(board.turn, "%i"), location),
             )
             unit.retreat_options = set(map(board.get_province_and_coast, set().union(*retreat_ops)))
         else:
@@ -327,8 +313,8 @@ class _DatabaseConnection:
             self._load_builds(cursor, board_id, board)
 
         province_data = cursor.execute(
-            "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
-            (board_id, format(board.turn, DATE_STRING_FORMAT)),
+            "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase_index=?",
+            (board_id, board.turn.get_index()),
         ).fetchall()
         province_info_by_name = {
             province_name: (owner, core, half_core)
@@ -336,15 +322,15 @@ class _DatabaseConnection:
         }
 
         if clear_status:
-            cursor.execute("UPDATE units SET failed_order=False WHERE board_id=? and phase=?",
-                (board_id, format(board.turn, DATE_STRING_FORMAT)))
-            cursor.execute("UPDATE builds SET failed_order=False WHERE board_id=? and phase=?",
-                (board_id, format(board.turn, DATE_STRING_FORMAT)))
+            cursor.execute("UPDATE units SET failed_order=False WHERE board_id=? and phase_index=?",
+                (board_id, board.turn.get_index()))
+            cursor.execute("UPDATE builds SET failed_order=False WHERE board_id=? and phase_index=?",
+                (board_id, board.turn.get_index()))
         unit_data = cursor.execute(
             "SELECT location, is_dislodged, owner, unit_type, order_type, " +
                    "order_destination, order_source, failed_order " +
-            "FROM units WHERE board_id=? and phase=?",
-            (board_id, format(board.turn, DATE_STRING_FORMAT)),
+            "FROM units WHERE board_id=? and phase_index=?",
+            (board_id, board.turn.get_index()),
         ).fetchall()
         for province in board.provinces:
             self._load_province(board, province, province_info_by_name)
@@ -355,8 +341,8 @@ class _DatabaseConnection:
 
         dp_data = cursor.execute(
             "SELECT location, player, points, order_type, order_destination, order_source " +
-            "FROM dp_orders WHERE board_id=? and phase=?",
-            (board_id, format(board.turn, DATE_STRING_FORMAT)),
+            "FROM dp_orders WHERE board_id=? and phase_index=?",
+            (board_id, board.turn.get_index()),
         ).fetchall()
         for dp_info in dp_data:
             self._load_dp_orders(board, dp_info)
@@ -388,8 +374,8 @@ class _DatabaseConnection:
         )
 
         cursor.execute(
-            "INSERT INTO boards (board_id, phase, phase_index, data_file, name) VALUES (?, ?, ?, ?, ?)",
-            (board_id, format(board.turn, DATE_STRING_FORMAT), format(board.turn, "%i"), board.datafile, board.data.get("game_name")),
+            "INSERT INTO boards (board_id, phase, phase_index, data_file) VALUES (?, ?, ?, ?)",
+            (board_id, format(board.turn, DATE_STRING_FORMAT), format(board.turn, "%i"), board.datafile),
         )
         cursor.executemany(
             "INSERT OR REPLACE INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?)",
@@ -470,15 +456,15 @@ class _DatabaseConnection:
         Used to save the board after .edit commands
         """
         cursor = self._connection.cursor()
-        phase = format(board.turn, DATE_STRING_FORMAT)
+        phase = board.turn.get_index()
 
         # We delete and re-create units and retreat options, since some might be removed via command
-        cursor.execute("DELETE FROM retreat_options WHERE board_id=? AND phase=?", (board_id, phase))
-        cursor.execute("DELETE FROM units WHERE board_id=? AND phase=?", (board_id, phase))
+        cursor.execute("DELETE FROM retreat_options WHERE board_id=? AND phase_index=?", (board_id, phase))
+        cursor.execute("DELETE FROM units WHERE board_id=? AND phase_index=?", (board_id, phase))
 
         cursor.executemany(
             "UPDATE provinces SET owner=?, core=?, half_core=? "
-            "WHERE board_id=? AND phase=? AND province_name=?",
+            "WHERE board_id=? AND phase_index=? AND province_name=?",
             [
                 (
                     province.get_owner_name(),
@@ -503,7 +489,7 @@ class _DatabaseConnection:
         cursor = self._connection.cursor()
         cursor.executemany(
             "UPDATE units SET order_type=?, order_destination=?, order_source=?, failed_order=? "
-            "WHERE board_id=? and phase=? and (location=? or location=?) and is_dislodged=?",
+            "WHERE board_id=? and phase_index=? and (location=? or location=?) and is_dislodged=?",
             [
                 (
                     unit.order.__class__.__name__ if unit.order is not None else None,
@@ -511,7 +497,7 @@ class _DatabaseConnection:
                     unit.order.get_source_str() if unit.order is not None else None,
                     unit.order.has_failed if unit.order is not None else False,
                     board.board_id,
-                    format(board.turn, DATE_STRING_FORMAT),
+                    board.turn.get_index(),
                     unit.province.get_name(unit.coast),
                     f"{unit.province.get_name()} coast" if not unit.coast else None, # Legacy coast support
                     unit.province.dislodged_unit == unit,
@@ -520,11 +506,11 @@ class _DatabaseConnection:
             ],
         )
         cursor.executemany(
-            "DELETE FROM dp_orders WHERE board_id=? and phase=? and location=?",
+            "DELETE FROM dp_orders WHERE board_id=? and phase_index=? and location=?",
             [
                 (
                     board.board_id,
-                    format(board.turn, DATE_STRING_FORMAT),
+                    board.turn.get_index(),
                     unit.province.get_name(unit.coast),
                 )
                 for unit in units
@@ -553,11 +539,11 @@ class _DatabaseConnection:
             ],
         )
         cursor.executemany(
-            "DELETE FROM retreat_options WHERE board_id=? and phase=? and origin=?",
+            "DELETE FROM retreat_options WHERE board_id=? and phase_index=? and origin=?",
             [
                 (
                     board.board_id,
-                    format(board.turn, DATE_STRING_FORMAT),
+                    board.turn.get_index(),
                     unit.province.get_name(unit.coast),
                 )
                 for unit in units
@@ -590,8 +576,8 @@ class _DatabaseConnection:
             players = {player}
         cursor = self._connection.cursor()
         cursor.executemany(
-            "DELETE FROM builds WHERE board_id=? AND phase=? AND player=?",
-            [(board.board_id, format(board.turn, DATE_STRING_FORMAT), p.name) for p in players],
+            "DELETE FROM builds WHERE board_id=? AND phase_index=? AND player=?",
+            [(board.board_id, board.turn.get_index(), p.name) for p in players],
         )
         cursor.executemany(
             "INSERT OR REPLACE INTO builds (board_id, phase, phase_index, player, location, order_type, unit_type, failed_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ",
@@ -663,13 +649,13 @@ class _DatabaseConnection:
     def delete_board(self, board: Board):
         """Deletes a board and all associated data for that phase."""
         cursor = self._connection.cursor()
-        phase = format(board.turn, DATE_STRING_FORMAT)
-        cursor.execute("DELETE FROM boards WHERE board_id=? AND phase=?", (board.board_id, phase))
-        cursor.execute("DELETE FROM provinces WHERE board_id=? AND phase=?", (board.board_id, phase))
-        cursor.execute("DELETE FROM units WHERE board_id=? AND phase=?", (board.board_id, phase))
-        cursor.execute("DELETE FROM dp_orders WHERE board_id=? AND phase=?", (board.board_id, phase))
-        cursor.execute("DELETE FROM builds WHERE board_id=? AND phase=?", (board.board_id, phase))
-        cursor.execute("DELETE FROM retreat_options WHERE board_id=? AND phase=?", (board.board_id, phase))
+        phase = board.turn.get_index()
+        cursor.execute("DELETE FROM boards WHERE board_id=? AND phase_index=?", (board.board_id, phase))
+        cursor.execute("DELETE FROM provinces WHERE board_id=? AND phase_index=?", (board.board_id, phase))
+        cursor.execute("DELETE FROM units WHERE board_id=? AND phase_index=?", (board.board_id, phase))
+        cursor.execute("DELETE FROM dp_orders WHERE board_id=? AND phase_index=?", (board.board_id, phase))
+        cursor.execute("DELETE FROM builds WHERE board_id=? AND phase_index=?", (board.board_id, phase))
+        cursor.execute("DELETE FROM retreat_options WHERE board_id=? AND phase_index=?", (board.board_id, phase))
         cursor.close()
         self._connection.commit()
 
