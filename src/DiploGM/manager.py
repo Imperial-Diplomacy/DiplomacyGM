@@ -86,7 +86,8 @@ class Manager(metaclass=SingletonMeta):
             self._boards[server_id].set_data("fow", "enabled")
         if kwargs.get("chaos"):
             self._boards[server_id].set_data("chaos", "enabled")
-        self._database.save_board(server_id, self._boards[server_id])
+        if kwargs.get("save_board", True) == True:
+            self._database.save_board(server_id, self._boards[server_id])
 
         return True, f"{self._boards[server_id].data['name']} game created"
 

@@ -68,6 +68,12 @@ class GameManagementCog(commands.Cog):
         """
         await game_creation.import_game(ctx)
 
+    @commands.command(brief="Marks a game as finished, optionally noting winners")
+    @perms.gm_only("finish the game")
+    async def end_game(self, ctx: commands.Context, *args) -> None:
+        "Marks a game as finished, optionally noting winners"
+        await game_creation.end_game(ctx, *args)
+
     @commands.command(brief="Permanently deletes a game; cannot be undone")
     @perms.gm_only("delete the game")
     async def delete_game(self, ctx: commands.Context) -> None:

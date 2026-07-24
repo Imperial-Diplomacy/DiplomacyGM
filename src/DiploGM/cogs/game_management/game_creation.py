@@ -226,6 +226,39 @@ async def import_game(ctx: commands.Context) -> None:
     await send_message_and_file(channel=ctx.channel, message=message)
 
 
+async def end_game(ctx: commands.Context, *args) -> None:
+    """Marks a game as finished."""
+    assert ctx.guild is not None
+    board = manager.get_board(ctx.guild.id)
+    args = [arg.lower() for arg in args]
+    if "false" in args:
+        board.set_data("has_finished", "false")
+        board.set_data("winners", "")
+        message = "Marked game as not ended"
+        log_command(logger, ctx, message=message)
+        await send_message_and_file(channel=ctx.channel, message=message)
+        return
+
+    board.set_data("has_finished", "true")
+    power_roles = ctx.message.role_mentions
+    winners = []
+    for role in power_roles:
+        try:
+            power = board.get_player(role.name)
+        except ValueError:
+            logger.warning("Could not find power for %s", role.name)
+            continue
+        if power is not None:
+            winners.append(power.get_name())
+    message = "Marked game as finished."
+    if len(winners) > 0:
+        winner_text = "|".join(sorted(winners))
+        board.set_data("winners", winner_text)
+        message += f"\nRecorded {', '.join(sorted(winners))} as winners"
+    log_command(logger, ctx, message=message)
+    await send_message_and_file(channel=ctx.channel, message=message)
+
+
 async def delete_game(ctx: commands.Context) -> None:
     """Completely deletes the game in the server. Cannot be undone."""
     assert ctx.guild is not None
