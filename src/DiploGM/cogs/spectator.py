@@ -294,16 +294,16 @@ class SpectatorCog(commands.Cog):
             )
             return False
 
-        if interaction.channel.name != "the-public-square":
-            channel = discord.utils.find(
-                lambda c: c.name == "the-public-square", guild.text_channels
-            )
-            if channel:
-                await interaction.response.send_message(
-                    f"Can't request here! Go to the public square: {channel.mention}",
-                    ephemeral=True,
-                )
-            return False
+        #if interaction.channel.name != "the-public-square":
+        #    channel = discord.utils.find(
+        #        lambda c: c.name == "the-public-square", guild.text_channels
+        #    )
+        #    if channel:
+        #        await interaction.response.send_message(
+        #            f"Can't request here! Go to the public square: {channel.mention}",
+        #            ephemeral=True,
+        #        )
+        #    return False
 
         return True
 
