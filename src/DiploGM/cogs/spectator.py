@@ -327,10 +327,8 @@ class SpectatorCog(commands.Cog):
         ]
 
         if not any([_role in _member.roles for _role in _team_roles]):
-            _elle = discord.utils.get(guild.members, name="eelisha")
             await interaction.response.send_message(
                 f"Bot is not on GM Team! Alerting {_team.mention}"
-                + (f" and {_elle.mention}" if _elle else "")
             )
             return False
 
