@@ -1,3 +1,25 @@
+1.13.0
+=====
+
+Contributors:
+- Golden Kumquat
+
+# Features
+- Added `.end_game` which can be used by GMs to mark a game as concluded in the database
+- Added `.view_influence`, usable by variant developers, which can show how far each power can reach in two years
+
+# Quality of Life
+- `.servers` is now sorted by server name
+- Non-fleet units can now appear in multiple places for tiles that wrap around the board
+
+# Developer Changes
+- The bot now uses integer phase numbers instead of unsorted phase strings
+- Temporary boards can be created which can be associated with a message instead of a server
+
+# Bugfixes
+- `.rng` now handles non-integer bounds more gracefully
+- Fixed issues with fetching SC history for .scoreboard
+
 1.12.6
 ======
 

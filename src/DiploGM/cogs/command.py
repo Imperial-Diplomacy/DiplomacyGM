@@ -93,13 +93,8 @@ class CommandCog(commands.Cog):
         self, board: Board, ctx: commands.Context, alphabetical: bool
     ) -> str:
         assert ctx.guild is not None
+        previous_year = board.turn.get_next_turn().get_next_turn().year - 1
         response = ""
-        try:
-            old_board = manager.get_board_from_db(
-                board.board_id, parse_season(["Fall"], board.turn.get_previous_turn())
-            )
-        except NoGameError:
-            old_board = None
         player_list = (
             sorted(board.get_players(), key=lambda p: p.get_name())
             if alphabetical
@@ -119,10 +114,8 @@ class CommandCog(commands.Cog):
                 f"{len(player.centers) - len(player.units)}) "
             )
 
-            if old_board is not None:
-                old_player = old_board.get_player(player.name)
-                assert old_player is not None
-                sc_diff = len(player.centers) - len(old_player.centers)
+            if (previous_scs := player.sc_history.get(previous_year)) is not None:
+                sc_diff = len(player.centers) - previous_scs
                 response += (
                     f"({'+' if sc_diff >= 0 else ''}"
                     f"{sc_diff} SC{'s' if abs(sc_diff) != 1 else ''}) "
