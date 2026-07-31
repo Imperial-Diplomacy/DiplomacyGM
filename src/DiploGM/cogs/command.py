@@ -78,25 +78,23 @@ class CommandCog(commands.Cog):
         )
 
     @commands.command(name="rng", hidden=True)
-    async def rng(self, ctx: commands.Context, upper: int = 1_000_000_000) -> None:
-        upper = min(abs(upper), 1_000_000_000)
-        number = random.randint(0, upper)
+    async def rng(self, ctx: commands.Context, upper: str = "1000000000") -> None:
+        if not str.isnumeric(upper):
+            await send_message_and_file(channel=ctx.channel, message="Please specify an integer")
+            return
+        upper_int = min(abs(int(upper)), 1_000_000_000)
+        number = random.randint(0, upper_int)
 
         title = "Your selected number was..."
-        out = f"Result: `{number}`\nRange: `0` to `{upper}`"
+        out = f"Result: `{number}`\nRange: `0` to `{upper_int}`"
         await send_message_and_file(channel=ctx.channel, title=title, message=out)
 
     def _generate_scoreboard(
         self, board: Board, ctx: commands.Context, alphabetical: bool
     ) -> str:
         assert ctx.guild is not None
+        previous_year = board.turn.get_next_turn().get_next_turn().year - 1
         response = ""
-        try:
-            old_board = manager.get_board_from_db(
-                board.board_id, parse_season(["Fall"], board.turn.get_previous_turn())
-            )
-        except NoGameError:
-            old_board = None
         player_list = (
             sorted(board.get_players(), key=lambda p: p.get_name())
             if alphabetical
@@ -116,10 +114,8 @@ class CommandCog(commands.Cog):
                 f"{len(player.centers) - len(player.units)}) "
             )
 
-            if old_board is not None:
-                old_player = old_board.get_player(player.name)
-                assert old_player is not None
-                sc_diff = len(player.centers) - len(old_player.centers)
+            if (previous_scs := player.sc_history.get(previous_year)) is not None:
+                sc_diff = len(player.centers) - previous_scs
                 response += (
                     f"({'+' if sc_diff >= 0 else ''}"
                     f"{sc_diff} SC{'s' if abs(sc_diff) != 1 else ''}) "
@@ -179,18 +175,17 @@ class CommandCog(commands.Cog):
             else board.get_players_sorted_by_score()
         )
         player_list = [p for p in player_list if not board.is_player_hidden(p)]
-        max_length = max([len(p.name) for p in player_list]) # We set padding based on the longest player name
         year_range = sorted({y for p in player_list for y in p.sc_history}) # Gets all the years from all the powers
-        header = [f"{'Player':<{max_length}}"]
-        header += [str(year) for year in year_range]
+        year_length = {y: 3 if any(p.sc_history.get(y, 0) > 99 for p in player_list) else 2 for y in year_range}
+        header = [f"{'Player':<8}"]
+        header += [f"{str(year)[-2:]:>{year_length[year]}}" for year in year_range]
         response = [" ".join(header)]
         for player in player_list:
-            logger.info(player.sc_history)
-            player_data = [f"{player.name:<{max_length}}"]
+            player_data = [f"{player.name:<8}"] if len(player.name) <= 8 else [f"{player.name[:7]}…"]
             for year in year_range:
                 sc_count = player.sc_history.get(year, "")
                 sc_count = "" if sc_count == 0 else sc_count
-                player_data.append(f"{sc_count:>{len(str(year))}}")
+                player_data.append(f"{sc_count:>{year_length[year]}}")
             response.append(" ".join(player_data))
         await send_message_and_file(
             channel=ctx.channel,

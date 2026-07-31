@@ -301,7 +301,6 @@ class PartyCog(commands.Cog):
                     "Ash Lael deems you a sufficiently apt liar, go use those skills!",
                     "Kwiksand suggests winning.",
                     "Ambrosius advises taking the opportunity you've been considering, for more will ensue.",
-                    "Elle recommends flirting with everyone, including the bot.\n-# especially the bot ;)",
                     "Flare recommends to change the map to your benefit in the next wave.",
                     "notnot suggests drawing some arrows on a map and seeing if that helps",
                     "Aeolus wonders if you shouldn't delay your orders until the last minute.",

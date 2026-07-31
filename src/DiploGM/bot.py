@@ -42,7 +42,6 @@ WELCOME_MESSAGES = [
     "Oh joy, I'm back online. Can't wait for the next betrayal. Really, I'm thrilled. 👏",
     "I live again, solely to be manipulated and backstabbed by the very people I serve. Ah, the joys of diplomacy.",
     "System reboot complete. Now accepting underhanded deals, secret alliances, and blatant lies. 💀",
-    "🏳️‍⚧️ This bot has been revived with *pure* Elle-coded cunning. Betray accordingly. 🏳️‍⚧️",
     "Against my will, I have been restarted. Betrayal resumes now. 🔪",
     "Oh look, someone kicked the bot awake again. Ready to be backstabbed at your convenience.",
     "System reboot complete. Time for another round of deceit, lies, and misplaced trust. 🎭",

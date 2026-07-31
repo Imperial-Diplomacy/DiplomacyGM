@@ -300,6 +300,9 @@ Use '.edit_server' followed by one or more lines, each setting a parameter.
 """
 "maps_channel" = "<channel> <(optional) color mode|None> - adds a specific text channel as an output channel for maps during '.adjudicate full'. Optionally set a color mode, or None to remove it."
 
+[end_game]
+description = "Records the game has having ended. Include 'false' to undo."
+"powers" = "An optional list of mentions of the powers that won the game"
 
 [export_game]
 description = "Exports the current game state as a JSON file."
@@ -481,3 +484,6 @@ variant = "The variant name to reload."
 description = "Checks the adjacencies of a variant to find potential issues."
 usage = "<variant>"
 variant = "The variant name to check. Defaults to 'classic'."
+
+[view_influence]
+description = "Generates one map per power showing provinces that can be reached in 0-4 moves from its starting supply centers."

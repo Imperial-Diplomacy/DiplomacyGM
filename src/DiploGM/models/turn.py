@@ -118,15 +118,16 @@ class Turn:
 
     def is_later(self, other: Turn) -> bool:
         """Returns True if the current Turn is later than the Turn being compared"""
-        year_diff = abs(self.year - self.start_year)
-        other_year_diff = abs(other.year - other.start_year)
-        if other_year_diff < year_diff:
+        if other.year < self.year:
             return True
-        if other_year_diff > year_diff:
+        if other.year > self.year:
             return False
         if other.phase.value < self.phase.value:
             return True
         return False
+
+    def get_index(self) -> int:
+        return 5 * self.year + self.phase.value
 
     @staticmethod
     def turn_from_string(turn_str: str) -> Turn | None:
