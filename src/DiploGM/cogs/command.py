@@ -93,7 +93,7 @@ class CommandCog(commands.Cog):
         self, board: Board, ctx: commands.Context, alphabetical: bool
     ) -> str:
         assert ctx.guild is not None
-        previous_year = board.turn.get_next_turn().get_next_turn().year - 1
+        previous_year = board.turn.get_next_turn().get_next_turn().year - 2
         response = ""
         player_list = (
             sorted(board.get_players(), key=lambda p: p.get_name())

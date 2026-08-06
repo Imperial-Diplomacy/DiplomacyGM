@@ -111,7 +111,6 @@ class _DatabaseConnection:
         phase = Turn.turn_from_string(start_string)
         if phase is None:
             raise ValueError(f"Unable to get turn from string {start_string}")
-        phase.start_year = board.turn.start_year
         while(not phase.is_later(board.turn)):
             province_data = cursor.execute(
                 "SELECT province_name, owner FROM provinces WHERE board_id=? AND phase_index=?",
@@ -125,12 +124,16 @@ class _DatabaseConnection:
             phase = phase.get_next_year()
             # If SC ownership has changed but it's not the next year yet, we still want that SC data anyway
             if phase.is_later(board.turn) and phase.year == board.turn.year and board.turn.phase == PhaseName.WINTER_BUILDS:
-                phase = Turn(board.turn.year, board.turn.phase, board.turn.start_year)
+                phase = Turn(board.turn.year, board.turn.phase)
 
     def load_board(self, board_id: int) -> Board | None:
         """Gets a specific board from the database."""
         cursor = self._connection.cursor()
-        phase_index, data_file = cursor.execute("SELECT phase_index, data_file FROM boards WHERE board_id=? ORDER BY phase_index DESC", (board_id,)).fetchone()
+        result = cursor.execute("SELECT phase_index, data_file FROM boards WHERE board_id=? ORDER BY phase_index DESC", (board_id,)).fetchone()
+        if not result:
+            cursor.close()
+            return None
+        phase_index, data_file = result
         current_turn = Turn.turn_from_int(phase_index)
         if current_turn is None:
             raise ValueError("Could not parse turn index '%s' for board %s", phase_index, board_id)
