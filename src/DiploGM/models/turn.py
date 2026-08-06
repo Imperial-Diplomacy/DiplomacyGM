@@ -15,14 +15,12 @@ class PhaseName(Enum):
 
 
 class Turn:
-    """Class representing a turn in the game, including the year and phase.
-    Start_year is included mostly for legacy database reasons."""
+    """Class representing a turn in the game, including the year and phase."""
 
     def __init__(
         self,
         year: int = 1901,
-        phase: PhaseName = PhaseName.SPRING_MOVES,
-        start_year: int = 1901,
+        phase: PhaseName = PhaseName.SPRING_MOVES
     ):
         self.phase_names: dict[PhaseName, str] = {
             PhaseName.SPRING_MOVES: "Spring Moves",
@@ -47,7 +45,6 @@ class Turn:
         }
         self.year: int = year
         self.phase: PhaseName = phase if phase in PhaseName else PhaseName.SPRING_MOVES
-        self.start_year: int = start_year
 
     def __str__(self):
         if self.year < 0:
@@ -63,7 +60,6 @@ class Turn:
             %Y - Full year
             %B - Full year with BC
             %y - Two-digit year
-            %I - Zero-indexed year (year - start_year; used for DB queries)
             %S - Full phase name (e.g. "Spring Moves")
             %s - Short phase name (e.g. "sm")
             %Z - Season name (e.g. "Spring")
@@ -77,7 +73,6 @@ class Turn:
             "%B", f"{str(self.year) if self.year > 0 else str(1 - self.year) + ' BC'}"
         )
         result = result.replace("%y", str(self.year % 100))
-        result = result.replace("%I", str(self.year - self.start_year))
         result = result.replace("%S", self.phase_names[self.phase])
         result = result.replace("%s", self.short_names[self.phase])
         result = result.replace("%Z", self.season_names[self.phase])
@@ -87,18 +82,18 @@ class Turn:
     def get_next_turn(self) -> Turn:
         """Gets the next turn, incrementing the year if it's currently Winter Builds."""
         if self.phase == PhaseName.WINTER_BUILDS:
-            return Turn(self.year + 1, PhaseName.SPRING_MOVES, self.start_year)
-        return Turn(self.year, PhaseName(self.phase.value + 1), self.start_year)
+            return Turn(self.year + 1, PhaseName.SPRING_MOVES)
+        return Turn(self.year, PhaseName(self.phase.value + 1))
 
     def get_previous_turn(self) -> Turn:
         """Gets the previous turn, decrementing the year if it's currently Spring Moves."""
         if self.phase == PhaseName.SPRING_MOVES:
-            return Turn(self.year - 1, PhaseName.WINTER_BUILDS, self.start_year)
-        return Turn(self.year, PhaseName(self.phase.value - 1), self.start_year)
+            return Turn(self.year - 1, PhaseName.WINTER_BUILDS)
+        return Turn(self.year, PhaseName(self.phase.value - 1))
 
     def get_next_year(self) -> Turn:
         """Gets the same turn in the next year."""
-        return Turn(self.year + 1, self.phase, self.start_year)
+        return Turn(self.year + 1, self.phase)
 
     def is_moves(self) -> bool:
         """Checks to see if it's Spring or Fall Moves."""
@@ -135,7 +130,7 @@ class Turn:
         split_index = turn_str.index(" ")
         year = int(turn_str[:split_index])
         phase_name = turn_str[split_index:].strip()
-        current_turn = Turn(year, start_year=0)
+        current_turn = Turn(year)
         while format(current_turn, "%S") != phase_name and current_turn.year == year:
             current_turn = current_turn.get_next_turn()
         if current_turn.year != year:

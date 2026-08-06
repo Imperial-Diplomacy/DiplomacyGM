@@ -73,7 +73,7 @@ def parse_season(arguments: list[str], default_turn: Turn) -> Turn:
     The result should be at latest default_turn, and that is used if year is not given."""
     year, season, retreat = None, None, False
     for s in arguments:
-        if s.isnumeric() and int(s) >= default_turn.start_year:
+        if s.isnumeric():
             year = int(s)
 
         if s.lower() in ["spring", "s", "sm", "sr"]:
@@ -94,15 +94,13 @@ def parse_season(arguments: list[str], default_turn: Turn) -> Turn:
     if retreat and season != PhaseName.WINTER_BUILDS:
         season = PhaseName(season.value + 1)
 
-    new_turn = Turn(year, season, default_turn.start_year)
+    new_turn = Turn(year, season)
     new_turn.year = min(new_turn.year, default_turn.year)
     if (
         new_turn.year == default_turn.year
         and new_turn.phase.value > default_turn.phase.value
     ):
-        if new_turn.year == default_turn.start_year:
-            return default_turn
-        return Turn(new_turn.year - 1, season, default_turn.start_year)
+        return Turn(new_turn.year - 1, season)
     return new_turn
 
 
