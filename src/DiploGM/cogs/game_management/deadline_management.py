@@ -2,7 +2,8 @@
 
 import logging
 import re
-from datetime import timedelta
+from dateparser import parse
+from datetime import datetime
 from time import time
 
 from discord import Member, Role
@@ -25,28 +26,6 @@ from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
 manager = Manager()
-# Regex for parsing time deltas, e.g. "2 days 3h 15m"
-# Currently supports days, hours, minutes, and seconds and negative values
-# We could do more with this if need be, but this should hopefully work for now
-_TIMEDELTA_RE = re.compile(
-    r"(?:(-?\d+)\s*d(?:ays?)?)?\s*"
-    r"(?:(-?\d+)\s*h(?:(?:ou)?rs?)?)?\s*"
-    r"(?:(-?\d+)\s*m(?:in(?:ute)?s?)?)?\s*"
-    r"(?:(-?\d+)\s*s(?:ec(?:ond)?s?)?)?\s*$"
-)
-
-
-def _parse_timedelta(s: str) -> timedelta:
-    m = _TIMEDELTA_RE.fullmatch(s.strip())
-    if m and any(m.groups()):
-        return timedelta(
-            days=int(m.group(1) or 0),
-            hours=int(m.group(2) or 0),
-            minutes=int(m.group(3) or 0),
-            seconds=int(m.group(4) or 0),
-        )
-    raise ValueError(f"Cannot parse time duration: {s!r}")
-
 
 async def set_deadline(ctx: commands.Context) -> None:
     """Manages the deadline for the current phase."""
@@ -58,21 +37,19 @@ async def set_deadline(ctx: commands.Context) -> None:
     if adjust:
         content = content.removeprefix("adjust").strip()
         deadline = int(board.data.get("deadline", time()))
-        try:
-            parsed_time = _parse_timedelta(content)
-        except ValueError as e:
+        new_deadline = parse(content, settings={"PREFER_DATES_FROM": "future", "RELATIVE_BASE": datetime.fromtimestamp(deadline)})
+        if new_deadline is None:
             await send_message_and_file(
                 channel=ctx.channel,
-                message=str(e),
+                message="Invalid time format. Please provide a valid time.",
                 embed_colour=config.ERROR_COLOUR,
             )
             return
-        new_deadline = deadline + int(parsed_time.total_seconds())
-        board.set_data("deadline", new_deadline)
-        logger.info("Adjusted deadline by %s to %s", parsed_time, new_deadline)
+        board.set_data("deadline", int(new_deadline.timestamp()))
+        logger.info("Adjusted deadline to %s", new_deadline)
         await send_message_and_file(
             channel=ctx.channel,
-            message=f"Adjusted deadline by {parsed_time}. New deadline is <t:{int(new_deadline)}:R>.",
+            message=f"Adjusted deadline to <t:{int(new_deadline.timestamp())}:f>.",
         )
     elif cancel:
         board.custom_data.pop("deadline", None)
