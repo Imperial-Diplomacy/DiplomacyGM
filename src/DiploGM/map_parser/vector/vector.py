@@ -252,7 +252,7 @@ class Parser:
         logger.info("map_parser.vector.parse: %ss", elapsed)
 
         self.data["year"] = self.data.get("year", 1901)
-        initial_turn = Turn(self.data["year"], PhaseName.SPRING_MOVES, self.data["year"])
+        initial_turn = Turn(self.data["year"], PhaseName.SPRING_MOVES)
         if self.data.get("first_season", "spring").lower() == "winter" or self.is_chaos:
             initial_turn = initial_turn.get_previous_turn()
 

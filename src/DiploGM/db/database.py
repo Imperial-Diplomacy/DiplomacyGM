@@ -123,7 +123,7 @@ class _DatabaseConnection:
                     player.sc_history[phase.year] = player.sc_history.get(phase.year, 0) + 1
             phase = phase.get_next_year()
             # If SC ownership has changed but it's not the next year yet, we still want that SC data anyway
-            if phase.is_later(board.turn) and phase.year == board.turn.year and board.turn.phase == PhaseName.WINTER_BUILDS:
+            if phase.is_later(board.turn) and phase.year == board.turn.year and board.turn.phase == PhaseName.FALL_RETREATS:
                 phase = Turn(board.turn.year, board.turn.phase)
 
     def load_board(self, board_id: int) -> Board | None:
