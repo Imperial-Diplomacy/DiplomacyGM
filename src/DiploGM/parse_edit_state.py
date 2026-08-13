@@ -302,17 +302,17 @@ def _bulk(_, keywords: list[str], board: Board) -> None:
         "set half core",
         "set province owner",
         "set total owner",
-        "delete unit",
     ]:
         for i in keywords[2:]:
             function_list[keywords[0]](keywords[0], [i, player], board)
-        return
-    if keywords[0] == "transform unit":
+    elif keywords[0] == "transform unit":
         for i in keywords[2:]:
             function_list[keywords[0]](keywords[0], [keywords[1], i], board)
-        return
-
-    raise RuntimeError("You can't use bulk with this commands")
+    elif keywords[0] == "delete unit":
+        for i in keywords[1:]:
+            function_list[keywords[0]](keywords[0], [i], board)
+    else:
+        raise RuntimeError("You can't use bulk with this commands")
 
 
 function_list["bulk"] = _bulk
