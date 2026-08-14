@@ -87,6 +87,58 @@ async def set_deadline(ctx: commands.Context) -> None:
             (board.board_id, "deadline"),
         )
 
+async def set_phase_length(ctx: commands.Context) -> None:
+    """Sets the default phase length for movement, retreat, and adjustment phases."""
+    assert ctx.guild is not None
+    board = manager.get_board(ctx.guild.id)
+    content = remove_prefix(ctx)
+    phase_names = ["moves", "retreats", "builds"]
+    phase_lengths = []
+    parameters = content.split()
+    if len(parameters) < 3:
+        await send_message_and_file(
+            channel=ctx.channel,
+            message="Please provide movement, retreat, and adjustment phase lengths.",
+            embed_colour=config.ERROR_COLOUR,
+        )
+        return
+
+    for phase_str in parameters[:3]:
+        if phase_str.isnumeric():
+            phase_lengths.append(60*60*int(phase_str))
+            continue
+        time_match = re.search(r"((\d+)h)?((\d+)m)?", phase_str)
+        if time_match:
+            hours = int(time_match.group(2)) if time_match.group(2) else 0
+            minutes = int(time_match.group(4)) if time_match.group(4) else 0
+            if hours == 0 and minutes == 0:
+                await send_message_and_file(
+                    channel=ctx.channel,
+                    message="Please provide a nonzero phase length.",
+                    embed_colour=config.ERROR_COLOUR,
+                )
+                return
+            phase_lengths.append(60 * 60 * hours + 60 * minutes)
+            continue
+        await send_message_and_file(
+            channel=ctx.channel,
+            message=f"Invalid phase length: {phase_str}.",
+            embed_colour=config.ERROR_COLOUR,
+        )
+        return
+
+    for phase_name, phase_length in zip(phase_names, phase_lengths):
+        board.set_data(["phase_length", phase_name], phase_length)
+        get_connection().execute_arbitrary_sql(
+            "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
+            (board.board_id, f"phase_length/{phase_name}", phase_length),
+        )
+    await send_message_and_file(
+        channel=ctx.channel,
+        message=f"Set phase lengths: Moves: {phase_lengths[0]//3600}h {(phase_lengths[0]%3600)//60}m, "
+                f"Retreats: {phase_lengths[1]//3600}h {(phase_lengths[1]%3600)//60}m, "
+                f"Builds: {phase_lengths[2]//3600}h {(phase_lengths[2]%3600)//60}m.",
+    )
 
 def _ping_player_builds(board: Board, player: Player, user_str: str) -> str:
     build_options = board.data.get("build_options", "classic")

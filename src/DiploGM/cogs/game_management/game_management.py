@@ -179,6 +179,13 @@ class GameManagementCog(commands.Cog):
         """
         await deadline_management.set_deadline(ctx)
 
+    @commands.command(brief="Sets the default phase length")
+    @perms.gm_only("set phase length")
+    async def set_phase_length(self, ctx: commands.Context) -> None:
+        """Manages the phase length for each phase."""
+        await deadline_management.set_phase_length(ctx)
+
+
     @commands.command(
         brief="Pings players who don't have the expected number of orders.",
         aliases=["pp"],

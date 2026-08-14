@@ -383,6 +383,11 @@ usage = "<old_name> <new_name>"
 old_name = "The current player name."
 new_name = "The new player name."
 
+[set_phase_length]
+description = "Sets the default phase lengths for moves, retreats, and adjustments, respectively."
+usage = "<phase_length> <phase_length> <phase_length>"
+phase_length = "How long the phase should last, in hours. Additionally, phase_length can be done in the format '#h##m'."
+
 [tally_reacts]
 description = """
 Tallies the reactions on a message, showing which powers have reacted with each emoji.
