@@ -2,13 +2,14 @@ from copy import deepcopy
 import datetime
 import json
 import logging
+import re
 import uuid
 
 from discord.ext import commands, tasks
 from discord import Message, TextChannel, User
 
 from DiploGM.bot import DiploGM
-from DiploGM import perms
+from DiploGM import config, perms
 from DiploGM.config import ERROR_COLOUR
 from DiploGM.utils import (
     get_value_from_timestamp,
@@ -171,6 +172,11 @@ class ScheduleCog(commands.Cog):
             )
             return
 
+        repeats = False
+        if content.endswith("repeats"):
+            content = content.removesuffix("repeats").strip()
+            repeats = True
+
         scheduled_task = {
             "invoking_user_id": ctx.author.id,
             "invoking_user_name": ctx.author.name,
@@ -184,6 +190,7 @@ class ScheduleCog(commands.Cog):
             "full_command": f"{self.bot.command_prefix}{command_name} {content}",
             "mentions": [mention.id for mention in ctx.message.mentions],
             "role_mentions": [mention.id for mention in ctx.message.role_mentions],
+            "repeats": repeats,
         }
 
         out = (
@@ -191,6 +198,8 @@ class ScheduleCog(commands.Cog):
             f"Arguments: {content}\n"
             f"To occur at: {timestamp}"
         )
+        if repeats:
+            out += "\nRepeats after each turn."
         await send_message_and_file(
             channel=ctx.channel, title="Schedule successful!", message=out
         )
@@ -322,6 +331,64 @@ class ScheduleCog(commands.Cog):
             channel=ctx.channel, title=f"Scheduled tasks for {guild.name}", message=out
         )
 
+    @commands.command(
+        name="delay_schedule",
+        brief="Delay scheduled commands.",
+        aliases=["delayschedule"]
+    )
+    @perms.gm_only("delay scheduled commands")
+    async def delay_schedule(self, ctx: commands.Context, delay_str: str):
+        """Delays all scheduled commands by the speficied hours and optionally minutes."""
+        assert ctx.guild is not None
+        sign = 1
+        if delay_str.startswith("-"):
+            sign = -1
+            delay_str = delay_str[1:]
+        if delay_str.isnumeric(): # If it's just a number, assume it's in hours
+            delay = 60 * 60 * int(delay_str)
+        else:
+            time_match = re.search(r"((\d+)h)?((\d+)m)?", delay_str)
+            if not time_match:
+                await send_message_and_file(
+                    channel=ctx.channel,
+                    message="Please provide a valid time length.",
+                    embed_colour=config.ERROR_COLOUR,
+                )
+                return
+
+            hours = int(time_match.group(2)) if time_match.group(2) else 0
+            minutes = int(time_match.group(4)) if time_match.group(4) else 0
+            delay = 60 * 60 * hours + 60 * minutes
+        delay *= sign
+
+        guild_tasks = {
+            id: task
+            for id, task in self.scheduled_tasks.items()
+            if task["guild_id"] == ctx.guild.id
+        }
+        guild_tasks = dict(
+            sorted(guild_tasks.items(), key=lambda pair: pair[1]["execute_at"])
+        )
+
+        out = [f"All tasks have been {('delayed' if delay > 0 else 'advanced')} by {delay_str}."]
+        for task_id, task in guild_tasks.items():
+            task["execute_at"] += datetime.timedelta(seconds=delay)
+            self.scheduled_tasks[task_id] = task
+            user = self.bot.get_user(task["invoking_user_id"])
+            s = f"Task ID = `{task_id}`:\n- [{user.mention if user else task['invoking_user_name']}] " + \
+                f"-> `{task['command']}` at <t:{int(task['execute_at'].timestamp())}:f>"
+            if len(task["args"]) != 0:
+                s += f"\n  - Arguments: {task['args']}"
+
+            out.append(s)
+
+        out = "\n".join(out)
+
+        await self.save_scheduled_tasks()
+        await send_message_and_file(
+            channel=ctx.channel, title=f"Scheduled tasks for {ctx.guild.name}", message=out
+        )
+
     @tasks.loop(seconds=LOOP_FREQUENCY_SECONDS)
     async def process_scheduled_tasks(self):
         """Recurring loop to process scheduled tasks on time (within a margin of error)
@@ -441,6 +508,22 @@ class ScheduleCog(commands.Cog):
                     f"Executing command scheduled by '{task['invoking_user_name']}' at <t:{int(task['created_at'].timestamp())}:f>",
                 )
 
+                if task.get("repeats"):
+                    # reschedule task for next turn
+                    board = manager.get_board(task["guild_id"])
+                    if board.turn.get_next_turn().is_moves():
+                        phase_length = board.data.get("phase_length", []).get("moves", 60*60*24*2)
+                    elif board.turn.get_next_turn().is_retreats():
+                        phase_length = board.data.get("phase_length", []).get("retreats", 60*60*24)
+                    else:
+                        phase_length = board.data.get("phase_length", []).get("builds", 60*60*24)
+                    task["execute_at"] = task["execute_at"] + datetime.timedelta(seconds=int(phase_length))
+                    self.scheduled_tasks[task_id] = task
+                    await self.save_scheduled_tasks()
+                    await send_message_and_file(
+                        channel=channel,
+                        message=f"Rescheduled repeating task {task_id} to <t:{int(task['execute_at'].timestamp())}:f>.",
+                    )
                 await self.bot.process_commands(message)
             except Exception as e:
                 await channel.send(

@@ -1,3 +1,27 @@
+1.13.1
+=====
+
+Contributors:
+- cin
+- Golden Kumquat
+
+# Features
+- Added `.set_phase_length`, which allows one to change how long each phase is
+- Added the `reepeats` option to `.schedule`, which causes scheduled commands to repeat each phase
+- Added `.delay_schedule`, which allows one to delay or advance all scheduled commands
+
+# Quality of Life
+- Made `.set_deadline adjust` able to accept more inputs
+- `/spec` can now be done in any channel, not just `#the-public-square`
+
+# Bugfixes
+- `.edit bulk delete_unit` now properly removes all listed units
+
+# Known Issues
+- Scheduling a repeated command to take place before more than a day (depending on phase lengths) before adjudication can cause unexpected behaviors
+- Advancing a command to the past will cause that command to be skipped
+- Scoreboard history is not properly loading
+
 1.13.0
 =====
 
