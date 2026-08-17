@@ -447,10 +447,20 @@ Schedules a command for execution at a future time.
 The scheduled command will run as if you had typed it at the specified time.
 Commands that cannot be scheduled: 'schedule', 'create_game', 'delete_game'.
 """
-usage = "<timestamp> <command>"
+usage = "<timestamp> <command> [repeats]"
 timestamp = "A Discord-formatted Unix timestamp for when to execute."
 command = "The command name to schedule."
 content = "The arguments for the scheduled command."
+repeats = "If included at the end, the scheduled command will repeat each phase."
+
+[delay_schedule]
+description = """
+Delays all scheduled commands by the specified amount of time.
+Time can be given in hours, or of the form #h#m (e.g. 24h, 1h30m, 5m).
+To advance scheduled commands instead, add a minus sign to the duration.
+"""
+usage = "<delay>"
+delay = "How long to delay all scheduled commands"
 
 [unschedule]
 description = "Cancels a scheduled command. Task IDs can be found from calling '.view_schedule.'"
