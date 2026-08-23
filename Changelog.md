@@ -1,3 +1,27 @@
+1.13.2
+=====
+
+Contributors:
+- aahoughton
+
+# Features
+- Added `pacific` as an argument for view map functionality.
+  - This will only work for Imperial Diplomacy
+  - Does use magic numbers, might not be the same across versions
+
+# Quality of Life
+- Added capital of a power to `.player_info`
+
+# Developer Changes
+- Added packages:
+  - cairosvg
+  - pillow
+- Set cairosvg as default behaviour for png exports, inkscape as backup
+
+# Known problems
+- `.vm pacific` might not correctly display orders that break the crossover line (e.g. convoys/NPO1-NEC)
+- The svg is not configured to be parsable by cairosvg, so behaviour is expected to fail- this is a TODO
+
 1.13.1
 =====
 

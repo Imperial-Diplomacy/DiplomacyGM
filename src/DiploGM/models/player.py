@@ -82,6 +82,12 @@ class Player:
                 f"{bullet}({unit.unit_type.code}) {unit.province.get_name(unit.coast)}"
             )
 
+        capital_str = (board.data
+            .get("players", {})
+            .get(self.name, {})
+            .get("capital", "None")
+        )
+
         centers = sorted(self.centers, key=lambda c: c.name)
         center_str = f"({len(centers)}):"
         for center in centers:
@@ -113,7 +119,7 @@ class Player:
                 + f"{round(board.get_score(self) * 100, 2)}%\n"
             )
 
-        out = f"Color: {color}\n{score}Centers: {center_str}\nUnits: {unit_str}\n"
+        out = f"Capital: {capital_str}\nCenters: {center_str}\nUnits: {unit_str}\nColor: {color}\n{score}"
         return out
 
     def get_number_of_builds(self) -> int:
