@@ -10,7 +10,7 @@ from discord import Message, Embed, Colour
 from discord.abc import Messageable
 
 from DiploGM import config
-from DiploGM.utils.image import svg_to_png, png_to_jpg
+from DiploGM.utils.image import png_to_jpg
 from .logging import log_command_no_ctx
 
 
@@ -85,9 +85,6 @@ async def send_message_and_file(
     if embed_colour is None:
         embed_colour = config.EMBED_STANDARD_COLOUR
     assert embed_colour is not None
-
-    if convert_svg and file and file_name:
-        file, file_name = await svg_to_png(file, file_name, dpi=dpi)
 
     # Checks embed title and bodies are within limits.
     if fields:
@@ -204,19 +201,14 @@ async def send_message_and_file(
                 discord_file = None
 
     if file is not None and file_name is not None:
-        with io.BytesIO(file) as vfile:
-            discord_file = discord.File(fp=vfile, filename=file_name)
+        discord_file = discord.File(
+            fp=io.BytesIO(file),
+            filename=file_name,
+        )
 
         if file_in_embed or (
             file_in_embed is None
-            and any(
-                file_name.lower().endswith(x)
-                for x in (
-                    ".png",
-                    ".jpg",
-                    ".jpeg",  # , ".gif", ".gifv", ".webm", ".mp4", "wav", ".mp3", ".ogg"
-                )
-            )
+            and file_name.lower().endswith((".png", ".jpg", ".jpeg"))
         ):
             embeds[-1].set_image(
                 url=f"attachment://{discord_file.filename.replace(' ', '_')}"
