@@ -281,7 +281,7 @@ class PlayerCog(commands.Cog):
         
             # cutup map png output for pacific center line
             pacific_map_mode="pacific" in set(arguments)
-            if "impdip" in board.datafile and pacific_map_mode and dpi == 200:
+            if "impdip" in board.datafile and pacific_map_mode:
                 img = Image.open(BytesIO(file))
                 arr = np.array(img)
 
