@@ -15,6 +15,7 @@ from DiploGM.utils import log_command, send_message_and_file
 from DiploGM.manager import Manager
 from DiploGM.models.player import Player
 from DiploGM.models.province import Province
+from DiploGM.utils.image import svg_to_png
 from DiploGM.utils.sanitise import parse_variant_path
 
 logger = logging.getLogger(__name__)
@@ -146,15 +147,14 @@ class VariantDevelopmentCog(commands.Cog):
             for province in board.provinces:
                 province.owner = distance_to_players[distances[province]]
             file, file_name = manager.draw_map(ctx.message.id, color_mode="custom")
+            file, file_name = await svg_to_png(file, file_name, dpi=board.data["svg config"].get("dpi", 200))
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"{player.name}",
                 message=f"Influence map for {player.name}",
                 file=file,
                 file_name=file_name,
-                convert_svg=True,
                 file_in_embed=False,
-                dpi=board.data["svg config"].get("dpi", 200),
             )
             await asyncio.sleep(0)
             board.set_data(["players", player.name, "custom_color"], player.default_color)
