@@ -11,6 +11,7 @@ from DiploGM import config, perms
 from DiploGM.services import reputation_service
 from DiploGM.utils import send_message_and_file
 from DiploGM.manager import Manager
+from DiploGM.utils.image import svg_to_png
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -189,6 +190,7 @@ class SlashSubstituteCog(commands.Cog):
         file, file_name = manager.draw_map_for_board(
             board, player_restriction=None, draw_moves=False, color_mode="standard"
         )
+        file, file_name = await svg_to_png(file, file_name, dpi=board.data["svg config"].get("dpi", 200))
 
         link = await send_message_and_file(
             channel=locations["advertise_channel"],
@@ -196,8 +198,6 @@ class SlashSubstituteCog(commands.Cog):
             message=out,
             file=file,
             file_name=file_name,
-            convert_svg=True,
-            dpi=board.data["svg config"].get("dpi", 200),
         )
         try:
             msg = await locations["advertise_channel"].send(interested_sub_role.mention)

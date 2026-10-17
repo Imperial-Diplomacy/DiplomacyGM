@@ -75,8 +75,6 @@ async def send_message_and_file(
     footer_content: str | None = None,
     footer_datetime: datetime.datetime | None = None,
     fields: List[Tuple[str, str]] | None = None,
-    convert_svg: bool = False,
-    dpi: int = 200,
     **_,
 ) -> Message:
 

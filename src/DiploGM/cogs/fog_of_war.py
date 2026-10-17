@@ -18,6 +18,7 @@ from DiploGM.models.player import (
     Player,
     ViewOrdersTags,
 )
+from DiploGM.utils.image import svg_to_png
 from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
@@ -84,15 +85,14 @@ class FogOfWarCog(commands.Cog):
                 turn=prev_turn,
                 fow_player=player,
             )
+            file, file_name = await svg_to_png(file, file_name, dpi=dpi)
             await send_message_and_file(
                 channel=channel,
                 title=f"{prev_turn} Orders Map",
                 message=f"Here is the {prev_turn} orders map for {player.name}",
                 file=file,
                 file_name=file_name,
-                convert_svg=True,
                 file_in_embed=False,
-                dpi=dpi,
             )
             await asyncio.sleep(0)
 
@@ -102,15 +102,14 @@ class FogOfWarCog(commands.Cog):
                 turn=board.turn,
                 fow_player=player,
             )
+            file, file_name = await svg_to_png(file, file_name, dpi=dpi)
             await send_message_and_file(
                 channel=channel,
                 title=f"{prev_turn} Results Map",
                 message=f"Here is the {prev_turn} results map for {player.name}",
                 file=file,
                 file_name=file_name,
-                convert_svg=True,
                 file_in_embed=False,
-                dpi=dpi,
             )
             await asyncio.sleep(0)
 

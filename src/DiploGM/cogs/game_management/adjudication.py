@@ -419,7 +419,6 @@ async def adjudicate(ctx: commands.Context) -> None:
             message="Test adjudication" if args["test"] else "",
             file=file,
             file_name=file_name,
-            convert_svg=args["return_svg"],
             dpi=board.data["svg config"].get("dpi", 200),
         )
 

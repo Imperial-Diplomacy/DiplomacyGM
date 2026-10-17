@@ -386,7 +386,6 @@ class PlayerCog(commands.Cog):
             title=f"{board.turn}",
             file=file,
             file_name=file_name,
-            convert_svg=False,
             file_in_embed=False,
         )
 
