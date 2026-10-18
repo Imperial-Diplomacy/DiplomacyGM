@@ -52,15 +52,15 @@ def _set_maps_channel(
     color_mode = keywords[1].lower() if len(keywords) > 1 else "standard"
     if color_mode == "none":
         color_mode = None
+        return f"maps_channel/{maps_channel_matches[-1]}", None
     else:
         valid_color_modes = board.data["svg config"].get("color_options", []) + [
-            "standard",
-            "custom",
+            "standard", "custom", "random", "pacific", "oil", "clean", "invert"
         ]
-        if color_mode not in valid_color_modes:
-            raise ValueError(f"Unknown color mode: {color_mode}")
-    return f"maps_channel/{maps_channel_matches[-1]}", color_mode
-
+        for color_mode in keywords[1:]:
+            if color_mode.lower() not in valid_color_modes:
+                raise ValueError(f"Unknown color mode: {color_mode}")
+    return f"maps_channel/{maps_channel_matches[-1]}", " ".join(keywords[1:]).lower()
 
 function_list = {"maps channel": _set_maps_channel}
 

@@ -1,3 +1,16 @@
+1.13.3
+=====
+
+Contributors:
+- Golden Kumquat
+
+# Quality of Life
+- `pacific`, `oil`, `invert`, and `clean` are now supported for `.edit_prefs color_mode` and `.edit_server maps_channel`
+
+# Bugfixes
+- `/advertize`, `.view_influence`, and `.publish_fow_moves` now properly show PNGs instead of SVGs
+- `.remove_all` now works on builds
+
 1.13.2
 =====
 

@@ -2,8 +2,11 @@
 
 import asyncio
 import logging
+from io import BytesIO
+import numpy as np
 import os
 from subprocess import PIPE
+from PIL import Image
 
 import cairosvg
 
@@ -17,8 +20,27 @@ if LIMIT is None:
     LIMIT = 4
 external_task_limit = asyncio.Semaphore(int(LIMIT))
 
+def rearrange_pacific_map(file: bytes, split_pixel_ratio, map_edge_pixel_ratio) -> bytes:
+    img = Image.open(BytesIO(file))
+    arr = np.array(img)
 
-async def svg_to_png(svg: bytes, file_name: str, dpi: int = 200) -> tuple[bytes, str]:
+    # scale for DPI
+    split_pixel = int(split_pixel_ratio * img.width)
+    map_edge_pixel = int(map_edge_pixel_ratio * img.width)
+    
+    # cut map section of image in two pieces
+    left = arr[:, :split_pixel]
+    right = arr[:, split_pixel:map_edge_pixel]
+
+    # reorder and stitch together
+    reordered = np.concatenate([right, left], axis=1)
+    arr[:, :map_edge_pixel] = reordered
+
+    output = BytesIO()
+    Image.fromarray(arr).save(output, format="PNG")
+    return output.getvalue()
+
+async def svg_to_png(svg: bytes, file_name: str, svg_data: dict, pacific_mode: bool = False) -> tuple[bytes, str]:
     """Convert an SVG to a PNG using Inkscape.
     This is by far the most intensive part of the bot, so if there's any way we could speed this up,
     it would make a huge difference."""
@@ -27,7 +49,7 @@ async def svg_to_png(svg: bytes, file_name: str, dpi: int = 200) -> tuple[bytes,
     try:
         data = cairosvg.svg2png(
             bytestring=svg, 
-            dpi=dpi
+            dpi=svg_data.get("dpi", 200)
         )
     except Exception as e:
         logger.warning(f"Failed to convert using cairosvg: {e}")
@@ -41,7 +63,7 @@ async def svg_to_png(svg: bytes, file_name: str, dpi: int = 200) -> tuple[bytes,
                 "inkscape", 
                 "--pipe",
                 "--export-type=png",
-                f"--export-dpi={dpi}",
+                f"--export-dpi={svg_data.get('dpi', 200)}",
                 stdin=PIPE,
                 stdout=PIPE,
                 stderr=PIPE,
@@ -70,6 +92,8 @@ async def svg_to_png(svg: bytes, file_name: str, dpi: int = 200) -> tuple[bytes,
         data = data[start:]
 
     base = os.path.splitext(file_name)[0]
+    if pacific_mode and svg_data.get("pacific_center_line"):
+        data = rearrange_pacific_map(data, svg_data["pacific_center_line"], svg_data.get("pacific_map_edge", 1.0))
     return data, base + ".png"
 
 

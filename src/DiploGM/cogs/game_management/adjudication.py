@@ -174,11 +174,11 @@ async def _update_deadline(ctx: commands.Context, guild_id: int) -> None:
     if not (timestamp := board.data.get("deadline")):
         return
     if board.turn.is_moves():
-        phase_length = board.data.get("phase_length", []).get("moves", 60*60*24*2)
+        phase_length = board.data.get("phase_length", {}).get("moves", 60*60*24*2)
     elif board.turn.is_retreats():
-        phase_length = board.data.get("phase_length", []).get("retreats", 60*60*24)
+        phase_length = board.data.get("phase_length", {}).get("retreats", 60*60*24)
     else:
-        phase_length = board.data.get("phase_length", []).get("builds", 60*60*24)
+        phase_length = board.data.get("phase_length", {}).get("builds", 60*60*24)
     board.set_data("deadline", int(timestamp) + int(phase_length))
     get_connection().execute_arbitrary_sql(
         "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
@@ -251,13 +251,22 @@ async def _upload_maps(
     board: Board,
     is_orders: bool,
     maps_channel_id: str | None,
-    color_mode: str,
+    color_prefs: list[str],
 ) -> None:
     assert ctx.guild is not None
+    color_mode = get_colour_option(board, color_prefs)
+    oil_spill_mode="oil" in color_prefs
+    invert_color_mode="invert" in color_prefs
+    clean_map_mode="clean" in color_prefs
+    pacific_map_mode="pacific" in color_prefs
+    print(color_prefs)
     file, file_name = manager.draw_map_for_board(
         board,
         draw_moves=is_orders,
         color_mode=color_mode,
+        oil_spill_mode=oil_spill_mode,
+        invert_color_mode=invert_color_mode,
+        clean_map_mode=clean_map_mode,
     )
     old_turn = board.turn if is_orders else board.turn.get_previous_turn()
     title = (
@@ -277,7 +286,7 @@ async def _upload_maps(
     needs_png = args["return_svg"] or (args["full"] and map_channel is not None)
     if needs_png:
         image_file, image_file_name = await svg_to_png(
-            file, file_name, dpi=board.data["svg config"].get("dpi", 200)
+            file, file_name, board.data["svg config"], pacific_mode=pacific_map_mode
         )
     await send_message_and_file(
         channel=ctx.channel,
@@ -345,6 +354,10 @@ async def adjudicate(ctx: commands.Context) -> None:
     args = {
         "return_svg": not ({"true", "t", "svg", "s"} & set(arguments)),
         "color": get_colour_option(board, arguments),
+        "oil_spill": "oil" in arguments,
+        "invert_color": "invert" in arguments,
+        "clean_map": "clean" in arguments,
+        "pacific_map": "pacific" in arguments,
         "test": "test" in arguments,
         "full": "full" in arguments and "test" not in arguments,
         "movement": "movement" in arguments,
@@ -396,15 +409,15 @@ async def adjudicate(ctx: commands.Context) -> None:
     if default_maps_channel and default_maps_channel not in map_channels:
         map_channels[default_maps_channel] = "standard"
     if args.get("color") is not None and default_maps_channel:
-        map_channels[default_maps_channel] = args["color"]
+        map_channels[default_maps_channel] = " ".join(arguments)
     if len(map_channels.items()) == 0:
         log_command(logger, ctx, "No map channel found in this server", level=logging.WARNING)
         await send_error(ctx.channel, ErrorMessage.NO_MAPS_CHANNEL)
-        await _upload_maps(ctx, args, draw_board, True, None, "standard")
-        await _upload_maps(ctx, args, new_board, False, None, "standard")
+        await _upload_maps(ctx, args, draw_board, True, None, ["standard"])
+        await _upload_maps(ctx, args, new_board, False, None, ["standard"])
     for map_channel, color_mode in map_channels.items():
-        await _upload_maps(ctx, args, draw_board, True, map_channel, color_mode)
-        await _upload_maps(ctx, args, new_board, False, map_channel, color_mode)
+        await _upload_maps(ctx, args, draw_board, True, map_channel, color_mode.split())
+        await _upload_maps(ctx, args, new_board, False, map_channel, color_mode.split())
 
     if args["movement"]:
         file, file_name = manager.draw_map_for_board(
@@ -412,6 +425,10 @@ async def adjudicate(ctx: commands.Context) -> None:
             draw_moves=True,
             color_mode=args["color"],
             movement_only=True,
+            oil_spill_mode=args["oil_spill"],
+            invert_color_mode=args["invert_color"],
+            clean_map_mode=args["clean_map"],
+            pacific_map_mode=args["pacific_map"],
         )
         await send_message_and_file(
             channel=ctx.channel,

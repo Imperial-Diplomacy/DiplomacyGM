@@ -2,13 +2,10 @@
 the command, or None if it was done by a GM."""
 
 import logging
-from io import BytesIO
 from typing import Callable, Iterable
 
 import discord
-import numpy as np
 from discord.ext import commands
-from PIL import Image
 
 from DiploGM import config
 from DiploGM import perms
@@ -131,15 +128,21 @@ class PlayerCog(commands.Cog):
 
         board = manager.get_board(ctx.guild.id)
 
-        if player is None:
-            for unit in board.units:
-                unit.order = None
-        else:
-            for unit in filter(lambda u: u.player == player, board.units):
-                unit.order = None
-
         database = get_connection()
-        database.save_order_for_units(board, board.units)
+        if board.turn.is_builds():
+            players = board.players if player is None else {player}
+            for player in players:
+                player.build_orders = set()
+                player.waived_orders = 0
+            database.save_build_orders_for_players(board, player)
+        else:
+            if player is None:
+                for unit in board.units:
+                    unit.order = None
+            else:
+                for unit in filter(lambda u: u.player == player, board.units):
+                    unit.order = None
+            database.save_order_for_units(board, board.units)
         log_command(logger, ctx, message="Removed all Orders")
         await send_message_and_file(channel=ctx.channel, title="Removed all Orders")
 
@@ -227,14 +230,23 @@ class PlayerCog(commands.Cog):
         arguments = remove_prefix(ctx).lower().split()
         board = manager.get_board(ctx.guild.id)
         season = parse_season(arguments, board.turn)
+        oil_spill_mode="oil" in arguments
+        invert_color_mode="invert" in arguments
+        clean_map_mode="clean" in arguments
+        pacific_map_mode="pacific" in arguments
 
         color_mode = get_colour_option(board, arguments)
         if color_mode is None:
-            color_mode = (
+            color_prefs = (
                 manager.ctx_parameters.get(ctx.author.id, {})
                 .get(board.datafile, {})
                 .get("color_mode", "standard")
-            )
+            ).split()
+            color_mode = get_colour_option(board, color_prefs)
+            oil_spill_mode="oil" in color_prefs
+            invert_color_mode="invert" in color_prefs
+            clean_map_mode="clean" in color_prefs
+            pacific_map_mode="pacific" in color_prefs
 
         if player and show_moves and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
@@ -247,9 +259,9 @@ class PlayerCog(commands.Cog):
                 draw_moves=show_moves,
                 player_restriction=player,
                 color_mode=color_mode,
-                oil_spill_mode="oil" in set(arguments),
-                invert_color_mode="invert" in set(arguments),
-                clean_map_mode="clean" in set(arguments),
+                oil_spill_mode=oil_spill_mode,
+                invert_color_mode=invert_color_mode,
+                clean_map_mode=clean_map_mode,
                 movement_only="movement" in arguments,
                 turn=season,
                 fow_player=player
@@ -274,36 +286,9 @@ class PlayerCog(commands.Cog):
                 "Please use `.vm svg` instead"
             )
 
-        dpi = board.data["svg config"].get("dpi", 200)
         convert_svg = not ({"true", "t", "svg", "s"} & set(arguments))
         if convert_svg and file and file_name:
-            file, file_name = await svg_to_png(file, file_name, dpi=dpi)
-        
-            # cutup map png output for pacific center line
-            pacific_map_mode="pacific" in set(arguments)
-            if "impdip" in board.datafile and pacific_map_mode:
-                img = Image.open(BytesIO(file))
-                arr = np.array(img)
-
-                # cutoff lines (assuming 200 DPI)
-                split_pixel_ratio = 3570 / 11047
-                map_edge_pixel_ratio = 9100 / 11047
-
-                # scale for DPI
-                split_pixel = int(split_pixel_ratio * img.width)
-                map_edge_pixel = int(map_edge_pixel_ratio * img.width)
-                
-                # cut map section of image in two pieces
-                left = arr[:, :split_pixel]
-                right = arr[:, split_pixel:map_edge_pixel]
-
-                # reorder and stitch together
-                reordered = np.concatenate([right, left], axis=1)
-                arr[:, :map_edge_pixel] = reordered
-
-                output = BytesIO()
-                Image.fromarray(arr).save(output, format="PNG")
-                file = output.getvalue()
+            file, file_name = await svg_to_png(file, file_name, board.data["svg config"], pacific_mode=pacific_map_mode)
 
         display_season = season or board.turn
         log_command(

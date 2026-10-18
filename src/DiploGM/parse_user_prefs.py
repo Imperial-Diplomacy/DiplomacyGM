@@ -46,14 +46,13 @@ def _set_color_mode(
 ) -> tuple[str | None, str | None]:
     if board is None:
         raise ValueError("Setting a color mode requires an existing game")
-    color_mode = keywords[0].lower()
     valid_color_modes = board.data["svg config"].get("color_options", []) + [
-        "standard",
-        "custom",
+        "standard", "custom", "random", "pacific", "oil spill", "clean", "invert"
     ]
-    if color_mode not in valid_color_modes:
-        raise ValueError(f"Unknown color mode: {color_mode}")
-    return f"{board.datafile}/color_mode", color_mode
+    for color_mode in keywords:
+        if color_mode.lower() not in valid_color_modes:
+            raise ValueError(f"Unknown color mode: {color_mode}")
+    return f"{board.datafile}/color_mode", " ".join(keywords).lower()
 
 
 def _set_pronouns(
