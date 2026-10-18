@@ -17,6 +17,7 @@ from test.DiploGM.utils.mocks import (
 )
 from DiploGM.cogs.player import PlayerCog
 from DiploGM.errors import CommandPermissionError
+from DiploGM.mapper.mapper import Mapper
 
 
 class PlayerCogTestCase(CogTestCase):
@@ -428,3 +429,11 @@ class TestViewMap(PlayerCogTestCase):
         self.mock_send.assert_called()
         kwargs = self.get_sent_kwargs()
         self.assertEqual(kwargs["file"], b"<svg>fake</svg>")
+
+    def test_fow_player_restricts_visible_provinces(self):
+        """FOW-view maps hide provinces outside the requesting player's visibility."""
+        self.board.data["fow"] = "enabled"
+        mapper = Mapper(self.board, fow_player=self.players["France"])
+
+        expected = {p.name for p in self.board.get_visible_provinces(self.players["France"])}
+        self.assertEqual(mapper.adjacent_provinces, expected)

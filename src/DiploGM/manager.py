@@ -190,6 +190,7 @@ class Manager(metaclass=SingletonMeta):
                 player_restriction = None
             if kwargs.get("fow_player") is not None:
                 kwargs["fow_player"] = board.get_player(kwargs["fow_player"].name)
+        kwargs.setdefault("restriction", player_restriction)
         svg, file_name = self.draw_map_for_board(
             board,
             player_restriction=player_restriction,
