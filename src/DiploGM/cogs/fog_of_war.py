@@ -85,7 +85,7 @@ class FogOfWarCog(commands.Cog):
                 turn=prev_turn,
                 fow_player=player,
             )
-            file, file_name = await svg_to_png(file, file_name, dpi=dpi)
+            file, file_name = await svg_to_png(file, file_name, board.data["svg config"])
             await send_message_and_file(
                 channel=channel,
                 title=f"{prev_turn} Orders Map",
@@ -102,7 +102,7 @@ class FogOfWarCog(commands.Cog):
                 turn=board.turn,
                 fow_player=player,
             )
-            file, file_name = await svg_to_png(file, file_name, dpi=dpi)
+            file, file_name = await svg_to_png(file, file_name, board.data["svg config"])
             await send_message_and_file(
                 channel=channel,
                 title=f"{prev_turn} Results Map",

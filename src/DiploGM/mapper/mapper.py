@@ -47,11 +47,7 @@ class Mapper:
     def __init__(
         self,
         board: Board,
-        restriction: Player | None = None,
-        color_mode: str | None = None,
-        oil_spill_mode: bool = False,
-        invert_color_mode: bool = False,
-        clean_map_mode: bool = False,
+        **kwargs,
     ):
         register_namespace("", "http://www.w3.org/2000/svg")
         register_namespace("inkscape", "http://www.inkscape.org/namespaces/inkscape")
@@ -64,23 +60,27 @@ class Mapper:
         self.board_svg_data: dict = board.data[SVG_CONFIG_KEY]
         self.current_turn: turn.Turn = board.turn
         self.board_svg: ElementTree = etree.parse(self.board.data["file"])
-        self.player_restriction: str | None = restriction.name if restriction else None
+        fow_player = kwargs.get("fow_player")
+        self.player_restriction: str | None = fow_player.name if fow_player else None
+        restriction = kwargs.get("restriction")
 
         # different colors
         self.replacements: dict | None = self.board_svg_data.get("color replacements")
-        self.load_colors(color_mode, invert_color_mode)
-        if color_mode is not None:
-            self.replace_colors(color_mode, invert_color_mode)
+        self.color_mode: str | None = kwargs.get("color_mode")
+        self.load_colors(kwargs.get("invert_color_mode", False))
+        if self.color_mode is not None:
+            self.replace_colors("invert" in kwargs)
 
         # enable sea adjacency layer (oil spills)
-        self.oil_spill_mode = oil_spill_mode
-        if self.oil_spill_mode:
+        if kwargs.get("oil_spill_mode", False):
             layer = find_svg_element(self.board_svg, "sea_borders", self.board_svg_data)
             if layer:
                 MapperUtils.set_element_visibility(layer, visible=True)
+            layer = find_svg_element(self.board_svg, "island_borders", self.board_svg_data)
+            if layer:
+                MapperUtils.set_element_visibility(layer, visible=True)
 
-        self.clean_map_mode = clean_map_mode
-        if self.clean_map_mode:
+        if kwargs.get("clean_map_mode", False):
             layers_to_hide = [
                 "province_names",
                 "supply_center_icons",
@@ -135,14 +135,14 @@ class Mapper:
         self.adjacent_provinces: set[str] = {p.name for p in visible_provinces}
 
         # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
-        if not self.clean_map_mode:
+        if not kwargs.get("clean_map_mode", False):
             for unit in [
                 unit
                 for unit in self.board.units
                 if unit.province.name in self.adjacent_provinces
             ]:
                 self._draw_unit(unit)
-        self._color_provinces()
+        self._color_provinces(kwargs.get("oil_spill_mode", False))
         self._color_centers()
         self.panel_drawer.draw_side_panel(self.board_svg)
 
@@ -463,9 +463,7 @@ class Mapper:
             root, encoding="utf-8"
         ), f"{str(self.board.turn).replace(' ', '_')}_gui.svg"
 
-    def load_colors(
-        self, color_mode: str | None = None, invert_color_mode: bool = False
-    ) -> None:
+    def load_colors(self, invert_color_mode: bool = False) -> None:
         """Loads player colors based on the color mode."""
         self.player_colors = {
             "None": "ffffff",
@@ -473,16 +471,16 @@ class Mapper:
         }
         for player in self.board.players:
             if (
-                color_mode is not None
+                self.color_mode is not None
                 and player.color_dict
-                and color_mode in player.color_dict
+                and self.color_mode in player.color_dict
             ):
-                color = player.color_dict[color_mode]
-            elif color_mode == "custom":
+                color = player.color_dict[self.color_mode]
+            elif self.color_mode == "custom":
                 color = self.board.data["players"][player.name].get(
                     "custom_color", player.default_color
                 )
-            elif color_mode == "random":
+            elif self.color_mode == "random":
                 color = oklab_random()
             else:
                 color = player.default_color
@@ -490,7 +488,7 @@ class Mapper:
         neutral_color = self.board_svg_data.get("neutral", "ffffff")
         if isinstance(neutral_color, dict):
             neutral_color = neutral_color.get(
-                color_mode, neutral_color.get("standard", "ffffff")
+                self.color_mode, neutral_color.get("standard", "ffffff")
             )
 
         self.player_colors["Neutral"] = neutral_color.lower()
@@ -500,23 +498,23 @@ class Mapper:
             self.neutral_color = neutral_colors
         else:
             self.neutral_color = neutral_colors.get(
-                color_mode, neutral_colors["standard"]
+                self.color_mode, neutral_colors["standard"]
             )
         impassable_colors = self.board_svg_data.get("impassable", "000000")
         if isinstance(impassable_colors, str):
             self.impassable_color = impassable_colors
         else:
             self.impassable_color = impassable_colors.get(
-                color_mode, impassable_colors["standard"]
+                self.color_mode, impassable_colors["standard"]
             )
 
         self.clear_seas_color = self.board_svg_data["default_sea_color"]
         if (
             self.replacements is not None
             and self.clear_seas_color in self.replacements
-            and color_mode in self.replacements[self.clear_seas_color]
+            and self.color_mode in self.replacements[self.clear_seas_color]
         ):
-            self.clear_seas_color = self.replacements[self.clear_seas_color][color_mode]
+            self.clear_seas_color = self.replacements[self.clear_seas_color][self.color_mode]
 
         if invert_color_mode:
             self.player_colors = {
@@ -526,7 +524,7 @@ class Mapper:
             self.impassable_color = MapperUtils.invert_hexcode(self.impassable_color)
             self.clear_seas_color = MapperUtils.invert_hexcode(self.clear_seas_color)
 
-    def replace_colors(self, color_mode: str, invert_color_mode: bool = False) -> None:
+    def replace_colors(self, invert_color_mode: bool = False) -> None:
         """Replaces colors in the SVG based on the color mode."""
         if self.replacements is None:
             return
@@ -542,9 +540,9 @@ class Mapper:
         for element in elements_to_process:
             color = get_element_color(element) or "ffffff"
             if color in self.replacements:
-                if color_mode in self.replacements.get(color, {}):
-                    color = self.replacements[color][color_mode]
-            elif color_mode == "dark":
+                if self.color_mode in self.replacements.get(color, {}):
+                    color = self.replacements[color][self.color_mode]
+            elif self.color_mode == "dark":
                 color = "ffffff"
 
             if invert_color_mode:
@@ -583,7 +581,7 @@ class Mapper:
         self._moves_svg = copy.deepcopy(self.board_svg)
         self.order_drawer.moves_svg = self._moves_svg
 
-    def _color_provinces(self) -> None:
+    def _color_provinces(self, oil_spill_mode: bool = False) -> None:
         province_layer = find_svg_element(
             self.board_svg, "land_layer", self.board_svg_data
         )
@@ -630,7 +628,7 @@ class Mapper:
             elif province.name not in self.adjacent_provinces:
                 color = self.board_svg_data.get("unknown", "808080")
             elif province_element in sea_elements:
-                if not self.oil_spill_mode or province.owner is None:
+                if not oil_spill_mode or province.owner is None:
                     color = self.clear_seas_color
 
             MapperUtils.color_element(province_element, color)
