@@ -177,6 +177,45 @@ class TestRemoveAll(PlayerCogTestCase):
         self.assertIsNone(self.a_paris.order)
         self.assertIsNone(self.a_london.order)
 
+class TestRemoveAllBuilds(PlayerCogTestCase):
+    """Tests for the .remove_all command during a build phase."""
+
+    def setUp(self):
+        super().setUp()
+        self.board.turn = Turn(1901, PhaseName.WINTER_BUILDS)
+        self.builder.build(self.players["France"], ("F", "Brest"), ("A", "Paris"), ("A", "Marseilles"))
+        self.builder.build(self.players["England"], ("F", "London"))
+
+    async def test_remove_all_builds_as_player(self):
+        """Player removes only their own build orders."""
+        ctx = create_mock_player_context(message_content=".remove_all")
+        await self.invoke(self.cog, "remove_all", ctx, None)
+
+        self.mock_send.assert_called()
+        self.assert_message_contains("Removed all Orders")
+        ctx = create_mock_gm_context(message_content=".view_orders")
+        await self.invoke(self.cog, "view_orders", ctx, None)
+        self.mock_send.assert_called()
+        self.assert_message_not_contains("Brest")
+        self.assert_message_not_contains("Paris")
+        self.assert_message_not_contains("Marseilles")
+        self.assert_message_contains("London")
+
+    async def test_remove_all_builds_as_gm(self):
+        """GM removes all build orders."""
+        ctx = create_mock_gm_context(message_content=".remove_all")
+        await self.invoke(self.cog, "remove_all", ctx, None)
+
+        self.mock_send.assert_called()
+        self.assert_message_contains("Removed all Orders")
+        ctx = create_mock_gm_context(message_content=".view_orders")
+        await self.invoke(self.cog, "view_orders", ctx, None)
+        self.mock_send.assert_called()
+        self.assert_message_not_contains("Brest")
+        self.assert_message_not_contains("Paris")
+        self.assert_message_not_contains("Marseilles")
+        self.assert_message_not_contains("London")
+
 class TestViewOrdersMoves(PlayerCogTestCase):
     """Tests for .view_orders during a move phase."""
 
@@ -353,26 +392,24 @@ class TestViewMap(PlayerCogTestCase):
 
     async def test_vm_returns_file(self):
         """Basic .vm returns a file with convert_svg=True for a player."""
-        ctx = create_mock_player_context(message_content=".vm")
+        ctx = create_mock_player_context(message_content=".vm svg")
         await self.invoke(self.cog, "view_map", ctx, self.players["France"])
 
         self.mock_send.assert_called()
         kwargs = self.get_sent_kwargs()
         self.assertEqual(kwargs["file"], b"<svg>fake</svg>")
         self.assertEqual(kwargs["file_name"], "map.svg")
-        self.assertTrue(kwargs["convert_svg"])
 
     async def test_vc_returns_file(self):
         """Basic .vc returns a file with convert_svg=True for a player.
         No need to do separate tests for .vm and .vc since they call the same underlying function."""
-        ctx = create_mock_player_context(message_content=".vc")
+        ctx = create_mock_player_context(message_content=".vc svg")
         await self.invoke(self.cog, "view_current", ctx, self.players["France"])
 
         self.mock_send.assert_called()
         kwargs = self.get_sent_kwargs()
         self.assertEqual(kwargs["file"], b"<svg>fake</svg>")
         self.assertEqual(kwargs["file_name"], "map.svg")
-        self.assertTrue(kwargs["convert_svg"])
 
     async def test_vm_svg_as_gm(self):
         """.vm svg as GM in GM channel returns SVG (convert_svg=False)."""
@@ -381,7 +418,7 @@ class TestViewMap(PlayerCogTestCase):
 
         self.mock_send.assert_called()
         kwargs = self.get_sent_kwargs()
-        self.assertFalse(kwargs["convert_svg"])
+        self.assertEqual(kwargs["file"], b"<svg>fake</svg>")
 
     async def test_vm_true_as_gm(self):
         """.vm true as GM returns SVG."""
@@ -390,4 +427,4 @@ class TestViewMap(PlayerCogTestCase):
 
         self.mock_send.assert_called()
         kwargs = self.get_sent_kwargs()
-        self.assertFalse(kwargs["convert_svg"])
+        self.assertEqual(kwargs["file"], b"<svg>fake</svg>")

@@ -174,11 +174,11 @@ async def _update_deadline(ctx: commands.Context, guild_id: int) -> None:
     if not (timestamp := board.data.get("deadline")):
         return
     if board.turn.is_moves():
-        phase_length = board.data.get("phase_length", []).get("moves", 60*60*24*2)
+        phase_length = board.data.get("phase_length", {}).get("moves", 60*60*24*2)
     elif board.turn.is_retreats():
-        phase_length = board.data.get("phase_length", []).get("retreats", 60*60*24)
+        phase_length = board.data.get("phase_length", {}).get("retreats", 60*60*24)
     else:
-        phase_length = board.data.get("phase_length", []).get("builds", 60*60*24)
+        phase_length = board.data.get("phase_length", {}).get("builds", 60*60*24)
     board.set_data("deadline", int(timestamp) + int(phase_length))
     get_connection().execute_arbitrary_sql(
         "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",

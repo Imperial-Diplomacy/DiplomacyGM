@@ -131,15 +131,21 @@ class PlayerCog(commands.Cog):
 
         board = manager.get_board(ctx.guild.id)
 
-        if player is None:
-            for unit in board.units:
-                unit.order = None
-        else:
-            for unit in filter(lambda u: u.player == player, board.units):
-                unit.order = None
-
         database = get_connection()
-        database.save_order_for_units(board, board.units)
+        if board.turn.is_builds():
+            players = board.players if player is None else {player}
+            for player in players:
+                player.build_orders = set()
+                player.waived_orders = 0
+            database.save_build_orders_for_players(board, player)
+        else:
+            if player is None:
+                for unit in board.units:
+                    unit.order = None
+            else:
+                for unit in filter(lambda u: u.player == player, board.units):
+                    unit.order = None
+            database.save_order_for_units(board, board.units)
         log_command(logger, ctx, message="Removed all Orders")
         await send_message_and_file(channel=ctx.channel, title="Removed all Orders")
 
