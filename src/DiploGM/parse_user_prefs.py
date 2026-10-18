@@ -47,7 +47,7 @@ def _set_color_mode(
     if board is None:
         raise ValueError("Setting a color mode requires an existing game")
     valid_color_modes = board.data["svg config"].get("color_options", []) + [
-        "standard", "custom", "random", "pacific", "oil spill", "clean", "invert"
+        "standard", "custom", "random", "pacific", "oil", "clean", "invert"
     ]
     for color_mode in keywords:
         if color_mode.lower() not in valid_color_modes:
