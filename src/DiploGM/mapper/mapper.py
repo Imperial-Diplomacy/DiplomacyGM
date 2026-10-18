@@ -60,11 +60,8 @@ class Mapper:
         self.board_svg_data: dict = board.data[SVG_CONFIG_KEY]
         self.current_turn: turn.Turn = board.turn
         self.board_svg: ElementTree = etree.parse(self.board.data["file"])
-        fow_player = kwargs.get("fow_player")
-        restriction = kwargs.get("restriction") or fow_player
-        self.player_restriction: str | None = (
-            restriction.name if restriction is not None else None
-        )
+        restriction = kwargs.get("fow_player")
+        self.player_restriction: str | None = restriction.name if restriction else None
 
         # different colors
         self.replacements: dict | None = self.board_svg_data.get("color replacements")
