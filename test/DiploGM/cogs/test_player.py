@@ -437,3 +437,11 @@ class TestViewMap(PlayerCogTestCase):
 
         expected = {p.name for p in self.board.get_visible_provinces(self.players["France"])}
         self.assertEqual(mapper.adjacent_provinces, expected)
+
+    def test_non_fow_board_does_not_restrict_visible_provinces(self):
+        """Normal maps remain unrestricted even when a player is passed in."""
+        self.board.data["fow"] = "disabled"
+        mapper = Mapper(self.board, restriction=self.players["France"])
+
+        expected = {p.name for p in self.board.provinces}
+        self.assertEqual(mapper.adjacent_provinces, expected)
