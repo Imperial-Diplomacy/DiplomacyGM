@@ -4,7 +4,6 @@ from __future__ import annotations
 from unittest import mock
 from unittest.mock import MagicMock
 
-from discord.ext import commands
 
 from test.DiploGM.utils.mocks import (
     CogTestCase,
@@ -14,10 +13,12 @@ from test.DiploGM.utils.mocks import (
     create_mock_member,
     create_mock_player_context,
 )
+from discord.ext import commands
 from DiploGM.cogs.player import PlayerCog
 from DiploGM.models.turn import Turn, PhaseName
 from DiploGM.errors import CommandPermissionError
 from DiploGM.mapper.mapper import Mapper
+from DiploGM.utils.sanitise import get_map_options
 
 
 class PlayerCogTestCase(CogTestCase):
@@ -441,7 +442,14 @@ class TestViewMap(PlayerCogTestCase):
     def test_non_fow_board_does_not_restrict_visible_provinces(self):
         """Normal maps remain unrestricted even when a player is passed in."""
         self.board.data["fow"] = "disabled"
-        mapper = Mapper(self.board, fow_player=self.players["France"])
+        mapper = Mapper(self.board, restriction=self.players["France"])
 
         expected = {p.name for p in self.board.provinces}
         self.assertEqual(mapper.adjacent_provinces, expected)
+
+    def test_get_map_options_uses_default_prefs(self):
+        """Saved preference strings like 'dark custom' should preserve map modes."""
+        board = self.board
+        board.data["svg config"]["map_options"] = ["standard", "dark", "custom"]
+
+        self.assertEqual(get_map_options(board, [], "dark custom"), ["dark", "custom"])
