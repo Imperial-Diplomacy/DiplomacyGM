@@ -20,7 +20,7 @@ from DiploGM.utils import (
 from DiploGM.manager import Manager
 from DiploGM.models.player import Player
 from DiploGM.models.province import ProvinceType
-from DiploGM.utils.sanitise import find_discord_role, parse_season, remove_prefix
+from DiploGM.utils.sanitise import find_discord_role, remove_prefix
 
 if TYPE_CHECKING:
     from DiploGM.models.board import Board
@@ -292,7 +292,7 @@ class CommandCog(commands.Cog):
             )
             return
 
-        power_roles = set(map(lambda p: find_discord_role(p, ctx.guild.roles), players))
+        power_roles = {find_discord_role(p, ctx.guild.roles) for p in players}
         active_players = {role: [] for role in power_roles}
 
         for member in ctx.guild.members:

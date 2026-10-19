@@ -147,7 +147,7 @@ class VariantDevelopmentCog(commands.Cog):
             for province in board.provinces:
                 province.owner = distance_to_players[distances[province]]
             file, file_name = manager.draw_map(ctx.message.id, color_mode="custom")
-            file, file_name = await svg_to_png(file, file_name, dpi=board.data["svg config"].get("dpi", 200))
+            file, file_name = await svg_to_png(file, file_name, board.data["svg config"])
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"{player.name}",

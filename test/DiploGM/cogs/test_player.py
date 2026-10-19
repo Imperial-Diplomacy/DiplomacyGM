@@ -6,7 +6,6 @@ from unittest.mock import MagicMock
 
 from discord.ext import commands
 
-from DiploGM.models.turn import Turn, PhaseName
 from test.DiploGM.utils.mocks import (
     CogTestCase,
     create_mock_context,
@@ -16,6 +15,7 @@ from test.DiploGM.utils.mocks import (
     create_mock_player_context,
 )
 from DiploGM.cogs.player import PlayerCog
+from DiploGM.models.turn import Turn, PhaseName
 from DiploGM.errors import CommandPermissionError
 from DiploGM.mapper.mapper import Mapper
 
@@ -441,7 +441,7 @@ class TestViewMap(PlayerCogTestCase):
     def test_non_fow_board_does_not_restrict_visible_provinces(self):
         """Normal maps remain unrestricted even when a player is passed in."""
         self.board.data["fow"] = "disabled"
-        mapper = Mapper(self.board, restriction=self.players["France"])
+        mapper = Mapper(self.board, fow_player=self.players["France"])
 
         expected = {p.name for p in self.board.provinces}
         self.assertEqual(mapper.adjacent_provinces, expected)
