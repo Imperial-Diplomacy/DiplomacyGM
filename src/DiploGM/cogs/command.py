@@ -144,8 +144,7 @@ class CommandCog(commands.Cog):
 
         if csv and not board.is_chaos():
             players = sorted(board.get_players(), key=lambda p: p.name)
-            counts = map(lambda p: str(len(p.centers)), players)
-            counts = "\n".join(counts)
+            counts = "\n".join([str(len(p.centers)) for p in players])
             await ctx.send(counts)
             return
 

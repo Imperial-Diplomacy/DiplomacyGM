@@ -15,7 +15,7 @@ from DiploGM.parse_order import parse_order, parse_remove_order
 from DiploGM.utils import get_orders, log_command, parse_season, send_message_and_file
 from DiploGM.utils.image import svg_to_png
 from DiploGM.utils.open_cores import get_open_core_text
-from DiploGM.utils.sanitise import find_discord_role, get_colour_option, remove_prefix
+from DiploGM.utils.sanitise import find_discord_role, get_map_options, remove_prefix
 from DiploGM.manager import Manager
 from DiploGM.models.player import (
     ForcedDisbandOption,
@@ -230,23 +230,9 @@ class PlayerCog(commands.Cog):
         arguments = remove_prefix(ctx).lower().split()
         board = manager.get_board(ctx.guild.id)
         season = parse_season(arguments, board.turn)
-        oil_spill_mode="oil" in arguments
-        invert_color_mode="invert" in arguments
-        clean_map_mode="clean" in arguments
-        pacific_map_mode="pacific" in arguments
 
-        color_mode = get_colour_option(board, arguments)
-        if color_mode is None:
-            color_prefs = (
-                manager.ctx_parameters.get(ctx.author.id, {})
-                .get(board.datafile, {})
-                .get("color_mode", "standard")
-            ).split()
-            color_mode = get_colour_option(board, color_prefs)
-            oil_spill_mode="oil" in color_prefs
-            invert_color_mode="invert" in color_prefs
-            clean_map_mode="clean" in color_prefs
-            pacific_map_mode="pacific" in color_prefs
+        user_prefs = manager.ctx_parameters.get(ctx.author.id, {}).get(board.datafile, {}).get("color_mode")
+        map_modes = get_map_options(board, arguments, user_prefs)
 
         if player and show_moves and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
@@ -258,10 +244,7 @@ class PlayerCog(commands.Cog):
                 ctx.guild.id,
                 draw_moves=show_moves,
                 player_restriction=player,
-                color_mode=color_mode,
-                oil_spill_mode=oil_spill_mode,
-                invert_color_mode=invert_color_mode,
-                clean_map_mode=clean_map_mode,
+                map_modes=map_modes,
                 movement_only="movement" in arguments,
                 turn=season,
                 fow_player=player
@@ -288,7 +271,7 @@ class PlayerCog(commands.Cog):
 
         convert_svg = not ({"true", "t", "svg", "s"} & set(arguments))
         if convert_svg and file and file_name:
-            file, file_name = await svg_to_png(file, file_name, board.data["svg config"], pacific_mode=pacific_map_mode)
+            file, file_name = await svg_to_png(file, file_name, board.data["svg config"], pacific_mode="pacific" in map_modes)
 
         display_season = season or board.turn
         log_command(
@@ -335,13 +318,9 @@ class PlayerCog(commands.Cog):
         board = manager.get_board(ctx.guild.id)
         fow_player = player if board.data.get("fow", "disabled") == "enabled" else None
 
-        color_mode = get_colour_option(board, arguments)
-        if color_mode is None:
-            color_mode = (
-                manager.ctx_parameters.get(ctx.author.id, {})
-                .get(board.datafile, {})
-                .get("color_mode", "standard")
-            )
+        user_prefs = manager.ctx_parameters.get(ctx.author.id, {}).get(board.datafile, {}).get("color_mode")
+        map_modes = get_map_options(board, arguments, user_prefs)
+
 
         if player and not board.orders_enabled:
             log_command(logger, ctx, "Orders locked - not processing")
@@ -350,7 +329,7 @@ class PlayerCog(commands.Cog):
 
         try:
             file, file_name = manager.draw_gui_map(
-                ctx.guild.id, color_mode=color_mode, fow_player=fow_player
+                ctx.guild.id, map_modes=map_modes, fow_player=fow_player
             )
         except MapRenderError as err:
             log_command(
@@ -441,12 +420,9 @@ class PlayerCog(commands.Cog):
                 "You must select a channel in a press category (e.g. #comms-1, #comms-2, etc.)."
             )
             return
-        has_comms_category = False
-        for channel in category.channels:
-            if channel.name.startswith(comms_category_prefix):
-                has_comms_category = True
-                break
-        if not has_comms_category:
+
+        # The chosen category must contain a press channel named #comms-<n>
+        if not any(channel.name.startswith(comms_category_prefix) for channel in category.channels):
             await send_creation_error(
                 "You must select a channel in a press category (e.g. #comms-1, #comms-2, etc.)."
             )
@@ -468,14 +444,14 @@ class PlayerCog(commands.Cog):
         }
         for role in roles:
             overwrites[role] = discord.PermissionOverwrite(view_channel=True)
-        
+
         #Allow general spectators to also view the newly created channel
         specrole = discord.utils.get(ctx.guild.roles, name="Spectator")
         if specrole is not None:
             overwrites[specrole] = discord.PermissionOverwrite(view_channel=True)
 
         try:
-            channel = await category.create_text_channel(
+            await category.create_text_channel(
                 channel_name, overwrites=overwrites
             )
         except discord.Forbidden:
@@ -505,9 +481,7 @@ class PlayerCog(commands.Cog):
         arguments = remove_prefix(ctx).lower().split()
 
         board = manager.get_board(ctx.guild.id)
-        power_roles = set(
-            map(lambda p: find_discord_role(p, guild.roles), board.get_players())
-        )
+        power_roles = {find_discord_role(p, guild.roles) for p in board.get_players()}
 
         if len(set(arguments).intersection(gm_arguments)) != 0:
             perms.assert_gm_only(ctx, "use a gm argument for .press_directory")
@@ -576,7 +550,7 @@ class PlayerCog(commands.Cog):
                     ctx, channel=ctx.channel, player=player, power_roles=power_roles
                 )
 
-            out = " ".join(map(lambda r: r.mention, ctx.message.role_mentions))
+            out = " ".join([r.mention for r in ctx.message.role_mentions])
             await send_message_and_file(
                 channel=ctx.channel,
                 message=f"Created press directories for players: {out}",

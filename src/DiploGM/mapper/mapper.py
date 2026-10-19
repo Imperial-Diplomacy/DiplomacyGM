@@ -2,7 +2,6 @@
 
 import copy
 import itertools
-import sys
 from xml.etree.ElementTree import ElementTree, Element, register_namespace
 from xml.etree.ElementTree import tostring as elementToString
 
@@ -47,6 +46,7 @@ class Mapper:
     def __init__(
         self,
         board: Board,
+        map_modes: list[str] = [],
         **kwargs,
     ):
         register_namespace("", "http://www.w3.org/2000/svg")
@@ -65,13 +65,15 @@ class Mapper:
 
         # different colors
         self.replacements: dict | None = self.board_svg_data.get("color replacements")
-        self.color_mode: str | None = kwargs.get("color_mode")
-        self.load_colors(kwargs.get("invert_color_mode", False))
+        matched_color_modes = set(map_modes) & set(self.board_svg_data.get("color_options", []))
+        logger.info(f"Matched color modes: {matched_color_modes}")
+        self.color_mode: str | None = matched_color_modes.pop() if matched_color_modes else None
+        self.load_colors("invert" in map_modes)
         if self.color_mode is not None:
-            self.replace_colors("invert" in kwargs)
+            self.replace_colors("invert" in map_modes)
 
         # enable sea adjacency layer (oil spills)
-        if kwargs.get("oil_spill_mode", False):
+        if "oil" in map_modes:
             layer = find_svg_element(self.board_svg, "sea_borders", self.board_svg_data)
             if layer:
                 MapperUtils.set_element_visibility(layer, visible=True)
@@ -79,7 +81,7 @@ class Mapper:
             if layer:
                 MapperUtils.set_element_visibility(layer, visible=True)
 
-        if kwargs.get("clean_map_mode", False):
+        if "clean" in map_modes:
             layers_to_hide = [
                 "province_names",
                 "supply_center_icons",
@@ -134,14 +136,10 @@ class Mapper:
         self.adjacent_provinces: set[str] = {p.name for p in visible_provinces}
 
         # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
-        if not kwargs.get("clean_map_mode", False):
-            for unit in [
-                unit
-                for unit in self.board.units
-                if unit.province.name in self.adjacent_provinces
-            ]:
+        if "clean" not in map_modes:
+            for unit in [unit for unit in self.board.units if unit.province.name in self.adjacent_provinces]:
                 self._draw_unit(unit)
-        self._color_provinces(kwargs.get("oil_spill_mode", False))
+        self._color_provinces("oil" in map_modes)
         self._color_centers()
         self.panel_drawer.draw_side_panel(self.board_svg)
 
