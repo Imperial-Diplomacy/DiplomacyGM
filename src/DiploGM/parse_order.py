@@ -51,11 +51,13 @@ class TreeToOrder(Transformer):
     # used for supports, specifically FoW
     @v_args(inline=False)
     def l_unit(self, s) -> Province:
-        """Turns a Unit into its associated provines.
+        """Turns a Unit into its associated province.
         Handy for stuff like FoW where you don't know if there's a unit where you're trying to support/convoy."""
         # ignore the fleet/army signifier, if exists
         loc = s[-1][0]
-        if loc is not None and not self.board.data.get("fow", "disabled") == "enabled":
+        if loc is None:
+            raise ValueError(f"No province found for {s[-1][0]}")
+        if self.board.data.get("fow", "disabled") != "enabled":
             unit = loc.unit
             if unit is None:
                 raise ValueError(f"No unit in {s[-1][0]}")

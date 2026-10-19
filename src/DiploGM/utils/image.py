@@ -3,9 +3,9 @@
 import asyncio
 import logging
 from io import BytesIO
-import numpy as np
 import os
 from subprocess import PIPE
+import numpy as np
 from PIL import Image
 
 import cairosvg
@@ -27,7 +27,7 @@ def rearrange_pacific_map(file: bytes, split_pixel_ratio, map_edge_pixel_ratio) 
     # scale for DPI
     split_pixel = int(split_pixel_ratio * img.width)
     map_edge_pixel = int(map_edge_pixel_ratio * img.width)
-    
+
     # cut map section of image in two pieces
     left = arr[:, :split_pixel]
     right = arr[:, split_pixel:map_edge_pixel]
@@ -48,11 +48,11 @@ async def svg_to_png(svg: bytes, file_name: str, svg_data: dict, pacific_mode: b
 
     try:
         data = cairosvg.svg2png(
-            bytestring=svg, 
+            bytestring=svg,
             dpi=svg_data.get("dpi", 200)
         )
     except Exception as e:
-        logger.warning(f"Failed to convert using cairosvg: {e}")
+        logger.warning("Failed to convert using cairosvg: %s", e)
 
     if not data:
         async with external_task_limit:

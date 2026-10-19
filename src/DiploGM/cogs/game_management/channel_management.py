@@ -377,15 +377,16 @@ async def last_message(ctx: commands.Context) -> None:
     )
 
 async def populate_channels(interaction: discord.Interaction) -> None:
-    # TODO: app_commands permissions check decorators
+    """Populates channels with pre-game messages"""
     if not perms.is_gm(interaction.user):
         await interaction.followup.send(
             "You are not allowed to use `/populate_channels`!", ephemeral=True
         )
         return
-    
-    """Reads JSON templates and processes pre-split message arrays from assets."""
+
+    # Reads JSON templates and processes pre-split message arrays from assets.
     guild = interaction.guild
+    assert guild is not None
     file_path = "assets/msg_templates.json"
 
     if not os.path.exists(file_path):
@@ -430,11 +431,11 @@ async def populate_channels(interaction: discord.Interaction) -> None:
             for chunk in chunks:
                 if not chunk.strip():
                     continue
-                    
+
                 # Format each predetermined section individually
                 formatted_text = chunk.format(**id_mapping)
                 await channel.send(formatted_text)
-                
+
             sent_count += 1
         except discord.Forbidden:
             print(f"⚠️ Permissions error on channel: #{channel_name}")

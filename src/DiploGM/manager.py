@@ -274,7 +274,9 @@ class Manager(metaclass=SingletonMeta):
 
         try:
             svg, file_name = Mapper(
-                self._boards[server_id], fow_player, color_mode=color_mode
+                self._boards[server_id],
+                color_mode=color_mode,
+                fow_player=fow_player,
             ).draw_gui_map(self._boards[server_id].turn, player_restriction)
         except Exception as e:
             raise MapRenderError("Failed to render GUI map") from e

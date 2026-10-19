@@ -190,7 +190,7 @@ class SlashSubstituteCog(commands.Cog):
         file, file_name = manager.draw_map_for_board(
             board, player_restriction=None, draw_moves=False, color_mode="standard"
         )
-        file, file_name = await svg_to_png(file, file_name, dpi=board.data["svg config"].get("dpi", 200))
+        file, file_name = await svg_to_png(file, file_name, board.data["svg config"])
 
         link = await send_message_and_file(
             channel=locations["advertise_channel"],
@@ -377,11 +377,10 @@ class SlashSubstituteCog(commands.Cog):
                     message=f"{incoming_user.mention} is previously spectated a currently unknown power.",
                 )
                 return
-            else:
-                await interaction.followup.send(
-                    f"{incoming_user.mention} is previously spectated {other.mention}!"
-                )
-                return
+            await interaction.followup.send(
+                f"{incoming_user.mention} is previously spectated {other.mention}!"
+            )
+            return
 
         # OUTPUT TO REPUTATION-TRACKER
         outgoing_username = outgoing_username.strip()
@@ -394,10 +393,9 @@ class SlashSubstituteCog(commands.Cog):
                 "Argument `outgoing_username` does not support user mentions."
             )
             return
-        else:
-            outgoing_user = discord_find(
-                lambda m: m.name == outgoing_username, guild.members
-            )
+        outgoing_user = discord_find(
+            lambda m: m.name == outgoing_username, guild.members
+        )
 
         # try to get outgoing user: if username provided and not in game server but still in the hub
         if not outgoing_user:
