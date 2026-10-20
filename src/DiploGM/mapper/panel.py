@@ -71,18 +71,10 @@ class PanelDrawer:
         initial_pretransform_coordinates = TransGL3(power_element[0]).transform(
             get_coordinates(power_element[0])
         )
-        banner_coordinates = TransGL3(power_element).transform(
-            initial_pretransform_coordinates
-        )
-        if (
-            high_player_count
-            and banner_coordinates != self.scoreboard_power_locations[banner_index]
-        ):
+        banner_coordinates = TransGL3(power_element).transform(initial_pretransform_coordinates)
+        if (high_player_count and banner_coordinates != self.scoreboard_power_locations[banner_index]):
             return False
-        if (
-            not high_player_count
-            and get_element_color(power_element[0]) != player.default_color
-        ):
+        if (not high_player_count and get_element_color(power_element[0]) != player.default_color):
             return False
         player_data = self.board.data["players"][player.name]
         if player_data.get("hidden") == "true":
@@ -90,11 +82,9 @@ class PanelDrawer:
             return True
 
         MapperUtils.color_element(power_element[0], self.player_colors[player.name])
+        # Only sort power banners if they're configured to do so or if it's not hideden FoW info
         sort_powers = self.board_svg_data.get("scoreboard", {}).get("sort", True)
-        sort_powers &= (
-            self.board.data.get("fow", "disabled") != "enabled"
-            or self.restriction is None
-        )
+        sort_powers &= (self.board.data.get("fow", "disabled") != "enabled" or self.restriction is None)
         if sort_powers:
             original_trans = TransGL3(power_element)
             translation = self.scoreboard_power_locations[
@@ -103,9 +93,7 @@ class PanelDrawer:
             offset = TransGL3().init(x_c=translation.real, y_c=translation.imag)
             power_element.set("transform", str(original_trans * offset))
 
-        for index, value in (
-            self.board_svg_data["scoreboard"].get("indexes", {}).items()
-        ):
+        for index, value in (self.board_svg_data["scoreboard"].get("indexes", {}).items()):
             if not index.isnumeric() or (i := int(index)) >= len(power_element):
                 continue
             if (

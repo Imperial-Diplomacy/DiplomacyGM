@@ -267,7 +267,6 @@ class Board:
 
     def get_visible_provinces(self, player: Player) -> set[Province]:
         """Gets a set of provinces that a player can see in Fog of War games."""
-        visible: set[Province] = set()
         visible = {
             p
             for unit in player.units
@@ -454,18 +453,12 @@ class Board:
                 continue
             order = allocation.order
             # First, let's check to see if the player isn't attacking the unit
-            destinations = [
-                u.order.destination for u in player.units if u.order is not None
-            ]
-            if unit.province in destinations:
+            if any(u.order.destination == unit.province for u in player.units if u.order):
                 continue
 
             multiplier = 2 if self.has_affiliation(player, unit.player) else 1
-            if str(order) in dp_allocations:
-                dp_allocations[str(order)] += allocation.points * multiplier
-            else:
-                str_to_order[str(order)] = order
-                dp_allocations[str(order)] = allocation.points * multiplier
+            dp_allocations[str(order)] = dp_allocations.get(str(order), 0) + allocation.points * multiplier
+            str_to_order[str(order)] = order
         # Now let's see which order got the highest bid
         max_points = 0
         winning_order = None
