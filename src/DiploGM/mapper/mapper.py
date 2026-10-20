@@ -66,7 +66,6 @@ class Mapper:
         # different colors
         self.replacements: dict | None = self.board_svg_data.get("color replacements")
         matched_color_modes = set(map_modes) & set(self.board_svg_data.get("color_options", []))
-        logger.info(f"Matched color modes: {matched_color_modes}")
         self.color_mode: str | None = matched_color_modes.pop() if matched_color_modes else None
         self.load_colors("invert" in map_modes)
         if self.color_mode is not None:
@@ -579,30 +578,17 @@ class Mapper:
         self.order_drawer.moves_svg = self._moves_svg
 
     def _color_provinces(self, oil_spill_mode: bool = False) -> None:
-        province_layer = find_svg_element(
-            self.board_svg, "land_layer", self.board_svg_data
-        )
-        island_fill_layer = find_svg_element(
-            self.board_svg, "island_fill_layer", self.board_svg_data
-        )
-        island_ring_layer = find_svg_element(
-            self.board_svg, "island_ring_layer", self.board_svg_data
-        )
-        sea_layer = find_svg_element(self.board_svg, "sea_borders", self.board_svg_data)
-        island_layer = find_svg_element(
-            self.board_svg, "island_borders", self.board_svg_data
-        )
-        if sea_layer is None or province_layer is None:
+        layer_names = ["land_layer", "island_fill_layer", "island_ring_layer", "sea_borders", "island_borders"]
+        layers = {name: find_svg_element(self.board_svg, name, self.board_svg_data) for name in layer_names}
+        if layers["sea_borders"] is None or layers["land_layer"] is None:
             raise ValueError("Missing a layer in SVG!")
-        island_fill_layer = island_fill_layer if island_fill_layer is not None else []
-        island_layer = island_layer if island_layer is not None else []
-        island_ring_layer = island_ring_layer if island_ring_layer is not None else []
+        layers = {name: layer or [] for name, layer in layers.items()}
 
         visited_provinces: set[str] = set()
-        sea_elements = set(sea_layer) | set(island_layer)
+        sea_elements = set(layers["sea_borders"]) | set(layers["island_borders"])
 
         for province_element in itertools.chain(
-            province_layer, island_fill_layer, sea_layer, island_layer
+            layers["land_layer"], layers["island_fill_layer"], layers["sea_borders"], layers["island_borders"]
         ):
             try:
                 province = self._get_province_from_element_by_label(province_element)
@@ -615,23 +601,21 @@ class Mapper:
                 continue
 
             visited_provinces.add(province.name)
-            color = (
-                self.player_colors[province.owner.name]
-                if province.owner
-                else self.neutral_color
-            )
             if province.is_impassable:
                 color = self.impassable_color
             elif province.name not in self.adjacent_provinces:
                 color = self.board_svg_data.get("unknown", "808080")
-            elif province_element in sea_elements:
-                if not oil_spill_mode or province.owner is None:
-                    color = self.clear_seas_color
+            elif province_element in sea_elements and (not oil_spill_mode or province.owner is None):
+                color = self.clear_seas_color
+            elif province.owner:
+                color = self.player_colors[province.owner.name]
+            else:
+                color = self.neutral_color
 
             MapperUtils.color_element(province_element, color)
 
         # Try to combine this with the code above? A lot of repeated stuff here
-        for island_ring in island_ring_layer:
+        for island_ring in layers["island_ring_layer"]:
             try:
                 province = self._get_province_from_element_by_label(island_ring)
             except ValueError as ex:
@@ -646,12 +630,10 @@ class Mapper:
                 color = self.impassable_color
             elif province.name not in self.adjacent_provinces:
                 color = self.board_svg_data.get("unknown", "808080")
+            elif province.owner:
+                color = self.player_colors[province.owner.name]
             else:
-                color = (
-                    self.player_colors[province.owner.name]
-                    if province.owner
-                    else self.neutral_color
-                )
+                color = self.neutral_color
 
             MapperUtils.color_element(island_ring, color, key="stroke")
 
@@ -664,9 +646,7 @@ class Mapper:
                 )
 
     def _color_centers(self) -> None:
-        centers_layer = find_svg_element(
-            self.board_svg, "supply_center_icons", self.board_svg_data
-        )
+        centers_layer = find_svg_element(self.board_svg, "supply_center_icons", self.board_svg_data)
         if centers_layer is None:
             raise ValueError("Supply Center layer not found in SVG")
 
@@ -678,7 +658,7 @@ class Mapper:
         if (capital_marker := self.cached_symbols.get("capital")) is not None:
             capital_marker.set("transform", "")
 
-        for center_element in list(centers_layer):
+        for center_element in centers_layer:
             try:
                 province = self._get_province_from_element_by_label(center_element)
             except ValueError as ex:
@@ -726,12 +706,9 @@ class Mapper:
                 MapperUtils.color_element(center_element, element_color)
             if province.name in capital_provinces and capital_marker is not None:
                 capital_copy = copy.deepcopy(capital_marker)
-                translation = TransGL3(center_element).transform(
-                    get_sc_coordinates(center_element)
-                ) - get_sc_coordinates(capital_copy)
-                capital_copy.set(
-                    "transform", f"translate({translation.real}, {translation.imag})"
-                )
+                translation = TransGL3(center_element).transform(get_sc_coordinates(center_element)) \
+                              - get_sc_coordinates(capital_copy)
+                capital_copy.set("transform", f"translate({translation.real}, {translation.imag})")
                 for elem in capital_copy:
                     if get_element_color(elem) != "000000":
                         MapperUtils.color_element(elem, element_color)

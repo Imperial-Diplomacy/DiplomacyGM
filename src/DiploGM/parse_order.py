@@ -9,6 +9,7 @@ from discord.ext.commands import Paginator
 from lark import Lark, Transformer, UnexpectedEOF, UnexpectedCharacters, v_args
 from lark.exceptions import VisitError
 
+from DiploGM.adjudicator.validate_order import OrderValidity, order_is_valid
 from DiploGM.config import ERROR_COLOUR, GRAMMAR_LOCATION, PARTIAL_ERROR_COLOUR
 from DiploGM.models.adjacency import Terrain
 from DiploGM.utils import _manage_coast_signature
@@ -336,48 +337,15 @@ def _get_parser(board: Board) -> Lark:
     ebnf_with_units = ebnf_with_units.replace(
         "{{UNIT_TYPE_CODES}}", "".join(unit_codes)
     )
-    start = (
-        "order"
-        if board.turn.is_moves()
-        else "retreat"
-        if board.turn.is_retreats()
-        else "build"
-    )
+    if board.turn.is_moves():
+        start = "order"
+    elif board.turn.is_retreats():
+        start = "retreat"
+    else:
+        start = "build"
     parser = Lark(ebnf_with_units, start=start, parser="earley")
     parser_cache[cache_key] = parser
     return parser
-
-
-def _check_for_warnings(unit: Unit) -> str | None:
-    if isinstance(unit.order, (order.Move, order.RetreatMove)):
-        if not unit.province.adjacencies.get(unit.order.destination):
-            return "This move is not to an adjacent province. This will fail unless there is a convoy."
-        if (
-            Terrain.COAST in unit.unit_type.moves_on
-            and unit.order.destination.adjacencies.coasts
-            and not unit.order.destination_coast
-        ):
-            reachable_coasts = unit.province.adjacencies.get_coasts(
-                unit.order.destination, unit.coast
-            )
-            if len(reachable_coasts) > 1:
-                return "Destination province has multiple reachable coasts, so this order will fail."
-            if reachable_coasts:
-                unit.order.destination_coast = reachable_coasts.pop()
-                return (
-                    "Destination province has one reachable coast. "
-                    + f"Assigning {unit.order.destination_coast} as the destination coast."
-                )
-    if isinstance(unit.order, order.Support):
-        if not unit.province.adjacencies.get(unit.order.destination):
-            return "This support is not to an adjacent province and will fail."
-        if (
-            unit.order.source != unit.order.destination
-            and not unit.order.source.adjacencies.get(unit.order.destination)
-        ):
-            return "This support is between two non-adjacent provinces, and will fail unless there is a convoy."
-    return None
-
 
 def _handle_individual_order(
     current_order: str, parser: Lark, player_restriction: Player | None, board: Board
@@ -388,20 +356,35 @@ def _handle_individual_order(
     if board.turn.is_builds():
         return f"\u001b[0;32m{current_order}", None, None
     movement = ordered_unit
-    if (warning := _check_for_warnings(ordered_unit)) is not None:
-        warning = f"`{current_order}`: {warning}"
-        color = "\u001b[0;33m"
-    else:
+
+    if ordered_unit.order is None or board.data.get("fow", "disabled") == "enabled":
+        warning = None
         color = "\u001b[0;32m"
+    else:
+        valid, reason = order_is_valid(
+            ordered_unit.province,
+            ordered_unit.order,
+            core_options=board.data.get("core_options", {}),
+        )
+        # Valid orders are green, as well as mismatched non-move orders (since they might depend on enemy units)
+        if (valid == OrderValidity.VALID or
+            (valid == OrderValidity.MISMATCHED_ORDER and not isinstance(ordered_unit.order, order.Move))):
+            warning = None
+            color = "\u001b[0;32m"
+        # Move orders that require a convoy give a warning, whether the convoying unit has a matching order
+        elif (valid == OrderValidity.VALID_WITH_CONVOY or
+              (valid == OrderValidity.MISMATCHED_ORDER and isinstance(ordered_unit.order, order.Move))):
+            warning = f"`{current_order}`: This move is not to an adjacent province and will require a convoy."
+            color = "\u001b[0;33m"
+        # Invalid orders give the provided warnings
+        else:
+            warning = f"`{current_order}`: {reason}"
+            color = "\u001b[0;33m"
     if (
         ordered_unit.player is None or not ordered_unit.player.is_active
     ) and player_restriction is not None:
-        if (
-            dp_order := ordered_unit.dp_allocations.get(player_restriction.name)
-        ) is not None:
-            orderoutput = (
-                f"{color}DP {dp_order.points}: {ordered_unit} {dp_order.order}"
-            )
+        if (dp_order := ordered_unit.dp_allocations.get(player_restriction.name)) is not None:
+            orderoutput = f"{color}DP {dp_order.points}: {ordered_unit} {dp_order.order}"
         else:
             orderoutput = f"{color}Removed DP bid for {ordered_unit}"
     else:

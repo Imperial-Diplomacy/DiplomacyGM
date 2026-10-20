@@ -219,6 +219,8 @@ def _validate_convoy_order(
     assert unit is not None
     if not unit.unit_type.can_convoy:
         return OrderValidity.INVALID, "This unit cannot convoy"
+    if not province.can_convoy:
+        return OrderValidity.INVALID, "Units in this province cannot convoy"
     source_unit = order.source.unit
     if not isinstance(source_unit, Unit):
         return OrderValidity.INVALID, "There is no unit to convoy"

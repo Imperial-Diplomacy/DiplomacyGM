@@ -30,5 +30,3 @@ def oklab_random() -> str:
     hex = f"{r:02x}{g:02x}{b:02x}"
 
     return hex
-    
-
