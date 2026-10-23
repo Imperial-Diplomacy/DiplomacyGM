@@ -34,6 +34,7 @@ async def set_deadline(ctx: commands.Context) -> None:
     content = remove_prefix(ctx)
     adjust = content.startswith("adjust")
     cancel = content.startswith("cancel")
+    schedule_cog = ctx.bot.get_cog("ScheduleCog")
     if adjust:
         content = content.removeprefix("adjust").strip()
         deadline = int(board.data.get("deadline", time()))
@@ -45,6 +46,9 @@ async def set_deadline(ctx: commands.Context) -> None:
                 embed_colour=config.ERROR_COLOUR,
             )
             return
+        if schedule_cog is not None:
+            time_delta = new_deadline - datetime.fromtimestamp(deadline)
+            await schedule_cog.adjust_repeated_tasks(board, time_delta)
         board.set_data("deadline", int(new_deadline.timestamp()))
         logger.info("Adjusted deadline to %s", new_deadline)
         await send_message_and_file(
@@ -70,6 +74,10 @@ async def set_deadline(ctx: commands.Context) -> None:
             )
             return
         new_deadline = int(timestamp_match.group(1))
+        if schedule_cog is not None:
+            deadline = int(board.data.get("deadline", time()))
+            time_delta = datetime.fromtimestamp(new_deadline) - datetime.fromtimestamp(deadline)
+            await schedule_cog.adjust_repeated_tasks(board, time_delta)
         board.set_data("deadline", new_deadline)
         logger.info("Set new deadline: %s", new_deadline)
         await send_message_and_file(

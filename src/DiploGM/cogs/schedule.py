@@ -9,8 +9,11 @@ from discord.ext import commands, tasks
 from discord import Message, TextChannel, User
 
 from DiploGM.bot import DiploGM
-from DiploGM import config, perms
+from DiploGM import perms
 from DiploGM.config import ERROR_COLOUR
+from DiploGM.db.database import get_connection
+from DiploGM.errors import NoGameError
+from DiploGM.models.board import Board
 from DiploGM.utils import (
     get_value_from_timestamp,
     send_message_and_file,
@@ -82,14 +85,7 @@ class ScheduleCog(commands.Cog):
         """,
     )
     @perms.gm_only("schedule a command")
-    async def schedule(
-        self,
-        ctx: commands.Context,
-        timestamp: str,
-        command_name: str,
-        *,
-        content: str = "",
-    ):
+    async def schedule(self, ctx: commands.Context, timestamp: str, command_name: str, *, content: str = "") -> str | None:
         """Schedule a command for execution at a time in the future
 
         Usage: 
@@ -123,16 +119,11 @@ class ScheduleCog(commands.Cog):
         if not guild or not channel:
             return
 
-
         if "\n" in content:
             for i, line in enumerate(content.split("\n")):
                 if i == 0:
                     line = f"{timestamp} {command_name} {line}"
-
-                components = line.split()
-                _timestamp = components[0]
-                _command_name = components[1]
-                _content = " ".join(components[2:])
+                _timestamp, _command_name, _content = line.split(maxsplit=2)
                 await self.schedule(ctx, _timestamp, _command_name, content=_content)
             return
 
@@ -143,9 +134,7 @@ class ScheduleCog(commands.Cog):
             return
 
         # check schedule time is in the future
-        scheduled_time = datetime.datetime.fromtimestamp(
-            scheduled_time, tz=datetime.timezone.utc
-        )
+        scheduled_time = datetime.datetime.fromtimestamp(scheduled_time, tz=datetime.timezone.utc)
 
         if scheduled_time <= now:
             await send_error(ctx.channel, ErrorMessage.COMMAND_IN_PAST)
@@ -155,27 +144,11 @@ class ScheduleCog(commands.Cog):
         command_name = command_name.removeprefix(str(self.bot.command_prefix))
         cmd: commands.Command = ctx.bot.get_command(command_name)
         if cmd is None:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message=f"Command '{command_name}' is not understood.",
-                embed_colour=ERROR_COLOUR,
-            )
+            await send_error(ctx.channel, ErrorMessage.UNKNOWN_COMMAND)
             return
-
-        elif command_name in IMPOSSIBLE_COMMANDS:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message=f"Command '{command_name}' can't be scheduled.",
-                embed_colour=ERROR_COLOUR,
-            )
+        if command_name in IMPOSSIBLE_COMMANDS:
+            await send_error(ctx.channel, ErrorMessage.UNSCHEDULABLE_COMMAND)
             return
-
-        repeats = False
-        if content.endswith("repeats"):
-            content = content.removesuffix("repeats").strip()
-            repeats = True
 
         scheduled_task = {
             "invoking_user_id": ctx.author.id,
@@ -190,7 +163,6 @@ class ScheduleCog(commands.Cog):
             "full_command": f"{self.bot.command_prefix}{command_name} {content}",
             "mentions": [mention.id for mention in ctx.message.mentions],
             "role_mentions": [mention.id for mention in ctx.message.role_mentions],
-            "repeats": repeats,
         }
 
         out = (
@@ -198,8 +170,6 @@ class ScheduleCog(commands.Cog):
             f"Arguments: {content}\n"
             f"To occur at: {timestamp}"
         )
-        if repeats:
-            out += "\nRepeats after each turn."
         await send_message_and_file(
             channel=ctx.channel, title="Schedule successful!", message=out
         )
@@ -207,6 +177,60 @@ class ScheduleCog(commands.Cog):
         task_id = uuid.uuid4().hex[:8]
         self.scheduled_tasks[task_id] = scheduled_task
         await self.save_scheduled_tasks()
+        return task_id
+
+    @commands.command(
+        name="schedule_repeating",
+        brief="Schedule a time for command execution that occurs every phase",
+    )
+    @perms.gm_only("schedule a repeating command")
+    async def schedule_repeating(
+        self,
+        ctx: commands.Context,
+        time_delta: str,
+        command_name: str,
+        *,
+        content: str = "",
+    ):
+        guild = ctx.guild
+        channel = ctx.channel
+        if not guild or not channel:
+            return
+        board = manager.get_board(guild.id)
+        if not (deadline := board.data.get("deadline")):
+            await send_error(ctx.channel, ErrorMessage.NO_DEADLINE)
+            return
+        if "\n" in content:
+            for i, line in enumerate(content.split("\n")):
+                if i == 0:
+                    line = f"{time_delta} {command_name} {line}"
+                _time_delta, _command_name, _content = line.split(maxsplit=2)
+                await self.schedule_repeating(ctx, _time_delta, _command_name, content=_content)
+            return
+
+        sign = 1
+        if time_delta.startswith("-"):
+            sign = -1
+            time_delta = time_delta[1:]
+        if time_delta.isnumeric(): # If it's just a number, assume it's in hours
+            hours, minutes = int(time_delta), 0
+        else:
+            if not (time_match := re.search(r"((\d+)h)?((\d+)m)?", time_delta)):
+                await send_error(ctx.channel, ErrorMessage.IMPROPER_TIME_LENGTH)
+                return
+
+            hours = int(time_match.group(2)) if time_match.group(2) else 0
+            minutes = int(time_match.group(4)) if time_match.group(4) else 0
+        seconds_before = sign * (60 * 60 * hours + 60 * minutes)
+        timestamp = deadline - int(seconds_before)
+        task_id = await self.schedule(ctx, f"<t:{timestamp}:f>", command_name, content=content)
+        if task_id is None:
+            return
+        board.set_data(["scheduled_repeated", task_id], f"{seconds_before}:{command_name}:{content}")
+        get_connection().execute_arbitrary_sql(
+            "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
+            (board.board_id, f"scheduled_repeated/{task_id}", f"{seconds_before}:{command_name}:{content}"),
+        )
 
     @commands.command(
         name="unschedule",
@@ -276,6 +300,16 @@ class ScheduleCog(commands.Cog):
                 embed_colour=ERROR_COLOUR,
             )
 
+        try:
+            board = manager.get_board(ctx.guild.id)
+            board.set_data(["scheduled_repeated", task_id], None)
+            get_connection().execute_arbitrary_sql(
+                "DELETE FROM board_parameters WHERE board_id = ? AND parameter_key = ?",
+                (board.board_id, f"scheduled_repeated/{task_id}"),
+            )
+        except NoGameError:
+            pass
+
     @commands.command(
         name="view_schedule",
         brief="View scheduled commands.",
@@ -331,63 +365,43 @@ class ScheduleCog(commands.Cog):
             channel=ctx.channel, title=f"Scheduled tasks for {guild.name}", message=out
         )
 
-    @commands.command(
-        name="delay_schedule",
-        brief="Delay scheduled commands.",
-        aliases=["delayschedule"]
-    )
-    @perms.gm_only("delay scheduled commands")
-    async def delay_schedule(self, ctx: commands.Context, delay_str: str):
-        """Delays all scheduled commands by the speficied hours and optionally minutes."""
-        assert ctx.guild is not None
-        sign = 1
-        if delay_str.startswith("-"):
-            sign = -1
-            delay_str = delay_str[1:]
-        if delay_str.isnumeric(): # If it's just a number, assume it's in hours
-            delay = 60 * 60 * int(delay_str)
-        else:
-            time_match = re.search(r"((\d+)h)?((\d+)m)?", delay_str)
-            if not time_match:
-                await send_message_and_file(
-                    channel=ctx.channel,
-                    message="Please provide a valid time length.",
-                    embed_colour=config.ERROR_COLOUR,
-                )
-                return
+    async def adjust_repeated_tasks(self, board: Board, delayed_deadline: datetime.timedelta):
+        """Adjusts all repeated tasks for a board to the new deadline.
 
-            hours = int(time_match.group(2)) if time_match.group(2) else 0
-            minutes = int(time_match.group(4)) if time_match.group(4) else 0
-            delay = 60 * 60 * hours + 60 * minutes
-        delay *= sign
+        Args:
+            board (Board): Board object to adjust repeated tasks for
+            delayed_deadline (int): Amount the deadline has been delayed by in seconds
+        """
 
-        guild_tasks = {
-            id: task
-            for id, task in self.scheduled_tasks.items()
-            if task["guild_id"] == ctx.guild.id
-        }
-        guild_tasks = dict(
-            sorted(guild_tasks.items(), key=lambda pair: pair[1]["execute_at"])
-        )
-
-        out = [f"All tasks have been {('delayed' if delay > 0 else 'advanced')} by {delay_str}."]
-        for task_id, task in guild_tasks.items():
-            task["execute_at"] += datetime.timedelta(seconds=delay)
-            self.scheduled_tasks[task_id] = task
-            user = self.bot.get_user(task["invoking_user_id"])
-            s = f"Task ID = `{task_id}`:\n- [{user.mention if user else task['invoking_user_name']}] " + \
-                f"-> `{task['command']}` at <t:{int(task['execute_at'].timestamp())}:f>"
-            if len(task["args"]) != 0:
-                s += f"\n  - Arguments: {task['args']}"
-
-            out.append(s)
-
-        out = "\n".join(out)
-
+        repeated_tasks = board.data.get("scheduled_repeated", {})
+        for task_id in repeated_tasks.keys():
+            if task_id not in self.scheduled_tasks:
+                continue
+            self.scheduled_tasks[task_id]["execute_at"] += delayed_deadline
         await self.save_scheduled_tasks()
-        await send_message_and_file(
-            channel=ctx.channel, title=f"Scheduled tasks for {ctx.guild.name}", message=out
-        )
+
+    async def refresh_repeated_tasks(self, ctx: commands.Context):
+        """Schedules all stored repeated tasks from a given server.
+        Primarily used to refresh tasks after an adjudication."""
+        assert ctx.guild is not None
+        board = manager.get_board(ctx.guild.id)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if not (deadline_str := board.data.get("deadline")):
+            logger.warning("No deadline found in game %s", ctx.guild.id)
+            return
+        deadline = datetime.datetime.fromtimestamp(int(deadline_str))
+        task_list = board.data.get("scheduled_repeated", {})
+        for task_id, task_details in task_list.items():
+            del self.scheduled_tasks[task_id]
+            seconds_before, command_name, content = task_details.split(":", 2)
+            new_timstamp = deadline - datetime.timedelta(seconds=int(seconds_before))
+            if new_timstamp <= now:
+                continue
+            new_task_id = await self.schedule(ctx, str(new_timstamp.timestamp()), command_name, content=content)
+            if new_task_id is None:
+                logger.warning("Failed to schedule task")
+                continue
+            self.scheduled_tasks[task_id] = self.scheduled_tasks.pop(new_task_id)
 
     @tasks.loop(seconds=LOOP_FREQUENCY_SECONDS)
     async def process_scheduled_tasks(self):
@@ -508,22 +522,6 @@ class ScheduleCog(commands.Cog):
                     f"Executing command scheduled by '{task['invoking_user_name']}' at <t:{int(task['created_at'].timestamp())}:f>",
                 )
 
-                if task.get("repeats"):
-                    # reschedule task for next turn
-                    board = manager.get_board(task["guild_id"])
-                    if board.turn.get_next_turn().is_moves():
-                        phase_length = board.data.get("phase_length", []).get("moves", 60*60*24*2)
-                    elif board.turn.get_next_turn().is_retreats():
-                        phase_length = board.data.get("phase_length", []).get("retreats", 60*60*24)
-                    else:
-                        phase_length = board.data.get("phase_length", []).get("builds", 60*60*24)
-                    task["execute_at"] = task["execute_at"] + datetime.timedelta(seconds=int(phase_length))
-                    self.scheduled_tasks[task_id] = task
-                    await self.save_scheduled_tasks()
-                    await send_message_and_file(
-                        channel=channel,
-                        message=f"Rescheduled repeating task {task_id} to <t:{int(task['execute_at'].timestamp())}:f>.",
-                    )
                 await self.bot.process_commands(message)
             except Exception as e:
                 await channel.send(

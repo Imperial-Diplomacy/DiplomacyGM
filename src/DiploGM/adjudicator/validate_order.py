@@ -41,12 +41,10 @@ def is_valid_result(result: OrderValidity | tuple[OrderValidity, str | None]) ->
     """Helper function to check if result of order_is_valid is valid or would be with a convoy."""
     if isinstance(result, tuple):
         result = result[0]
-    return result == OrderValidity.VALID or result == OrderValidity.VALID_WITH_CONVOY
+    return result in {OrderValidity.VALID, OrderValidity.VALID_WITH_CONVOY}
 
 
-def convoy_is_possible(
-    start: Province, end: Province, check_fleet_orders: bool = True
-) -> bool:
+def convoy_is_possible(start: Province, end: Province, check_fleet_orders: bool = True) -> bool:
     """
     Breadth-first search to figure out if start -> end is possible passing over fleets
 
@@ -68,6 +66,7 @@ def convoy_is_possible(
         for adjacent_province in current.adjacencies.get_all():
             if adjacent_province == end:
                 return True
+            # If the adjacent province is a sea province and has a fleet, it could convoy
             adjacent_could_convoy = (
                 adjacent_province.can_convoy
                 and adjacent_province.unit is not None
@@ -80,9 +79,7 @@ def convoy_is_possible(
                 and (adjacent_province.unit.order.source is start)
                 and (adjacent_province.unit.order.destination is end)
             )
-            if adjacent_could_convoy and (
-                not check_fleet_orders or adjacent_did_convoy
-            ):
+            if adjacent_could_convoy and (not check_fleet_orders or adjacent_did_convoy):
                 to_visit.append(adjacent_province)
 
     return False
@@ -137,25 +134,14 @@ def _validate_move_order(
         return OrderValidity.INVALID, "Cannot move to an impassable province"
     adjacency = province.adjacencies.get(destination_province)
     if adjacency is None:
-        return (
-            OrderValidity.INVALID,
-            f"{province} does not border {destination_province}",
-        )
-    if (
-        Terrain.LAND in unit.unit_type.moves_on
-        and Terrain.SEA in unit.unit_type.moves_on
-    ):
+        return OrderValidity.INVALID, f"{province} does not border {destination_province}"
+    if Terrain.LAND in unit.unit_type.moves_on and Terrain.SEA in unit.unit_type.moves_on:
         return OrderValidity.VALID, None
     terrain_intersection = unit.unit_type.moves_on & adjacency.terrain
     if not terrain_intersection:
-        return (
-            OrderValidity.INVALID,
-            f"{unit.unit_type.name} cannot move from {province} to {destination_province}",
-        )
+        return OrderValidity.INVALID, f"{unit.unit_type.name} cannot move from {province} to {destination_province}"
     if Terrain.COAST in terrain_intersection:
-        valid, reason = _validate_coastal_move(
-            province, order, unit, strict_coast_movement
-        )
+        valid, reason = _validate_coastal_move(province, order, unit, strict_coast_movement)
         if valid != OrderValidity.VALID:
             return valid, reason
 
@@ -224,6 +210,11 @@ def _validate_convoy_order(
     source_unit = order.source.unit
     if not isinstance(source_unit, Unit):
         return OrderValidity.INVALID, "There is no unit to convoy"
+    valid_move, reason = order_is_valid(
+        order.source, Move(destination=order.destination), strict_coast_movement=False
+    )
+    if not is_valid_result(valid_move):
+        return valid_move, reason
     if (
         not isinstance(source_unit.order, Move)
         or source_unit.order.destination != order.destination
@@ -232,11 +223,6 @@ def _validate_convoy_order(
             OrderValidity.MISMATCHED_ORDER,
             f"Convoyed unit {order.source} did not make corresponding order",
         )
-    valid_move, reason = order_is_valid(
-        order.source, Move(destination=order.destination), strict_coast_movement=False
-    )
-    if not is_valid_result(valid_move):
-        return valid_move, reason
     # Check we are actually part of the convoy chain
     destination_province = order.destination
     if not convoy_is_possible(order.source, destination_province):
@@ -304,44 +290,27 @@ def _validate_core_order(
 ) -> tuple[OrderValidity, str | None]:
     assert province.unit is not None
     if not province.has_supply_center:
-        return (
-            OrderValidity.INVALID,
-            f"{province} does not have a supply center to core",
-        )
+        return OrderValidity.INVALID, f"{province} does not have a supply center to core"
     if province.owner != province.unit.player:
         return OrderValidity.INVALID, "Units can only core in owned supply centers"
-    if (
-        adj_requirement := core_options.get("require_adjacent_ownership", "false")
-    ) != "false":
-        for p in province.adjacencies.get_all():
-            if p.owner == province.unit.player:
-                continue
-            if adj_requirement == "all" and p.type != ProvinceType.SEA:
-                return (
-                    OrderValidity.INVALID,
-                    "Cannot core if there are unowned adjacent provinces",
-                )
-            if adj_requirement == "sc" and p.has_supply_center:
-                return (
-                    OrderValidity.INVALID,
-                    "Cannot core if there are unowned adjacent supply centers",
-                )
-    if (
-        unit_requirement := core_options.get("require_no_enemy_units", "false")
-    ) != "false":
-        for p in province.adjacencies.get_all():
-            if p.unit is None or p.unit.player == province.unit.player:
-                continue
-            if unit_requirement == "all":
-                return (
-                    OrderValidity.INVALID,
-                    "Cannot core if there are adjacent enemy units",
-                )
-            if unit_requirement == "sc" and p.has_supply_center:
-                return (
-                    OrderValidity.INVALID,
-                    "Cannot core if there are adjacent enemy units in supply centers",
-                )
+
+    if (core_options.get("require_adjacent_ownership") == "all"
+        and any(p.owner != province.unit.player and p.type != ProvinceType.SEA
+                for p in province.adjacencies.get_all())):
+        return OrderValidity.INVALID, "Cannot core if there are unowned adjacent provinces"
+    if (core_options.get("require_adjacent_ownership") == "sc"
+        and any(p.owner != province.unit.player and p.has_supply_center
+                for p in province.adjacencies.get_all())):
+        return OrderValidity.INVALID, "Cannot core if there are unowned adjacent supply centers"
+
+    if (core_options.get("require_no_enemy_units") == "all"
+        and any(p.unit is not None and p.unit.player != province.unit.player
+                for p in province.adjacencies.get_all())):
+        return OrderValidity.INVALID, "Cannot core if there are adjacent enemy units"
+    if (core_options.get("require_no_enemy_units") == "sc"
+        and any(p.unit is not None and p.unit.player != province.unit.player and p.has_supply_center
+                for p in province.adjacencies.get_all())):
+        return OrderValidity.INVALID, "Cannot core if there are adjacent enemy units in supply centers"
     return OrderValidity.VALID, None
 
 
