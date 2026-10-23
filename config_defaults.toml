@@ -45,6 +45,8 @@ gm_category = "gm channels"
 maps_channel = "maps"
 orders_log_channel = "orders-log"
 draw_votes_channel = "draw-votes"
+announcements_channel = "announcements"
+deadlines_channel = "deadlines"
 restricted_roles = ["Admin", "Moderators", "GM", "Heavenly Angel", "GM Team", "Player", "Spectator", "Country Spectator", "Dead", "DiploGM"]
 
 [permissions]

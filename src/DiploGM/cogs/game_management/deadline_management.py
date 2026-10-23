@@ -22,7 +22,7 @@ from DiploGM.models.order import Disband, Build
 from DiploGM.models.player import Player
 from DiploGM.manager import Manager
 from DiploGM.utils.sanitise import find_discord_role, remove_prefix
-from DiploGM.utils.send_message import ErrorMessage, send_error
+from DiploGM.utils.send_message import ErrorMessage, send_error, get_channel
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -326,3 +326,14 @@ async def ping_players(ctx: commands.Context) -> None:
             title="Failed to find a player for the following:",
             message=f"- {failed_players_str}",
         )
+
+async def post_deadline(ctx: commands.Context) -> None:
+    assert ctx.guild is not None
+    board = manager.get_board(ctx.guild.id)
+    if (deadline := board.data.get("deadline")) is None:
+        await send_error(ctx.channel, ErrorMessage.NO_DEADLINE)
+    deadlines_channel_id = await get_channel(ctx.guild, "deadlines_channel")
+    if deadlines_channel_id is None:
+        await send_error(ctx.channel, ErrorMessage.NO_DEADLINES_CHANNEL)
+        return
+    deadlines_channel = ctx.guild.get_channel(int(deadlines_channel_id))

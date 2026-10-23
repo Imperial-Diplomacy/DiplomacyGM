@@ -6,7 +6,7 @@ from typing import List, Tuple
 import logging
 
 import discord
-from discord import Message, Embed, Colour
+from discord import Message, Embed, Colour, Guild, TextChannel
 from discord.abc import Messageable
 
 from DiploGM import config
@@ -32,6 +32,7 @@ class ErrorMessage(Enum):
     IMPROPER_TIME_LENGTH = "Did not give a proper time length."
     INVALID_MAPS_CHANNEL = "Maps channel is not a text channel."
     NO_MAPS_CHANNEL = "Maps channel not found in server."
+    NO_DEADLINES_CHANNEL = "Deadlines channel not found in server."
     MESSAGE_NOT_GIVEN = "No message given."
     NO_DEADLINE = "No deadline set for this game."
     NO_PREVIOUS_BOARD = "No previous board found."
@@ -64,6 +65,20 @@ async def send_orders_locked_error(channel: Messageable) -> Message:
         message="If you think this is an error, contact a GM.",
         embed_colour=config.ERROR_COLOUR,
     )
+
+async def get_channel(guild: Guild, name: str) -> str | None:
+    """Gets the channel given its name"""
+    if (channel_name := config.CHANNEL_NAMES.get(name)) is None:
+        return None
+    for channel in guild.channels:
+        if (
+            channel.name.lower() == channel_name
+            and channel.category is not None
+            and channel.category.name.lower() == config.GM_CATEGORY
+            and isinstance(channel, TextChannel)
+        ):
+            return str(channel.id)
+    return None
 
 
 async def send_message_and_file(
