@@ -89,7 +89,6 @@ HUB_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID: int = all_config["hub"][
 ]
 ## Roles
 HUB_BOT_WIZARD_ROLE: int = all_config["hub"]["bot_wizard"]
-HUB_SERVER_VERIFIED_ROLE: str = all_config["hub"]["verified_role"]
 ## Messages
 HUB_SERVER_BOT_BUG_REPORT_CHANNEL_MESSAGE: str = all_config["hub"]["bug_report_channel"]
 

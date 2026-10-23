@@ -9,7 +9,6 @@ from DiploGM import utils
 from DiploGM.config import (
     ERROR_COLOUR,
     HUB_SERVER_ID,
-    HUB_SERVER_VERIFIED_ROLE,
     PARTIAL_ERROR_COLOUR,
     PLAYER_CHANNEL_SUFFIX,
     RESTRICTED_ROLE_NAMES,
@@ -346,19 +345,13 @@ class SpectatorCog(commands.Cog):
                 return False
             self.ban_repo.delete(requester.id)
 
-        # check for membership and verification on the hub Server
+        # check for membership on the hub Server
         if not (hub := self.bot.get_guild(HUB_SERVER_ID)):
             return False
         hub_requester = discord.utils.get(hub.members, name=interaction.user.name)
         if not hub_requester:
             await interaction.response.send_message(
                 f"You are not a member of the Hub Server! Notifying {_team.mention}!"
-            )
-            return False
-
-        if not discord.utils.get(hub_requester.roles, name=HUB_SERVER_VERIFIED_ROLE):
-            await interaction.response.send_message(
-                f"You are not verified on the Hub Server! Notifying {_team.mention}!"
             )
             return False
 
