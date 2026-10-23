@@ -184,6 +184,8 @@ async def _update_deadline(ctx: commands.Context, guild_id: int) -> None:
         "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
         (board.board_id, "deadline", board.data["deadline"]),
     )
+    if (schedule_cog := ctx.bot.get_cog("ScheduleCog")) is not None:
+        await schedule_cog.refresh_repeated_tasks(ctx)
     await send_message_and_file(
         channel=ctx.channel,
         message=f"Updated deadline to <t:{board.data['deadline']}:f>.",
