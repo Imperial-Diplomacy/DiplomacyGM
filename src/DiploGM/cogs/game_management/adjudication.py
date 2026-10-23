@@ -27,7 +27,7 @@ from DiploGM.models.player import (
 )
 from DiploGM.manager import Manager
 from DiploGM.utils.sanitise import get_map_options, remove_prefix
-from DiploGM.utils.send_message import ErrorMessage, send_error
+from DiploGM.utils.send_message import ErrorMessage, send_error, get_channel
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -81,7 +81,7 @@ async def _post_orders(ctx: commands.Context, board: Board) -> str:
         )
         await send_error(ctx.channel, ErrorMessage.UNKNOWN_ERROR)
         return ""
-    orders_log_channel = _get_orders_log(ctx.guild)
+    orders_log_channel = get_channel(ctx.guild, "orders_log_channel")
     if not orders_log_channel or not isinstance(orders_log_channel, TextChannel):
         log_command(
             logger,
@@ -390,7 +390,7 @@ async def adjudicate(ctx: commands.Context) -> None:
         )
     else:
         map_channels = {}
-    default_maps_channel = _get_maps_channel(guild)
+    default_maps_channel = get_channel(guild, "maps_channel")
     if default_maps_channel and default_maps_channel not in map_channels:
         map_channels[default_maps_channel] = ["standard"]
     if args.get("map_modes") is not None and default_maps_channel:
@@ -424,27 +424,3 @@ async def adjudicate(ctx: commands.Context) -> None:
         await unlock_orders(ctx)
 
     await _adjudication_utils(ctx, guild, new_board, args["test"])
-
-
-def _get_maps_channel(guild: Guild) -> str | None:
-    for channel in guild.channels:
-        if (
-            channel.name.lower() == config.MAPS_CHANNEL
-            and channel.category is not None
-            and channel.category.name.lower() == config.GM_CATEGORY
-            and isinstance(channel, TextChannel)
-        ):
-            return str(channel.id)
-    return None
-
-
-def _get_orders_log(guild: Guild) -> TextChannel | None:
-    for channel in guild.channels:
-        if (
-            channel.name.lower() == config.ORDERS_LOG_CHANNEL
-            and channel.category is not None
-            and channel.category.name.lower() == config.GM_CATEGORY
-            and isinstance(channel, TextChannel)
-        ):
-            return channel
-    return None

@@ -8,7 +8,6 @@ from discord import Guild, Member, TextChannel, User
 from discord.abc import GuildChannel
 from discord.ext import commands
 
-from DiploGM import config
 from DiploGM.manager import Manager
 from DiploGM.models.board import Board
 from DiploGM.models.player import Player
@@ -31,7 +30,9 @@ async def tally_reacts(ctx: commands.Context, message_id: Optional[int], message
 
     draw_votes_channel: Optional[GuildChannel] = None
     if message_id is not None:
-        draw_votes_channel = _get_draw_votes_channel(ctx.guild)
+        channel_id = await send_message.get_channel(ctx.guild, "draw_votes_channel")
+        if channel_id is not None:
+            draw_votes_channel = ctx.guild.get_channel(int(channel_id))
 
     if message_link is not None:
         pattern = r"https://(?:canary\.|ptb\.)?discord\.com/channels/(\d+)/(\d+)/(\d+)"
@@ -99,16 +100,6 @@ async def tally_reacts(ctx: commands.Context, message_id: Optional[int], message
         title="Tallied votes",
         message=response
     )
-
-def _get_draw_votes_channel(guild: Guild) -> TextChannel | None:
-    for channel in guild.channels:
-        if (
-            channel.name.lower() == config.DRAW_VOTES_CHANNEL
-            and channel.category is not None
-            and isinstance(channel, TextChannel)
-        ):
-            return channel
-    return None
 
 def _get_player_object_for_member_with_orders(guild: Guild, board: Board, user: User | Member) -> Optional[Player]:
     """WHAT a function name"""
