@@ -1,28 +1,27 @@
 {
     "server-rules": [
-      "### IMPERIAL DIPLOMACY CODE OF CONDUCT\nhttps://docs.google.com/document/d/16cFW-NeVMQs1JhN6CbAxzcEf2mokWAS8vF8ZyxARlMI/",
-  
-      "### IMPERIAL DIPLOMACY COMMUNITY SERVER RULES\n\n1. **Be kind and considerate.** No flaming, toxicity, or any other harmful behavior towards others is allowed. For examples of what is not allowed, please refer to the Imperial Diplomacy Code of Conduct.\n2. **No spamming.** Memes can go anywhere, but if there's a lot of them, they should be focused in <#{public_square_id}>.\n3. **No NSFW is allowed.** (If something is borderline, it's better not to post it).\n4. **Keep channels to their designated purposes** as much as possible.\n5. **Do your best NOT TO QUIT** your Diplomacy games.\n6. **Don't cheat.** Cheating can include but may not be limited to:\n   A. sending screenshots\n   B. sending images that you haven't created yourself that aren't publicly available (this includes the `.vm` command from the Bot but NOT the `.view_gui` command)\n   C. forwarding private press, voids, or orders of ongoing games except to your void in that game\n   D. sending messages about ongoing games through direct message\n   E. soliciting information from non-players that is, or could be, obtained from channels that you do not have access to\n   F. discussing messages in press or voids in ongoing games outside of their respective game server\n   G. not reporting leaked information from spectators or from other players.\n   H. metagaming. Do not let what a player did in one game impact your decisions toward them in another.",
-  
-      "7. **Do your best to maintain** your Imperial Diplomacy Reputation.\n8. **Be respectful of others' identities and time.** Excessive spam pings, and deliberate and or severely frequent disregard for folks' identities as explicitly stated in <#{player_information_id}> is considered harmful behavior, in line with Rule 1.\n9. **Don't excessively argue** with your <@&{gm_role_id}> and/ or <@&{moderators_role_id}>. If you have a serious dispute, instead make a ticket here: https://discord.com/channels/1201167737163104376/1245039464779350096. Just as you're obligated to listen to the <@&{gm_role_id}> and <@&{moderators_role_id}> they are obligated to listen to the <@&{admin_role_id}> team.\n10. **Have fun and enjoy your time here!**\n11. **These rules may be updated at any time.**",
-  
+      "### IMPERIAL DIPLOMACY CODE OF CONDUCT\nhttps://docs.google.com/document/d/1Qtr24fqZBHTDRkje4pPlpFBREnxsf7vtkcFSa9LXqSM/",
+      "### IMPERIAL DIPLOMACY COMMUNITY SERVER RULES",
+      "1. Everyone is required to follow the Imperial Diplomacy Code of Conduct and the list of rules here, which may be updated at any time. Don't excessively argue with staff. If you have a complaint, open a support ticket.",
+      "2. No spamming. This includes excessive pings and overflowing a channel with irrelevant jokes or pictures. Keep channels to their designated purposes.",
+      "3. Avoid quitting your Diplomacy games to the best of your ability. Do your best to maintain your Imperial Diplomacy Reputation.",
+      "4. Respect others' identities. Deliberate, severe, or frequent disregard for pronouns or other identifying characteristics is a violation of this rule. We will tolerate all except for intolerance.",
       "Moderation is here to try and keep the community safe. The main purpose is to punish behavior which is harmful to game integrity (such as cheating) and behavior which is overtly toxic (such as offensive name calling.) If something someone says makes you uncomfortable report it to <@&{moderators_role_id}> and/or <@&{gm_role_id}>. If they make a decision that you disagree with, please open a ticket here. We all do our best to monitor but if you escalate to us, the entire community is better off as a result.",
-  
       "### COUNTRY SPECTATOR REQUESTS\n\nIf you'd like to spectate a specific power, using the command `/spec @[role of country you are spectating]` in <#{public_square_id}> will send the player a message in their orders channel asking them to approve the spec, and when they do, you will automatically be granted the country spectator roles! If you're having any issues getting the spec role you'd like, please feel free to ping <@&{gm_role_id}> if there are any issues (however, leaving and re-joining the server usually fixes any bugs with this command.)\n\n*There are no general spectators in this wave.*"
     ],
 
     "variant-rules": [
-      "### IMPERIAL DIPLOMACY RULESET\nhttps://docs.google.com/document/d/1atlC8-ykOKuZf8rnsxfQtQ4B2WOrU05astG8gKzcjoM/"
+      "### IMPERIAL DIPLOMACY RULESET\nhttps://docs.google.com/document/d/1VOv1JScpWq3RnIO3Bkf5XjxbHIy4xgTwxttxKau1Wb0/"
     ],
   
     "player-guide": [
-      "### IMPERIAL DIPLOMACY PLAYER GUIDE\nhttps://docs.google.com/document/d/1SNZgzDViPB-7M27dTF0SdmlVuu_KYlqqzX0FQ4tWc2M/edit?tab=t.0"
+      "### IMPERIAL DIPLOMACY PLAYER GUIDE\nhttps://docs.google.com/document/d/1dEr_f1n_0gsUbEWpMu_VjWWx2WdG4LAk6574l-QW2ow/"
     ],
   
     "other-servers": [
       "### **Diplomacy Variant Club**\n*Imperial Diplomacy* is only one variant of many, and the people who designed this game are fantastic enthusiasts of all of the Variants this strategy has to offer, so has a server that features resources to join other great variants of the game as well!Do join below:\n\n**Server Link:** https://discord.gg/6PvPB5ASYf",
   
-      "### **DiploStrats**\n*Imperial Diplomacy* has after Diplostrats’ AAR of Game A1B has had a large influx of new members. They make amazing game analysis videos of important tournament games as well as other interesting matches. Their videos are great for growing as a diplomacy player!\n\n**Server Link:** https://discord.gg/6StHkpCEKg",
+      "### **DiploStrats**\n*Imperial Diplomacy* has after Diplostrats' AAR of Game A1B has had a large influx of new members. They make amazing game analysis videos of important tournament games as well as other interesting matches. Their videos are great for growing as a diplomacy player!\n\n**Server Link:** https://discord.gg/6StHkpCEKg",
   
       "### **NoPun Diplomacy Variants**\nArguably one of the most creative and well published map designers for Diplomacy Variants, *NoPunIn10Did* runs very high skill tournaments and games, primarily featuring DP (Diplomacy Points) on his server. Quite a fun crowd to play with, but featuring some of the most dangerous diplomacy players out there...\n\n**Server Link:** https://discord.gg/77r4BSRYV8",
   
@@ -30,7 +29,7 @@
   
       "### **Virtual World Diplomacy Community**\nThis is the center of the virtual face to face scene. They regularly schedule both competitive and casual games for the classic map played via voice regularly that accommodate to various time zones. For anyone who wants to play face to face on the classic map from the comfort of your home!\n\n**Server Link:** https://discord.gg/6aME5JSsxW",
   
-      "### **Imperial Diplomacy Bullet Games**\nLooking to sharpen your tactics? Join the ImpDip Bullet server, where bullet games (no-press, turns under 10 minutes, games under 2 hours) are played occasionally on subsections of the ImpDip map!\n\n**Server Link:** https://discord.gg/hqJYtQJtFD",
+      "### **Imperial Diplomacy Bullet Games**\nLooking to sharpen your tactics? Join the ImpDip Bullet server, where bullet games (no-press, turns under 10 minutes, games under 2 hours) are played occasionally on subsections of the ImpDip map!\n\n**Server Link:** https://discord.gg/tH8x7NE2DX",
   
       "### **Imperial Diplomacy Main Server**\nDo you want to rule the world? Establish empires, stab soulmates, and show off your speeches... Imperial Diplomacy is a world variant of the classic board game, Diplomacy, featuring 25 players and 300+ supply centers. This hub is your place to find archived, current, and upcoming games of Imperial Diplomacy, as well as to be informed on updates and fixes to the variant! ALL MEMBERS OF THIS SERVER MUST BE IN THE MAIN IMPDIP SERVER.\n\n**Server Link:** https://discord.gg/aC2AKefQvs"
     ]
