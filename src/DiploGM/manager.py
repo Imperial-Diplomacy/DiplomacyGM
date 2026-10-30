@@ -120,6 +120,10 @@ class Manager(metaclass=SingletonMeta):
 
         return "Approved request Logged!"
 
+    def get_specs(self, server_id: int, role_id: int) -> set[SpecRequest]:
+        """Get all approved specs for a power"""
+        return {s for s in self._spec_requests.get(server_id, []) if s.role_id == role_id}
+
     def get_board(self, server_id: int) -> Board:
         """Gets the current board for a server.
         Raises a RuntimeError if there is no game in the server."""

@@ -20,7 +20,10 @@ from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
 manager = Manager()
+COUNTRY_SPEC_NAME = "Country Spectator"
 
+# TODO: Move this to a config
+MAX_SPECS = 5
 
 class SpecView(discord.ui.View):
     """Handles the button presses for spectator requests."""
@@ -43,26 +46,27 @@ class SpecView(discord.ui.View):
         self.spec_role = cspec_role
 
     @discord.ui.button(label="Accept", style=discord.ButtonStyle.success)
-    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def accept(self, interaction: discord.Interaction, _: discord.ui.Button):
         """Handle the accept button press."""
+
+        async def send_message(message: str):
+            await interaction.response.send_message(message, ephemeral=True)
+            if interaction.message:
+                await interaction.message.delete()
+
         assert interaction.guild is not None
         # check if player has country spectator role already (HAS NOT LEFT THE SERVER AFTER SPECTATING)
         if self.spec_role in self.member.roles:
-            await interaction.response.send_message(
-                f"{self.member.mention} is already spectating a player!", ephemeral=True
-            )
-            if interaction.message:
-                await interaction.message.delete()
+            await send_message(f"{self.member.mention} is already spectating a player!")
             return
 
         # check if db has a log of requesting player being accepted (HAS LEFT AND REJOINED THE SERVER AFTER SPECTATING)
         if manager.get_spec_request(interaction.guild.id, self.member.id):
-            await interaction.response.send_message(
-                f"{self.member.mention} has previously been accepted as a Spectator.",
-                ephemeral=True,
-            )
-            if interaction.message:
-                await interaction.message.delete()
+            await send_message(f"{self.member.mention} has previously been accepted as a Spectator.")
+            return
+
+        if len(manager.get_specs(interaction.guild.id, self.power_role.id)) >= MAX_SPECS:
+            await send_message(f"{self.power_role.mention} already has too many specs!")
             return
 
         try:
@@ -70,9 +74,6 @@ class SpecView(discord.ui.View):
                 f"Response from: {self.game_name}\n"
                 + f"You have been accepted as a spectator for: @{self.power_role.name}\n"
                 + f"Go to {self.url} to watch them play!"
-            )
-            await interaction.response.send_message(
-                f"Accept response sent to {self.member.mention}!", ephemeral=True
             )
         except discord.Forbidden:
             logger.warning(
@@ -91,11 +92,10 @@ class SpecView(discord.ui.View):
             f"[SPECTATOR LOG] for {self.member.mention}: {resp}"
         )
 
-        if interaction.message:
-            await interaction.message.delete()
+        await send_message(f"Accept response sent to {self.member.mention}!")
 
     @discord.ui.button(label="Reject", style=discord.ButtonStyle.danger)
-    async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def reject(self, interaction: discord.Interaction, _: discord.ui.Button):
         """Handle the reject button press."""
         try:
             await self.member.send(
@@ -293,17 +293,6 @@ class SpectatorCog(commands.Cog):
             )
             return False
 
-        #if interaction.channel.name != "the-public-square":
-        #    channel = discord.utils.find(
-        #        lambda c: c.name == "the-public-square", guild.text_channels
-        #    )
-        #    if channel:
-        #        await interaction.response.send_message(
-        #            f"Can't request here! Go to the public square: {channel.mention}",
-        #            ephemeral=True,
-        #        )
-        #    return False
-
         return True
 
     async def _validate_good_standing(self, interaction: discord.Interaction) -> bool:
@@ -373,23 +362,14 @@ class SpectatorCog(commands.Cog):
             return
 
         requester = guild.get_member(interaction.user.id)
-        if not requester:
-            return
-
-        if not await self._validate_good_standing(interaction):
+        if not requester or not await self._validate_good_standing(interaction):
             return
 
         admin_channel_names = ["admin-chat", "admin-spam", "gm-bot-commands"]
-        admin_channel = discord.utils.find(
-            lambda c: c.name in admin_channel_names, guild.text_channels
-        )
+        admin_channel = discord.utils.find(lambda c: c.name in admin_channel_names, guild.text_channels)
         if not admin_channel:
-            logger.warning(
-                "Server: %s does not have a #gm-bot-commands channel.", guild.name
-            )
-            await interaction.response.send_message(
-                "Could not process your request. (Contact Admin)", ephemeral=True
-            )
+            logger.warning("Server: %s does not have a #gm-bot-commands channel.", guild.name)
+            await interaction.response.send_message("Could not process your request. (Contact Admin)", ephemeral=True)
             return
 
         # CHECK IF USER HAS BEEN ACCEPTED IN THIS SERVER BEFORE
@@ -417,28 +397,26 @@ class SpectatorCog(commands.Cog):
 
         # get country spectator role
         cspec_role = discord.utils.find(
-            lambda r: r.name == "Country Spectator", guild.roles
+            lambda r: r.name == COUNTRY_SPEC_NAME, guild.roles
         )
         if not cspec_role:
-            await interaction.response.send_message(
-                "Could not find country spectator role! Contact GM."
-            )
+            await interaction.response.send_message(f"Could not find {COUNTRY_SPEC_NAME} role! Contact GM.")
             return
 
         # if player already a player or country spec
-        if any(
-            map(
-                lambda r: (
-                    r.name in ["Player", "Spectator", "Country Spectator", "Dead"]
-                ),
-                requester.roles,
-            )
-        ):
+        if any(r for r in requester.roles if r.name in {"Player", "Spectator", COUNTRY_SPEC_NAME, "Dead"}):
             await interaction.response.send_message(
                 "Can't request to spectate that power, you are either a Player or already a Spectator.",
                 ephemeral=True,
             )
 
+            return
+
+        # Power already has too many specs
+        if len(manager.get_specs(guild.id, power_role.id)) >= MAX_SPECS:
+            await interaction.response.send_message(
+                f"{power_role.mention} already has too many specs! Try spectating someone else.", ephemeral=True
+            )
             return
 
         # get power channel to send request
@@ -517,12 +495,12 @@ class SpectatorCog(commands.Cog):
         if not guild:
             return
 
-        cspec = discord_find(lambda r: r.name == "Country Spectator", guild.roles)
+        cspec = discord_find(lambda r: r.name == COUNTRY_SPEC_NAME, guild.roles)
         if cspec is None:
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Error",
-                message="There is no Country Spectator role in this server.",
+                message=f"There is no {COUNTRY_SPEC_NAME} role in this server.",
             )
             return
 
