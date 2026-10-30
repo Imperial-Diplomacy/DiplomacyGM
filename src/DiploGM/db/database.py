@@ -139,8 +139,6 @@ class _DatabaseConnection:
             raise ValueError("Could not parse turn index '%s' for board %s", phase_index, board_id)
         board = self._get_board(board_id, current_turn, data_file, cursor)
 
-        if board is not None:
-            self._load_board_history(board, cursor)
         cursor.close()
         logger.info("Successfully loaded")
         return board
@@ -338,6 +336,7 @@ class _DatabaseConnection:
         for province in board.provinces:
             self._load_province(board, province, province_info_by_name)
 
+        self._load_board_history(board, cursor)
         board.units.clear()
         for unit_info in unit_data:
             self._load_unit(board, board_id, unit_info, cursor)
