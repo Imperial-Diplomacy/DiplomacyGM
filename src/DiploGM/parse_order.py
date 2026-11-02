@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from discord.ext.commands import Paginator
-from lark import Lark, Transformer, UnexpectedEOF, UnexpectedCharacters, v_args
+from lark import Lark, Transformer, UnexpectedEOF, UnexpectedCharacters, v_args, Token, Tree
 from lark.exceptions import VisitError
 
 from DiploGM.config import ERROR_COLOUR, GRAMMAR_LOCATION, PARTIAL_ERROR_COLOUR
@@ -376,6 +376,16 @@ def _check_for_warnings(unit: Unit) -> str | None:
             and not unit.order.source.adjacencies.get(unit.order.destination)
         ):
             return "This support is between two non-adjacent provinces, and will fail unless there is a convoy."
+
+def _check_for_build_warnings(board: Board, unit_type_string: str, province: Province) -> str | None:    
+    if (unit_type := board.fetch_unit_types().get(unit_type_string)) is None:
+        raise ValueError(f"{unit_type_string} isn't a valid unit type")
+    if (
+        Terrain.LAND not in unit_type.moves_on
+        and province.is_landlocked()
+    ):
+        return ('This province is landlocked and cannot build a fleet. Use .remove_order to remove this order, '+
+                'unless you want to create a map with a failing fleet build')
     return None
 
 
@@ -386,6 +396,22 @@ def _handle_individual_order(
     cmd = parser.parse(current_order.strip().lower() + " ")
     ordered_unit: Unit = generator.transform(cmd)
     if board.turn.is_builds():
+        build_node = next(cmd.find_data("build_unit"), None)
+        if build_node is not None:
+            descriptor_token = next(
+                child for child in build_node.children
+                if isinstance(child, Token) and child.type == "DESCRIPTOR"
+            )
+            province_node = next(
+                child for child in build_node.children
+                if isinstance(child, Tree) and child.data == "province"
+            )
+            descriptor = str(descriptor_token).strip()
+            province, coast = generator.transform(province_node)
+            if (warning := _check_for_build_warnings(board, descriptor, province)) is not None:
+                warning = f"`{current_order}`: {warning}"
+                color = "\u001b[0;33m"
+                return f"{color}{current_order}", None, warning
         return f"\u001b[0;32m{current_order}", None, None
     movement = ordered_unit
     if (warning := _check_for_warnings(ordered_unit)) is not None:
