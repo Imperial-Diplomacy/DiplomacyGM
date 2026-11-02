@@ -10,7 +10,7 @@ from discord.utils import find as discord_find
 
 from DiploGM import config
 from DiploGM import perms
-from DiploGM.config import MAP_ARCHIVE_SAS_TOKEN
+from DiploGM.config import MAP_ARCHIVE_SECRET_ACCESS_KEY
 from DiploGM.errors import NoGameError
 from DiploGM.utils import (
     log_command,
@@ -275,10 +275,10 @@ class AdminCog(commands.Cog):
     @perms.superuser_only("Uploads map to archive")
     async def archive_upload(self, ctx: commands.Context) -> None:
         """Uploads a map from a server to the map archive."""
-        if not MAP_ARCHIVE_SAS_TOKEN:
+        if not MAP_ARCHIVE_SECRET_ACCESS_KEY:
             await send_message_and_file(
                 channel=ctx.channel,
-                title="maps_sas_token is not defined in environment variables",
+                title="maps_secret_access_key is not defined in environment variables",
                 embed_colour=config.ERROR_COLOUR,
             )
             return

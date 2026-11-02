@@ -59,9 +59,10 @@ GAME_PLAYING: str = all_config["bot"]["game_playing"]
 
 
 # ARCHIVE WEBSITE
-MAP_ARCHIVE_SAS_TOKEN = all_config["archive_website"]["sas_token"]
-MAP_ARCHIVE_UPLOAD_URL = all_config["archive_website"]["upload_url"]
-MAP_ARCHIVE_URL = all_config["archive_website"]["url"]
+MAP_ARCHIVE_ACCESS_KEY_ID = all_config["archive_website"]["access_key_id"]
+MAP_ARCHIVE_ACCOUNT_ID = all_config["archive_website"]["account_id"]
+MAP_ARCHIVE_BUCKET_NAME = all_config["archive_website"]["bucket_name"]
+MAP_ARCHIVE_SECRET_ACCESS_KEY = all_config["archive_website"]["secret_access_key"]
 
 
 # DEVELOPMENT SERVER HUB

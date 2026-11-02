@@ -78,6 +78,7 @@ simultaneous_svg_exports_limit = 1
 
 [archive_website]
 # Should be set in config.toml, Contact Golden Kumquat for further info.
-sas_token = ""
-upload_url = ""
-url = "https://imperialdiplomacy.com/maparchive/"
+access_key_id = ""
+account_id = ""
+bucket_name = ""
+secret_access_key = ""
