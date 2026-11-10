@@ -19,16 +19,17 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-s3 = boto3.client(
-    service_name="s3",
-    endpoint_url=f"https://{MAP_ARCHIVE_ACCOUNT_ID}.r2.cloudflarestorage.com",
-    aws_access_key_id=MAP_ARCHIVE_ACCESS_KEY_ID,
-    aws_secret_access_key=MAP_ARCHIVE_SECRET_ACCESS_KEY,
-    config=Config(
-        signature_version="s3v4",
-        response_checksum_validation="WHEN_SUPPORTED"
-    ),
-)
+if MAP_ARCHIVE_SECRET_ACCESS_KEY:
+    s3 = boto3.client(
+        service_name="s3",
+        endpoint_url=f"https://{MAP_ARCHIVE_ACCOUNT_ID}.r2.cloudflarestorage.com",
+        aws_access_key_id=MAP_ARCHIVE_ACCESS_KEY_ID,
+        aws_secret_access_key=MAP_ARCHIVE_SECRET_ACCESS_KEY,
+        config=Config(
+            signature_version="s3v4",
+            response_checksum_validation="WHEN_SUPPORTED"
+        ),
+    )
 
 async def upload_map_to_archive(
     ctx: commands.Context,

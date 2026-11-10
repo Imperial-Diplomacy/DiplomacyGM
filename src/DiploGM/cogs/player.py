@@ -75,7 +75,13 @@ class PlayerCog(commands.Cog):
             await send_orders_locked_error(ctx.channel)
             return
 
-        message = parse_order(ctx.message.content, player, board)
+        if len(ctx.message.attachments) > 0:
+            attachment = ctx.message.attachments[0]
+            content = (await attachment.read()).decode("utf-8")
+            content = f"{ctx.prefix}{ctx.invoked_with} {content}"
+        else:
+            content = ctx.message.content
+        message = parse_order(content, player, board)
         database = get_connection()
         if board.turn.is_builds():
             database.save_build_orders_for_players(board, player)
