@@ -62,7 +62,16 @@ def _set_maps_channel(
                 raise ValueError(f"Unknown color mode: {color_mode}")
     return f"maps_channel/{maps_channel_matches[-1]}", " ".join(keywords[1:]).lower()
 
-function_list = {"maps channel": _set_maps_channel}
+def _set_wave(
+    _, keywords: list[str], board: Board
+) -> tuple[str | None, str | None]:
+    wave = " ".join(keywords)
+    if wave.lower() == "none":
+        wave = None
+    return f"wave", wave
+
+function_list = {"maps channel": _set_maps_channel,
+                 "wave": _set_wave,}
 
 
 def _parse_command(server_id: int, command: str, board: Board) -> None:

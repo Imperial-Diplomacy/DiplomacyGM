@@ -408,6 +408,13 @@ class SlashSubstituteCog(commands.Cog):
                 power_role, roles["power-orders"], roles["player"]
             )
             await incoming_user.remove_roles(roles["cspec"])
+            wave = manager.ctx_parameters.get(guild.id, {}).get("wave", None)
+            if wave:
+                incoming_hub_member = locations["hub_server"].get_member(incoming_user.id)
+                for role in locations["hub_server"].roles:
+                    if role.name.lower().startswith(wave.lower()) and incoming_hub_member:
+                        await incoming_hub_member.add_roles(role)
+                        break
 
             if not outgoing_user:
                 await interaction.followup.send(
