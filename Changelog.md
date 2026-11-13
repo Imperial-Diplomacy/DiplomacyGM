@@ -1,3 +1,30 @@
+1.14.0
+=====
+
+Contributors:
+- Golden Kumquat
+
+# Features
+- `.edit_prefs` and `.edit_server` now both allow one to set modes such as oil and pacific as default map modes
+- Replaced `.schedule repeats` with `.schedule_repeating`, which is far less hacky and should be a lot less prone to bugs
+- Moved Map Archive upload from Azure to AWS
+- Removed reference to "ImpDip verified" role, as it is no longer being used
+- Added functionality for spec limits
+
+# Quality of Life
+- The bot more consistently displays warnings if someone makes a potentially invalid order
+- Pacific map mode can now work with non-ImpDip variants where appropriate 
+
+# Developer Changes
+- Refactored map modes to be significantly more clean
+- Added tests to make sure FoW properly restricts visible provinces
+
+# Bugfixes
+- `.scoreboard` and `.sc_history` properly fetch SC history
+- Provinces that are 5 words long are now properly recognised by the bot
+- The `/substitute` and `.view_influence` commands no longer upload maps as SVGs
+- Doing `.vc oil` (or pacific/clean/invert) now properly works again
+
 1.13.3
 =====
 
