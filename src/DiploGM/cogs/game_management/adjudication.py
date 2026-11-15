@@ -390,7 +390,7 @@ async def adjudicate(ctx: commands.Context) -> None:
         )
     else:
         map_channels = {}
-    default_maps_channel = get_channel(guild, "maps_channel")
+    default_maps_channel = await get_channel(guild, "maps_channel")
     if default_maps_channel and default_maps_channel not in map_channels:
         map_channels[default_maps_channel] = ["standard"]
     if args.get("map_modes") is not None and default_maps_channel:

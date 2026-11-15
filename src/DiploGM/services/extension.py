@@ -31,14 +31,12 @@ class ExtensionService(BaseService):
     def delete_extension(self, grace_id: int) -> None:
         extension_repo.delete(grace_id)
 
-    def view_user_extensions(self, user_id: int) -> dict:
+    def view_user_extensions(self, user_id: int) -> dict[int, list[ExtensionEvent]]:
         events = extension_repo.load_by_user(user_id)
 
         servers = {}
-        for e in sorted(
-            events, key=lambda e: (e.server_id, e.created_at), reverse=True
-        ):
-            servers[e.server_id] = servers.get(e.server_id, set()).add(e)
+        for e in sorted(events, key=lambda e: (e.server_id, e.created_at), reverse=True):
+            servers[e.server_id] = servers.get(e.server_id, []) + [e]
 
         return servers
 
@@ -47,8 +45,7 @@ class ExtensionService(BaseService):
 
         users: dict[int, list[ExtensionEvent]] = {}
         for e in sorted(events, key=lambda e: (e.user_id, e.created_at), reverse=True):
-            if e not in users[e.server_id]:
-                users[e.server_id] = users.get(e.server_id, []) + [e]
+            users[e.user_id] = users.get(e.user_id, []) + [e]
 
         return users
 
