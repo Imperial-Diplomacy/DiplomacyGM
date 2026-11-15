@@ -66,7 +66,7 @@ async def send_orders_locked_error(channel: Messageable) -> Message:
         embed_colour=config.ERROR_COLOUR,
     )
 
-async def get_channel(guild: Guild, name: str) -> str | None:
+def get_channel(guild: Guild, name: str) -> str | None:
     """Gets the channel given its name"""
     if (channel_name := config.CHANNEL_NAMES.get(name)) is None:
         return None

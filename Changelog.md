@@ -1,3 +1,13 @@
+1.14.1
+=====
+
+Contributors:
+- Golden Kumquat
+
+# Bugfixes
+- The order parser now looks at the retreating unit type instead of the dislodging unit type when validating submitted retreat moves
+- Order publishing now works again
+
 1.14.0
 =====
 

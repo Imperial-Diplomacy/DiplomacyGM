@@ -127,7 +127,7 @@ def _validate_coastal_move(
 def _validate_move_order(
     province: Province, order: Move | RetreatMove, strict_coast_movement: bool
 ) -> tuple[OrderValidity, str | None]:
-    unit = province.unit
+    unit = province.unit if isinstance(order, Move) else province.dislodged_unit
     assert unit is not None
     destination_province = order.destination
     if destination_province.is_impassable:
