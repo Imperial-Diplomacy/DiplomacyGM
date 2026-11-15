@@ -66,20 +66,6 @@ async def send_orders_locked_error(channel: Messageable) -> Message:
         embed_colour=config.ERROR_COLOUR,
     )
 
-def get_channel(guild: Guild, name: str) -> str | None:
-    """Gets the channel given its name"""
-    if (channel_name := config.CHANNEL_NAMES.get(name)) is None:
-        return None
-    for channel in guild.channels:
-        if (
-            channel.name.lower() == channel_name
-            and channel.category is not None
-            and channel.category.name.lower() == config.GM_CATEGORY
-            and isinstance(channel, TextChannel)
-        ):
-            return str(channel.id)
-    return None
-
 
 async def send_message_and_file(
     *,

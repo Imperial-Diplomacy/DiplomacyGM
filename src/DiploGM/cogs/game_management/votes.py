@@ -5,9 +5,11 @@ import re
 from typing import Callable, Optional
 
 from discord import Guild, Member, TextChannel, User
+import discord
 from discord.abc import GuildChannel
 from discord.ext import commands
 
+from DiploGM import config
 from DiploGM.manager import Manager
 from DiploGM.models.board import Board
 from DiploGM.models.player import Player
@@ -30,9 +32,8 @@ async def tally_reacts(ctx: commands.Context, message_id: Optional[int], message
 
     draw_votes_channel: Optional[GuildChannel] = None
     if message_id is not None:
-        channel_id = await send_message.get_channel(ctx.guild, "draw_votes_channel")
-        if channel_id is not None:
-            draw_votes_channel = ctx.guild.get_channel(int(channel_id))
+        draw_votes_channel = discord.utils.get(ctx.guild.text_channels,
+                                               name=config.CHANNEL_NAMES.get("draw_votes_channel"))
 
     if message_link is not None:
         pattern = r"https://(?:canary\.|ptb\.)?discord\.com/channels/(\d+)/(\d+)/(\d+)"
