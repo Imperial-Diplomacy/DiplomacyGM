@@ -4,7 +4,7 @@ import asyncio
 import logging
 
 import discord
-from discord import TextChannel, Guild
+from discord import Guild
 from discord.ext import commands
 
 from DiploGM import config
@@ -27,7 +27,7 @@ from DiploGM.models.player import (
 )
 from DiploGM.manager import Manager
 from DiploGM.utils.sanitise import get_map_options, remove_prefix
-from DiploGM.utils.send_message import ErrorMessage, send_error, get_channel
+from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -81,8 +81,8 @@ async def _post_orders(ctx: commands.Context, board: Board) -> str:
         )
         await send_error(ctx.channel, ErrorMessage.UNKNOWN_ERROR)
         return ""
-    orders_log_channel = get_channel(ctx.guild, "orders_log_channel")
-    if not orders_log_channel or not isinstance(orders_log_channel, TextChannel):
+    orders_log_channel = discord.utils.get(ctx.guild.text_channels, name=config.CHANNEL_NAMES.get("orders_log_channel"))
+    if not orders_log_channel:
         log_command(
             logger,
             ctx,
@@ -116,38 +116,23 @@ async def _ping_phase_change(guild: Guild, board: Board, log_url: str) -> None:
     extra_info = {}
     if curr_board.turn.is_retreats():
         for player in curr_board.get_players():
-            units_to_retreat = sorted(
-                [str(u) for u in player.units if len(u.retreat_options or []) > 0]
-            )
+            units_to_retreat = sorted([str(u) for u in player.units if len(u.retreat_options or []) > 0])
             if len(units_to_retreat) > 0:
-                extra_info[player.name] = "**Units to retreat**:\n" + "\n".join(
-                    units_to_retreat
-                )
-    elif (
-        curr_board.turn.is_builds()
-        and (old_board := manager.get_previous_board(board.board_id)) is not None
-    ):
+                extra_info[player.name] = "**Units to retreat**:\n" + "\n".join(units_to_retreat)
+    elif curr_board.turn.is_builds() and (old_board := manager.get_previous_board(board.board_id)) is not None:
         for player in curr_board.get_players():
             old_player = old_board.get_player(player.name)
             if not old_player:
                 continue
             extra_info[player.name] = ""
-            centers_gained = {str(c) for c in player.centers} - {
-                str(c) for c in old_player.centers
-            }
+            centers_gained = {str(c) for c in player.centers} - {str(c) for c in old_player.centers}
             if len(centers_gained) > 0:
                 centers_gained = sorted([str(c) for c in centers_gained])
-                extra_info[player.name] = "**Centers gained**:\n" + "\n".join(
-                    centers_gained
-                )
-            centers_lost = {str(c) for c in old_player.centers} - {
-                str(c) for c in player.centers
-            }
+                extra_info[player.name] = "**Centers gained**:\n" + "\n".join(centers_gained)
+            centers_lost = {str(c) for c in old_player.centers} - {str(c) for c in player.centers}
             if len(centers_lost) > 0:
                 centers_lost = sorted([str(c) for c in centers_lost])
-                extra_info[player.name] += "\n**Centers lost**:\n" + "\n".join(
-                    centers_lost
-                )
+                extra_info[player.name] += "\n**Centers lost**:\n" + "\n".join(centers_lost)
 
     for c in [cat for cat in guild.categories if config.is_player_category(cat)]:
         for ch in c.text_channels:
@@ -208,7 +193,7 @@ async def publish_orders(ctx: commands.Context, *args) -> None:
     if "silent" not in arguments:
         _ = asyncio.create_task(_ping_phase_change(guild, board, log_url))
 
-    if config.MAP_ARCHIVE_SAS_TOKEN:
+    if config.MAP_ARCHIVE_SECRET_ACCESS_KEY:
         file, _ = manager.draw_map_for_board(board, draw_moves=True)
         _ = asyncio.create_task(upload_map_to_archive(ctx, guild.id, board, file))
 
@@ -390,11 +375,11 @@ async def adjudicate(ctx: commands.Context) -> None:
         )
     else:
         map_channels = {}
-    default_maps_channel = await get_channel(guild, "maps_channel")
+    default_maps_channel = discord.utils.get(guild.text_channels, name=config.CHANNEL_NAMES.get("maps_channel"))
     if default_maps_channel and default_maps_channel not in map_channels:
-        map_channels[default_maps_channel] = ["standard"]
+        map_channels[str(default_maps_channel.id)] = ["standard"]
     if args.get("map_modes") is not None and default_maps_channel:
-        map_channels[default_maps_channel] = args["map_modes"]
+        map_channels[str(default_maps_channel.id)] = args["map_modes"]
     if len(map_channels.items()) == 0:
         log_command(logger, ctx, "No map channel found in this server", level=logging.WARNING)
         await send_error(ctx.channel, ErrorMessage.NO_MAPS_CHANNEL)
