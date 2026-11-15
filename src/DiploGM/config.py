@@ -95,9 +95,7 @@ HUB_SERVER_BOT_BUG_REPORT_CHANNEL_MESSAGE: str = all_config["hub"]["bug_report_c
 
 # SERVER CHANNELS
 GM_CATEGORY: str = all_config["server_channels"]["gm_category"]
-MAPS_CHANNEL: str = all_config["server_channels"]["maps_channel"]
-ORDERS_LOG_CHANNEL: str = all_config["server_channels"]["orders_log_channel"]
-DRAW_VOTES_CHANNEL: str = all_config["server_channels"]["draw_votes_channel"]
+CHANNEL_NAMES: dict[str, str] = all_config["server_channels"]
 RESTRICTED_ROLE_NAMES: str = all_config["server_channels"]["restricted_roles"]
 
 # PERMISSIONS

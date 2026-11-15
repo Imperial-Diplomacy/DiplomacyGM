@@ -176,12 +176,12 @@ def remove_prefix(ctx: commands.Context) -> str:
     return ctx.message.content.removeprefix(f"{ctx.prefix}{ctx.invoked_with}").strip()
 
 
-def get_colour_option(board, args) -> str | None:
-    """Gets the colour option from the arguments, defaulting to None."""
-    color_options: list[str] = board.data["svg config"].get(
-        "color_options", ["standard"]
-    )
-    color_options = [*color_options, "custom", "random"]
-    if color_arguments := list(set(color_options) & set(args)):
-        return color_arguments[0]
-    return None
+def get_map_options(board, args: list[str], default_args: str | None) -> list[str]:
+    """Gets the map options from the arguments, defaulting to user preferences or Standard."""
+    ADDITIONAL_MAP_OPTIONS = {"custom", "random", "invert", "oil", "clean", "pacific"}
+    map_options: set[str] = set(board.data["svg config"].get("map_options", ["standard"]))
+    map_options = map_options | ADDITIONAL_MAP_OPTIONS
+    matched_options = map_options & set(args)
+    if len(matched_options) == 0:
+        return default_args.split() if default_args else ["standard"]
+    return list(matched_options)

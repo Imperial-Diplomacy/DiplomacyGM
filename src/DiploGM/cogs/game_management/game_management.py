@@ -137,6 +137,12 @@ class GameManagementCog(commands.Cog):
         """
         await channel_management.setup_server(ctx, *args)
 
+    @commands.command(brief="Adds Spectator roles to press channels")
+    @perms.gm_only("add spectator roles")
+    async def add_spectators(self, ctx: commands.Context) -> None:
+        """Adds the Spectator role to all press channels."""
+        await channel_management.add_spectators(ctx)
+
     @commands.command(hidden=True)
     @perms.superuser_only("delete channels and roles")
     async def reset_server(self, ctx: commands.Context) -> None:

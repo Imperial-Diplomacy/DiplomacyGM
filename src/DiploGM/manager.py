@@ -168,6 +168,7 @@ class Manager(metaclass=SingletonMeta):
         server_id: int,
         draw_moves: bool = False,
         player_restriction: Player | None = None,
+        map_modes: list[str] = [],
         **kwargs,
     ) -> tuple[bytes, str]:
         """Gets the map for a server.
@@ -199,6 +200,7 @@ class Manager(metaclass=SingletonMeta):
             board,
             player_restriction=player_restriction,
             draw_moves=draw_moves,
+            map_modes=map_modes,
             **kwargs,
         )
         return svg, file_name
@@ -208,12 +210,13 @@ class Manager(metaclass=SingletonMeta):
         board: Board,
         player_restriction: Player | None = None,
         draw_moves: bool = False,
+        map_modes: list[str] = [],
         **kwargs,
     ) -> tuple[bytes, str]:
         """Gets the current map for a board."""
         start = time.time()
         try:
-            mapper = Mapper(board, **kwargs)
+            mapper = Mapper(board, map_modes=map_modes, **kwargs)
 
             if draw_moves:
                 svg, file_name = mapper.draw_moves_map(
@@ -270,7 +273,7 @@ class Manager(metaclass=SingletonMeta):
         self,
         server_id: int,
         player_restriction: Player | None = None,
-        color_mode: str | None = None,
+        map_modes: list[str] = [],
         fow_player: Player | None = None,
     ) -> tuple[bytes, str]:
         """Draws an GUI map for a board."""
@@ -279,7 +282,7 @@ class Manager(metaclass=SingletonMeta):
         try:
             svg, file_name = Mapper(
                 self._boards[server_id],
-                color_mode=color_mode,
+                map_modes=map_modes,
                 fow_player=fow_player,
             ).draw_gui_map(self._boards[server_id].turn, player_restriction)
         except Exception as e:

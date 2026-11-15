@@ -8,7 +8,7 @@ from subprocess import PIPE
 import numpy as np
 from PIL import Image
 
-import cairosvg
+# import cairosvg
 
 from DiploGM.config import SIMULATRANEOUS_SVG_EXPORT_LIMIT
 
@@ -46,13 +46,13 @@ async def svg_to_png(svg: bytes, file_name: str, svg_data: dict, pacific_mode: b
     it would make a huge difference."""
     data = b""
 
-    try:
-        data = cairosvg.svg2png(
-            bytestring=svg,
-            dpi=svg_data.get("dpi", 200)
-        )
-    except Exception as e:
-        logger.warning("Failed to convert using cairosvg: %s", e)
+#    try:
+#        data = cairosvg.svg2png(
+#            bytestring=svg,
+#            dpi=svg_data.get("dpi", 200)
+#        )
+#    except Exception as e:
+#        logger.warning("Failed to convert using cairosvg: %s", e)
 
     if not data:
         async with external_task_limit:

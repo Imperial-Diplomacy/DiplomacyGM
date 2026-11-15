@@ -130,7 +130,7 @@ retreat_unit : (DESCRIPTOR)? province
 
 DESCRIPTOR.2 : /{{UNIT_TYPE_STRINGS}}/i _WS
 
-province : PROVINCE (_WS PROVINCE) ~ 0..3
+province : PROVINCE (_WS PROVINCE) ~ 0..5
 
 PROVINCE : /(?![{{UNIT_TYPE_CODES}}]\s)[a-zA-Z0-9\._‘’`´′‛'-]+(?=\s)/
 

@@ -56,6 +56,8 @@ def create_mock_context(
     - ctx.prefix, ctx.invoked_with (for remove_prefix)
     """
     ctx = MagicMock(spec=commands.Context)
+    ctx.bot = MagicMock(spec=commands.Bot)
+    ctx.bot.get_cog.return_value = None
 
     # Guild
     ctx.guild = MagicMock(spec=discord.Guild)

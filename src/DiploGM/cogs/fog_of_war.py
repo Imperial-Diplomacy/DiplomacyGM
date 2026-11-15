@@ -75,7 +75,6 @@ class FogOfWarCog(commands.Cog):
         if not player_list:
             return
 
-        dpi = board.data["svg config"].get("dpi", 200)
         prev_turn = board.turn.get_previous_turn()
 
         for player, channel in player_list:

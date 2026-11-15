@@ -2,9 +2,9 @@
 
 import logging
 import re
-from dateparser import parse
-from datetime import datetime
 from time import time
+from datetime import datetime, timezone
+from dateparser import parse
 
 from discord import Member, Role
 from discord.ext import commands
@@ -22,7 +22,7 @@ from DiploGM.models.order import Disband, Build
 from DiploGM.models.player import Player
 from DiploGM.manager import Manager
 from DiploGM.utils.sanitise import find_discord_role, remove_prefix
-from DiploGM.utils.send_message import ErrorMessage, send_error
+from DiploGM.utils.send_message import ErrorMessage, send_error, get_channel
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -34,10 +34,11 @@ async def set_deadline(ctx: commands.Context) -> None:
     content = remove_prefix(ctx)
     adjust = content.startswith("adjust")
     cancel = content.startswith("cancel")
+    schedule_cog = ctx.bot.get_cog("ScheduleCog")
     if adjust:
         content = content.removeprefix("adjust").strip()
         deadline = int(board.data.get("deadline", time()))
-        new_deadline = parse(content, settings={"PREFER_DATES_FROM": "future", "RELATIVE_BASE": datetime.fromtimestamp(deadline)})
+        new_deadline = parse(content, settings={"PREFER_DATES_FROM": "future", "RELATIVE_BASE": datetime.fromtimestamp(deadline, tz=timezone.utc)})
         if new_deadline is None:
             await send_message_and_file(
                 channel=ctx.channel,
@@ -45,6 +46,9 @@ async def set_deadline(ctx: commands.Context) -> None:
                 embed_colour=config.ERROR_COLOUR,
             )
             return
+        if schedule_cog is not None:
+            time_delta = new_deadline - datetime.fromtimestamp(deadline, tz=timezone.utc)
+            await schedule_cog.adjust_repeated_tasks(board, time_delta)
         board.set_data("deadline", int(new_deadline.timestamp()))
         logger.info("Adjusted deadline to %s", new_deadline)
         await send_message_and_file(
@@ -70,6 +74,10 @@ async def set_deadline(ctx: commands.Context) -> None:
             )
             return
         new_deadline = int(timestamp_match.group(1))
+        if schedule_cog is not None:
+            deadline = int(board.data.get("deadline", time()))
+            time_delta = datetime.fromtimestamp(new_deadline, tz=timezone.utc) - datetime.fromtimestamp(deadline, tz=timezone.utc)
+            await schedule_cog.adjust_repeated_tasks(board, time_delta)
         board.set_data("deadline", new_deadline)
         logger.info("Set new deadline: %s", new_deadline)
         await send_message_and_file(
@@ -318,3 +326,14 @@ async def ping_players(ctx: commands.Context) -> None:
             title="Failed to find a player for the following:",
             message=f"- {failed_players_str}",
         )
+
+async def post_deadline(ctx: commands.Context) -> None:
+    assert ctx.guild is not None
+    board = manager.get_board(ctx.guild.id)
+    if (deadline := board.data.get("deadline")) is None:
+        await send_error(ctx.channel, ErrorMessage.NO_DEADLINE)
+    deadlines_channel_id = await get_channel(ctx.guild, "deadlines_channel")
+    if deadlines_channel_id is None:
+        await send_error(ctx.channel, ErrorMessage.NO_DEADLINES_CHANNEL)
+        return
+    deadlines_channel = ctx.guild.get_channel(int(deadlines_channel_id))

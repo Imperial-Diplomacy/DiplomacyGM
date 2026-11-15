@@ -73,13 +73,9 @@ class OrderDrawer:
                 "hold" if current_turn.is_moves() else "disband",
                 coordinate,
             )
-            order_function = (
-                self._draw_hold if current_turn.is_moves() else self.draw_force_disband
-            )
+            order_function = self._draw_hold if current_turn.is_moves() else self.draw_force_disband
         # Unit and order are optional and are _ or __ in the definitions of functions that don't need them
-        return order_function(
-            unit, order, coordinate, order.has_failed if order else False
-        )
+        return order_function(unit, order, coordinate, order.has_failed if order else False)
 
     def draw_player_order(self, order: PlayerOrder) -> None:
         """Draws a Player Order (e.g. build, disband, etc.) on the map."""
@@ -275,13 +271,8 @@ class OrderDrawer:
             start = coordinate
             for loc in path[1:]:
                 points += [
-                    MapperUtils.loc_to_point(
-                        loc,
-                        unit.unit_type,
-                        order.destination_coast,
-                        start,
-                        self.board_svg_data.get("map_width", 0),
-                    )
+                    MapperUtils.loc_to_point(loc, unit.unit_type, order.destination_coast,
+                        start, self.board_svg_data.get("map_width", 0))
                 ]
                 start = points[-1]
 
@@ -297,9 +288,7 @@ class OrderDrawer:
             stroke = f"M {f(points[0])} C {f(points[1])}, "
             for x in range(1, len(points) - 1):
                 vectors = (points[x - 1] - points[x], points[x + 1] - points[x])
-                control_point = vectors[0] / abs(vectors[0]) - vectors[1] / abs(
-                    vectors[1]
-                )
+                control_point = vectors[0] / abs(vectors[0]) - vectors[1] / abs(vectors[1])
                 control_point = (
                     points[x]
                     if control_point == 0

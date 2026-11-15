@@ -211,6 +211,23 @@ async def setup_server(ctx: commands.Context, *args) -> None:
 
     await send_message_and_file(channel=ctx.channel, message="Server setup complete")
 
+async def add_spectators(ctx: commands.Context) -> None:
+    """Adds the Spectator role to all press channels, since people routinely forget to do this."""
+    assert ctx.guild is not None
+    spectator_role = discord.utils.get(ctx.guild.roles, name="Spectator")
+    if not spectator_role:
+        await send_message_and_file(channel=ctx.channel, message="Spectator role not found.")
+        return
+
+    comms_num = 1
+    while True:
+        channel = discord.utils.get(ctx.guild.channels, name=f"comms-{comms_num}")
+        if not channel or not channel.category:
+            break
+        for channel in channel.category.channels:
+            await channel.set_permissions(spectator_role, read_messages=True)
+        comms_num += 1
+    await send_message_and_file(channel=ctx.channel, message="Spectator role added to all press channels.")
 
 async def reset_server(ctx: commands.Context) -> None:
     """Resets roles and channels. Very dangerous and thus is superuser only."""
