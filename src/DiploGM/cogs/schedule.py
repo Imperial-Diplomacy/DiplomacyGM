@@ -389,7 +389,7 @@ class ScheduleCog(commands.Cog):
         if not (deadline_str := board.data.get("deadline")):
             logger.warning("No deadline found in game %s", ctx.guild.id)
             return
-        deadline = datetime.datetime.fromtimestamp(int(deadline_str))
+        deadline = datetime.datetime.fromtimestamp(int(deadline_str), tz=datetime.timezone.utc)
         task_list = board.data.get("scheduled_repeated", {})
         for task_id, task_details in task_list.items():
             del self.scheduled_tasks[task_id]

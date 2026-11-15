@@ -46,7 +46,7 @@ class Mapper:
     def __init__(
         self,
         board: Board,
-        map_modes: list[str] = [],
+        map_modes: list[str] | None = None,
         **kwargs,
     ):
         register_namespace("", "http://www.w3.org/2000/svg")
@@ -62,6 +62,8 @@ class Mapper:
         self.board_svg: ElementTree = etree.parse(self.board.data["file"])
         restriction = kwargs.get("fow_player")
         self.player_restriction: str | None = restriction.name if restriction else None
+        if map_modes is None:
+            map_modes = []
 
         # different colors
         self.replacements: dict | None = self.board_svg_data.get("color replacements")

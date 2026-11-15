@@ -2,9 +2,9 @@
 
 import logging
 import re
-from dateparser import parse
-from datetime import datetime
 from time import time
+from datetime import datetime, timezone
+from dateparser import parse
 
 from discord import Member, Role
 from discord.ext import commands
@@ -38,7 +38,7 @@ async def set_deadline(ctx: commands.Context) -> None:
     if adjust:
         content = content.removeprefix("adjust").strip()
         deadline = int(board.data.get("deadline", time()))
-        new_deadline = parse(content, settings={"PREFER_DATES_FROM": "future", "RELATIVE_BASE": datetime.fromtimestamp(deadline)})
+        new_deadline = parse(content, settings={"PREFER_DATES_FROM": "future", "RELATIVE_BASE": datetime.fromtimestamp(deadline, tz=timezone.utc)})
         if new_deadline is None:
             await send_message_and_file(
                 channel=ctx.channel,
@@ -47,7 +47,7 @@ async def set_deadline(ctx: commands.Context) -> None:
             )
             return
         if schedule_cog is not None:
-            time_delta = new_deadline - datetime.fromtimestamp(deadline)
+            time_delta = new_deadline - datetime.fromtimestamp(deadline, tz=timezone.utc)
             await schedule_cog.adjust_repeated_tasks(board, time_delta)
         board.set_data("deadline", int(new_deadline.timestamp()))
         logger.info("Adjusted deadline to %s", new_deadline)
@@ -76,7 +76,7 @@ async def set_deadline(ctx: commands.Context) -> None:
         new_deadline = int(timestamp_match.group(1))
         if schedule_cog is not None:
             deadline = int(board.data.get("deadline", time()))
-            time_delta = datetime.fromtimestamp(new_deadline) - datetime.fromtimestamp(deadline)
+            time_delta = datetime.fromtimestamp(new_deadline, tz=timezone.utc) - datetime.fromtimestamp(deadline, tz=timezone.utc)
             await schedule_cog.adjust_repeated_tasks(board, time_delta)
         board.set_data("deadline", new_deadline)
         logger.info("Set new deadline: %s", new_deadline)
