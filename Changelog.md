@@ -10,10 +10,12 @@ Contributors:
 - Moved Map Archive upload from Azure to AWS
 - Removed reference to "ImpDip verified" role, as it is no longer being used
 - Added functionality for spec limits
+- Added `.add_spectators` so GMs can make sure General Spectators can see all press channels
 
 # Quality of Life
 - The bot more consistently displays warnings if someone makes a potentially invalid order
-- Pacific map mode can now work with non-ImpDip variants where appropriate 
+- Pacific map mode can now work with non-ImpDip variants where appropriate
+- The bot makes sure you really want to delete the game when you do `.delete_game`
 
 # Developer Changes
 - Refactored map modes to be significantly more clean
@@ -24,6 +26,7 @@ Contributors:
 - Provinces that are 5 words long are now properly recognised by the bot
 - The `/substitute` and `.view_influence` commands no longer upload maps as SVGs
 - Doing `.vc oil` (or pacific/clean/invert) now properly works again
+- Viewing graces should hopefully work now
 
 1.13.3
 =====

@@ -262,6 +262,13 @@ async def end_game(ctx: commands.Context, *args) -> None:
 async def delete_game(ctx: commands.Context) -> None:
     """Completely deletes the game in the server. Cannot be undone."""
     assert ctx.guild is not None
+    if "confirm" not in remove_prefix(ctx).lower():
+        await send_message_and_file(
+            channel=ctx.channel,
+            message="Deleting a game is irreversible and removes it from the database. " +\
+                    "To confirm, please type `.delete_game confirm`.",
+            embed_colour=config.ERROR_COLOUR)
+        return
     manager.total_delete(ctx.guild.id)
     log_command(logger, ctx, message="Deleted game")
     await send_message_and_file(channel=ctx.channel, title="Deleted game")

@@ -213,6 +213,9 @@ country = "If specified, only sends the log for that country."
 
 
 # Game Management Cog
+[add_spectators]
+description = "Adds the Spectator role to all press channels. Useful for cases where people forget to add the role."
+
 [adjudicate]
 description = """
 Adjudicates the current phase and publishes maps.
