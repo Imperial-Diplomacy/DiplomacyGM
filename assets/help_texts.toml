@@ -303,7 +303,10 @@ Edits server-wide parameters. One parameter per line.
 Edits here will persist through game creation and deletion.
 Use '.edit_server' followed by one or more lines, each setting a parameter.
 """
-"maps_channel" = "<channel> <(optional) color mode|None> - adds a specific text channel as an output channel for maps during '.adjudicate full'. Optionally set a color mode, or None to remove it."
+"maps_channel" = "<channel> <(optional) color mode|None> - Adds a specific text channel as an output channel for maps during '.adjudicate full'. Optionally set a color mode, or None to remove it."
+"ping_phase_change" = "<enabled|true|disabled|false> - Pings players in their orders channels when orders are published. Defaults to disabled."
+"post_deadlines" = "<enabled|true|disabled|false> - Posts the deadline to the #deadlines channel when orders have been published or the deadline has been updated. Defaults to enabled."
+"wave" = "<wave name> - Sets the wave name of the server."
 
 [end_game]
 description = "Records the game has having ended. Include 'false' to undo."

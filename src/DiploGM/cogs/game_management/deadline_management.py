@@ -47,6 +47,7 @@ async def set_deadline(ctx: commands.Context) -> None:
                 embed_colour=config.ERROR_COLOUR,
             )
             return
+        new_deadline = new_deadline.replace(tzinfo=timezone.utc)
         if schedule_cog is not None:
             time_delta = new_deadline - datetime.fromtimestamp(deadline, tz=timezone.utc)
             await schedule_cog.adjust_repeated_tasks(board, time_delta)
@@ -338,6 +339,9 @@ async def post_deadline(ctx: commands.Context) -> None:
     if deadlines_channel is None:
         await send_error(ctx.channel, ErrorMessage.NO_DEADLINES_CHANNEL)
         return
+    last_message = deadlines_channel.last_message
+    if last_message is not None and str(board.turn) in last_message.content:
+        await last_message.delete() 
     message = f"The {board.turn} deadline is <t:{deadline}:R>, at <t:{deadline}:F>."
     await send_message_and_file(
         channel=deadlines_channel,

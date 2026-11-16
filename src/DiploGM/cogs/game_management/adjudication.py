@@ -8,6 +8,7 @@ from discord import Guild
 from discord.ext import commands
 
 from DiploGM import config
+from DiploGM.cogs.game_management import deadline_management
 from DiploGM.db.database import get_connection
 from DiploGM.models.board import Board
 from DiploGM import perms
@@ -26,7 +27,7 @@ from DiploGM.models.player import (
     ViewOrdersTags,
 )
 from DiploGM.manager import Manager
-from DiploGM.utils.sanitise import get_map_options, remove_prefix
+from DiploGM.utils.sanitise import find_discord_role, get_map_options, remove_prefix
 from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
@@ -112,6 +113,7 @@ async def _post_orders(ctx: commands.Context, board: Board) -> str:
 
 async def _ping_phase_change(guild: Guild, board: Board, log_url: str) -> None:
     curr_board = manager.get_board(guild.id)
+    ping_players = manager.ctx_parameters.get(guild.id, {}).get("ping_phase_change", "false") == "true"
 
     extra_info = {}
     if curr_board.turn.is_retreats():
@@ -141,7 +143,11 @@ async def _ping_phase_change(guild: Guild, board: Board, log_url: str) -> None:
                 continue
 
             additional_info = extra_info.get(player.name, "")
-            await ch.send("The game has adjudicated!\n", silent=True)
+            message = "The game has adjudicated!\n"
+            if ping_players:
+                role = find_discord_role(player, guild.roles)
+                message = f"Hey **{role.mention if role else player.name}**, {message}"
+            await ch.send(message)
             await send_message_and_file(
                 channel=ch,
                 title="Adjudication Information",
@@ -199,6 +205,8 @@ async def publish_orders(ctx: commands.Context, *args) -> None:
 
     if board.data.get("deadline"):
         _ = asyncio.create_task(_update_deadline(ctx, guild.id))
+        if manager.ctx_parameters.get(guild.id, {}).get("post_deadlines", "true") == "true":
+            _ = asyncio.create_task(deadline_management.post_deadline(ctx))
 
 
 async def _is_missing_orders(board: Board) -> bool:

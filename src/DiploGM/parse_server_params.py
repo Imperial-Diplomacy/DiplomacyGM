@@ -62,16 +62,36 @@ def _set_maps_channel(
                 raise ValueError(f"Unknown color mode: {color_mode}")
     return f"maps_channel/{maps_channel_matches[-1]}", " ".join(keywords[1:]).lower()
 
-def _set_wave(
-    _, keywords: list[str], board: Board
-) -> tuple[str | None, str | None]:
+def _set_wave(_, keywords: list[str], __) -> tuple[str | None, str | None]:
     wave = " ".join(keywords)
     if wave.lower() == "none":
         wave = None
     return f"wave", wave
 
+def _ping_phase_change(_, keywords: list[str], __) -> tuple[str | None, str | None]:
+    keyword_set = {k.lower() for k in keywords}
+    if {"true", "enabled", "yes"}.intersection(keyword_set):
+        result = "true"
+    elif {"false", "disabled", "no"}.intersection(keyword_set):
+        result = "false"
+    else:
+        raise ValueError("Invalid ping phase change value. Use 'enabled' or 'disabled'.")
+    return f"ping_phase_change", result
+
+def _post_deadlines(_, keywords: list[str], __) -> tuple[str | None, str | None]:
+    keyword_set = {k.lower() for k in keywords}
+    if {"true", "enabled", "yes"}.intersection(keyword_set):
+        result = "true"
+    elif {"false", "disabled", "no"}.intersection(keyword_set):
+        result = "false"
+    else:
+        raise ValueError("Invalid post deadlines value. Use 'enabled' or 'disabled'.")
+    return f"post_deadlines", result
+
 function_list = {"maps channel": _set_maps_channel,
-                 "wave": _set_wave,}
+                 "wave": _set_wave,
+                 "ping phase change": _ping_phase_change,
+                 "post deadlines": _post_deadlines}
 
 
 def _parse_command(server_id: int, command: str, board: Board) -> None:

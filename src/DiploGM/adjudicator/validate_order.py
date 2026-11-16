@@ -261,7 +261,7 @@ def _validate_support_order(
     if is_support_hold:
         if source_unit.order is not None and not source_unit.order.is_support_holdable:
             return (
-                OrderValidity.INVALID,
+                OrderValidity.MISMATCHED_ORDER,
                 f"Supported unit {order.source} cannot be supported",
             )
         return OrderValidity.VALID, None
