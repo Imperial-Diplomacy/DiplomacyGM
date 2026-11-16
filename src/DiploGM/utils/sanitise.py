@@ -179,7 +179,7 @@ def remove_prefix(ctx: commands.Context) -> str:
 def get_map_options(board, args: list[str], default_args: str | None) -> list[str]:
     """Gets the map options from the arguments, defaulting to user preferences or Standard."""
     ADDITIONAL_MAP_OPTIONS = {"custom", "random", "invert", "oil", "clean", "pacific"}
-    map_options: set[str] = set(board.data["svg config"].get("map_options", ["standard"]))
+    map_options: set[str] = set(board.data["svg config"].get("color_options", ["standard"]))
     map_options = map_options | ADDITIONAL_MAP_OPTIONS
     matched_options = map_options & set(args)
     if len(matched_options) == 0:

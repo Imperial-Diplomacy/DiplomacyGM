@@ -450,6 +450,6 @@ class TestViewMap(PlayerCogTestCase):
     def test_get_map_options_uses_default_prefs(self):
         """Saved preference strings like 'dark custom' should preserve map modes."""
         board = self.board
-        board.data["svg config"]["map_options"] = ["standard", "dark", "custom"]
+        board.data["svg config"]["color_options"] = ["standard", "dark", "custom"]
 
         self.assertEqual(get_map_options(board, [], "dark custom"), ["dark", "custom"])

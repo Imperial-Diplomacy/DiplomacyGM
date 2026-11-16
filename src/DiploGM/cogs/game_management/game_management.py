@@ -213,6 +213,14 @@ class GameManagementCog(commands.Cog):
         await deadline_management.ping_players(ctx)
 
     @commands.command(
+        brief="Posts the current deadline to the deadlines channel"
+    )
+    @perms.gm_only("post deadline")
+    async def post_deadline(self, ctx: commands.Context) -> None:
+        """Posts the current deadline to the deadlines channel."""
+        await deadline_management.post_deadline(ctx)
+
+    @commands.command(
         brief="Disables orders until .unlock_orders is run",
         aliases=["lock"],
     )

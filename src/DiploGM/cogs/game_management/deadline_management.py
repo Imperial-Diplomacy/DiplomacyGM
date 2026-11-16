@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from dateparser import parse
 
 from discord import Member, Role
+import discord
 from discord.ext import commands
 
 from DiploGM import config
@@ -327,12 +328,18 @@ async def ping_players(ctx: commands.Context) -> None:
             message=f"- {failed_players_str}",
         )
 
-#async def post_deadline(ctx: commands.Context) -> None:
-#    assert ctx.guild is not None
-#    board = manager.get_board(ctx.guild.id)
-#    if (deadline := board.data.get("deadline")) is None:
-#    deadlines_channel_id = get_channel(ctx.guild, "deadlines_channel")
-#    if deadlines_channel_id is None:
-#        await send_error(ctx.channel, ErrorMessage.NO_DEADLINES_CHANNEL)
-#        return
-#    deadlines_channel = ctx.guild.get_channel(int(deadlines_channel_id))
+async def post_deadline(ctx: commands.Context) -> None:
+    """Posts the current deadline to the deadlines channel."""
+    assert ctx.guild is not None
+    board = manager.get_board(ctx.guild.id)
+    if (deadline := board.data.get("deadline")) is None:
+        return
+    deadlines_channel = discord.utils.get(ctx.guild.text_channels, name=config.CHANNEL_NAMES["deadlines_channel"])
+    if deadlines_channel is None:
+        await send_error(ctx.channel, ErrorMessage.NO_DEADLINES_CHANNEL)
+        return
+    message = f"The {board.turn} deadline is <t:{deadline}:R>, at <t:{deadline}:F>."
+    await send_message_and_file(
+        channel=deadlines_channel,
+        message=message
+    )
