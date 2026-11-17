@@ -317,7 +317,7 @@ class OrderDrawer:
             unit.unit_type,
             source_coast,
             coordinate,
-            self.board_svg_data["map_width"],
+            self.board_svg_data.get("map_width", 0),
         )
         if (
             source.unit is not None

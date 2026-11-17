@@ -160,6 +160,40 @@ class VariantDevelopmentCog(commands.Cog):
             board.set_data(["players", player.name, "custom_color"], player.default_color)
         manager.total_delete(ctx.message.id)
 
+    @commands.command(brief="Views each province's power.")
+    @perms.variant_dev_only("view province_power")
+    async def view_province_power(self, ctx: commands.Context, variant: str) -> None:
+        """Generates maps showing influence for each power"""
+        assert ctx.guild is not None
+        success, message = manager.create_game(ctx.message.id, variant, save_board = False)
+        if not success:
+            log_command(logger, ctx, message=message)
+            await send_message_and_file(channel=ctx.channel, message=message)
+            return
+
+        board = manager.get_board(ctx.message.id)
+        board.delete_all_units()
+        for player in board.players:
+            board.data["players"][player.name]["hidden"] = "true"
+        for i in range(0, 7):
+            r, g, b = colorsys.hsv_to_rgb(i / 7, 0.6, 1.0)
+            board.add_new_player(f"{i} SCs", f"{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}")
+        for province in board.provinces:
+            num_scs = len([p for p in province.adjacencies.get_all() if p.has_supply_center])
+            num_scs = min(num_scs, 6)
+            province.owner = board.get_player(f"{num_scs} SCs")
+
+        file, file_name = manager.draw_map(ctx.message.id, map_modes=["custom"])
+        file, file_name = await svg_to_png(file, file_name, board.data["svg config"])
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Province Power",
+            file=file,
+            file_name=file_name,
+            file_in_embed=False,
+        )
+        manager.total_delete(ctx.message.id)
+
 async def setup(bot):
     cog = VariantDevelopmentCog(bot)
     await bot.add_cog(cog)

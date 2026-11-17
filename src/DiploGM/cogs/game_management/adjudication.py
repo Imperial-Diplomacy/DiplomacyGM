@@ -268,7 +268,7 @@ async def _upload_maps(
     needs_png = args["return_svg"] or (args["full"] and map_channel is not None)
     if needs_png:
         image_file, image_file_name = await svg_to_png(
-            file, file_name, board.data["svg config"], pacific_mode="pacific" in args["map_modes"]
+            file, file_name, board.data["svg config"], pacific_mode="pacific" in map_modes
         )
     await send_message_and_file(
         channel=ctx.channel,
@@ -378,14 +378,12 @@ async def adjudicate(ctx: commands.Context) -> None:
     ) + f"{old_turn}"
 
     if args["full"]:
-        map_channels = dict(
-            manager.ctx_parameters.get(guild.id, {}).get("maps_channel", {})
-        )
+        map_channels: dict[str, str] = dict(manager.ctx_parameters.get(guild.id, {}).get("maps_channel", {}))
     else:
-        map_channels = {}
+        map_channels: dict[str, str] = {}
     default_maps_channel = discord.utils.get(guild.text_channels, name=config.CHANNEL_NAMES.get("maps_channel"))
     if default_maps_channel and default_maps_channel not in map_channels:
-        map_channels[str(default_maps_channel.id)] = ["standard"]
+        map_channels[str(default_maps_channel.id)] = "standard"
     if args.get("map_modes") is not None and default_maps_channel:
         map_channels[str(default_maps_channel.id)] = args["map_modes"]
     if len(map_channels.items()) == 0:
@@ -394,6 +392,7 @@ async def adjudicate(ctx: commands.Context) -> None:
         await _upload_maps(ctx, args, draw_board, True, None, ["standard"])
         await _upload_maps(ctx, args, new_board, False, None, ["standard"])
     for map_channel, map_modes in map_channels.items():
+        map_modes = map_modes.split(" ") if isinstance(map_modes, str) else map_modes
         await _upload_maps(ctx, args, draw_board, True, map_channel, map_modes)
         await _upload_maps(ctx, args, new_board, False, map_channel, map_modes)
 

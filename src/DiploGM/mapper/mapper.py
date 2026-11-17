@@ -252,9 +252,7 @@ class Mapper:
         logger.info("mapper.draw_moves_map")
 
         self._reset_moves_map()
-        self.player_restriction = (
-            player_restriction.name if player_restriction else None
-        )
+        self.player_restriction = player_restriction.name if player_restriction else None
         self.order_drawer.player_restriction = self.player_restriction
         self.current_turn = current_turn
 
@@ -278,20 +276,10 @@ class Mapper:
                     )
             self.draw_moves_and_retreats(arrow_layer, current_turn, movement_only)
         else:
-            if (
-                self.player_restriction is None
-                or (current_player := self.board.get_player(self.player_restriction))
-                is None
-            ):
-                build_orders = {
-                    (player, order)
-                    for player in self.board.players
-                    for order in player.build_orders
-                }
-            else:
-                build_orders = {
-                    (current_player, order) for order in current_player.build_orders
-                }
+            player_list = self.board.players
+            if self.player_restriction and (current_player := self.board.get_player(self.player_restriction)):
+                player_list = [current_player]
+            build_orders = {(player, order) for player in player_list for order in player.build_orders}
             for player, build_order in build_orders:
                 if (
                     isinstance(build_order, PlayerOrder)
@@ -401,32 +389,16 @@ class Mapper:
                 s = province.unit.unit_type.code.lower()
             province_to_unit_type[province.name] = s
 
-        province_to_province_type = {}
-        for province in self.board.provinces:
-            if province.type == ProvinceType.SEA:
-                province_type = "sea"
-            elif province.type == ProvinceType.ISLAND:
-                province_type = "island"
-            elif province.type == ProvinceType.LAND:
-                province_type = "land"
-            else:
-                raise ValueError(
-                    f"Unknown province type {province.type} for province {province.name}"
-                )
-            province_to_province_type[province.name] = province_type
+        province_to_province_type = {p: p.type.name.lower() for p in self.board.provinces}
 
-        arrow_layer = find_svg_element(
-            self._moves_svg, "arrow_output", self.board_svg_data
-        )
+        arrow_layer = find_svg_element(self._moves_svg, "arrow_output", self.board_svg_data)
         if arrow_layer is None:
             raise ValueError("Arrow output layer not found in SVG")
 
         immediate = [
             unit.province.get_name(unit.coast)
             for unit in self.board.units
-            if MapperUtils.is_moveable(
-                unit, self.adjacent_provinces, self.player_restriction
-            )
+            if MapperUtils.is_moveable(unit, self.adjacent_provinces, self.player_restriction)
         ]
 
         script.text = js % (
@@ -584,7 +556,7 @@ class Mapper:
         layers = {name: find_svg_element(self.board_svg, name, self.board_svg_data) for name in layer_names}
         if layers["sea_borders"] is None or layers["land_layer"] is None:
             raise ValueError("Missing a layer in SVG!")
-        layers = {name: layer or [] for name, layer in layers.items()}
+        layers = {name: [] if layer is None else layer for name, layer in layers.items()}
 
         visited_provinces: set[str] = set()
         sea_elements = set(layers["sea_borders"]) | set(layers["island_borders"])
