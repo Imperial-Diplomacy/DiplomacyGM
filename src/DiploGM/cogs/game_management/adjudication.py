@@ -414,5 +414,8 @@ async def adjudicate(ctx: commands.Context) -> None:
     if args["full"]:
         await publish_orders(ctx)
         await unlock_orders(ctx)
+        if board.data.get("fow", "disabled") == "enabled" and (fow_cog := ctx.bot.get_cog("FogOfWarCog")) is not None:
+            await fow_cog.publish_fow_order_logs(ctx)
+            await fow_cog.publish_fow_moves(ctx)
 
     await _adjudication_utils(ctx, guild, new_board, args["test"])
