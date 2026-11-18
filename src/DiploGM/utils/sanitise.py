@@ -106,12 +106,9 @@ def parse_season(arguments: list[str], default_turn: Turn) -> Turn:
 
 def get_value_from_timestamp(timestamp: str) -> int | None:
     """Gets the value from a timestamp string."""
-    if len(timestamp) == 10 and timestamp.isnumeric():
-        return int(timestamp)
-
-    match = re.match(r"<t:(\d{10}):\w>", timestamp)
+    match = re.search(r"\d{10}", timestamp)
     if match:
-        return int(match.group(1))
+        return int(match.group(0))
 
     return None
 

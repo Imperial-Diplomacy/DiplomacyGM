@@ -123,13 +123,14 @@ class ScheduleCog(commands.Cog):
             for i, line in enumerate(content.split("\n")):
                 if i == 0:
                     line = f"{timestamp} {command_name} {line}"
-                _timestamp, _command_name, _content = line.split(maxsplit=2)
-                await self.schedule(ctx, _timestamp, _command_name, content=_content)
+                params = line.split(maxsplit=2)
+                await self.schedule(ctx, params[0], params[1], content=params[2] if len(params) > 2 else "")
             return
 
         now = datetime.datetime.now(datetime.timezone.utc)
         scheduled_time = get_value_from_timestamp(timestamp)
         if not scheduled_time:
+            logger.warning("Improper timestamp given: %s", timestamp)
             await send_error(ctx.channel, ErrorMessage.IMPROPER_TIMESTAMP)
             return
 
@@ -204,8 +205,8 @@ class ScheduleCog(commands.Cog):
             for i, line in enumerate(content.split("\n")):
                 if i == 0:
                     line = f"{time_delta} {command_name} {line}"
-                _time_delta, _command_name, _content = line.split(maxsplit=2)
-                await self.schedule_repeating(ctx, _time_delta, _command_name, content=_content)
+                params = line.split(maxsplit=2)
+                await self.schedule_repeating(ctx, params[0], params[1], content=params[2] if len(params) > 2 else "")
             return
 
         sign = 1
@@ -222,7 +223,7 @@ class ScheduleCog(commands.Cog):
             hours = int(time_match.group(2)) if time_match.group(2) else 0
             minutes = int(time_match.group(4)) if time_match.group(4) else 0
         seconds_before = sign * (60 * 60 * hours + 60 * minutes)
-        timestamp = deadline - int(seconds_before)
+        timestamp = int(deadline) - int(seconds_before)
         task_id = await self.schedule(ctx, f"<t:{timestamp}:f>", command_name, content=content)
         if task_id is None:
             return
@@ -265,6 +266,11 @@ class ScheduleCog(commands.Cog):
         """
 
         assert ctx.guild is not None
+        board: Board | None = None
+        try:
+            board = manager.get_board(ctx.guild.id)
+        except NoGameError:
+            pass
         task_id = task_id.strip()
 
         if task_id == "all":
@@ -276,6 +282,12 @@ class ScheduleCog(commands.Cog):
             ]
             for cur_task_id in ids:
                 del self.scheduled_tasks[cur_task_id]
+                if board:
+                    board.set_data(["scheduled_repeated", cur_task_id], None)
+                    get_connection().execute_arbitrary_sql(
+                        "DELETE FROM board_parameters WHERE board_id = ? AND parameter_key = ?",
+                        (board.board_id, f"scheduled_repeated/{cur_task_id}"),
+                    )
                 await self.save_scheduled_tasks()
 
             await send_message_and_file(
@@ -398,11 +410,12 @@ class ScheduleCog(commands.Cog):
             new_timstamp = deadline - datetime.timedelta(seconds=int(seconds_before))
             if new_timstamp <= now:
                 continue
-            new_task_id = await self.schedule(ctx, str(new_timstamp.timestamp()), command_name, content=content)
+            new_task_id = await self.schedule(ctx, f"<t:{int(new_timstamp.timestamp())}:f>", command_name, content=content)
             if new_task_id is None:
                 logger.warning("Failed to schedule task")
                 continue
             self.scheduled_tasks[task_id] = self.scheduled_tasks.pop(new_task_id)
+        await self.save_scheduled_tasks()
 
     @tasks.loop(seconds=LOOP_FREQUENCY_SECONDS)
     async def process_scheduled_tasks(self):
