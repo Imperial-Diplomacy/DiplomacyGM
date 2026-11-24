@@ -183,7 +183,7 @@ class PlayerCog(commands.Cog):
         )
 
         board = manager.get_board(ctx.guild.id)
-        order_text = get_orders(board, player, ctx, tags=tags)
+        order_text = get_orders(board, player, tags)
 
         log_command(
             logger,
@@ -191,6 +191,10 @@ class PlayerCog(commands.Cog):
             message=f"Success - generated orders for {board.turn}",
         )
         assert isinstance(order_text, str)
+        for cur_player in board.players:
+            role = find_discord_role(cur_player, ctx.guild.roles)
+            replace = role.mention if role is not None else cur_player.name
+            order_text = order_text.replace(f"@{cur_player.name}", replace)
         await send_message_and_file(
             channel=ctx.channel, title=f"{board.turn}", message=order_text
         )

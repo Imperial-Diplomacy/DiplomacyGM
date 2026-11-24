@@ -1,5 +1,4 @@
 import random as rng
-from math import sqrt, atan2, pi
 
 def lineartogamma(val: float) -> float:
     return 1.055 * val**(1/2.4) - 0.055 if val >= 0.0031308 else 12.92 * val

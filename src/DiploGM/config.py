@@ -6,6 +6,7 @@ import logging
 import tomllib
 from typing import List, Tuple, Any, TYPE_CHECKING
 from discord import TextChannel
+from enum import Enum
 
 if TYPE_CHECKING:
     from discord import CategoryChannel, Role
@@ -95,7 +96,6 @@ HUB_SERVER_BOT_BUG_REPORT_CHANNEL_MESSAGE: str = all_config["hub"]["bug_report_c
 
 # SERVER CHANNELS
 GM_CATEGORY: str = all_config["server_channels"]["gm_category"]
-CHANNEL_NAMES: dict[str, str] = all_config["server_channels"]
 RESTRICTED_ROLE_NAMES: str = all_config["server_channels"]["restricted_roles"]
 
 # PERMISSIONS
@@ -114,6 +114,23 @@ ERROR_COLOUR: str = all_config["colours"]["embed_error"]
 SIMULATRANEOUS_SVG_EXPORT_LIMIT = all_config["inkscape"][
     "simultaneous_svg_exports_limit"
 ]
+
+class ChannelName(Enum):
+    GM_BOT_COMMANDS = "gm-bot-commands"
+    ADMIN_CHAT = "admin-chat"
+    ADMIN_SPAM = "admin-spam"
+    ANNOUNCEMENTS = "announcements_channel"
+    DEADLINES = "deadlines_channel"
+    DRAW_VOTES_CHANNEL = "draw_votes_channel"
+    MAPS_CHANNEL = "maps_channel"
+    ORDERS_LOG_CHANNEL = "orders-log-channel"
+    ORDERS = "orders"
+    VOID = "void"
+
+CHANNEL_DEFAULTS: dict[ChannelName, str] = {
+    channel: all_config["server_channels"].get(channel.value, channel.value)
+    for channel in ChannelName
+}
 
 
 class ConfigException(Exception):

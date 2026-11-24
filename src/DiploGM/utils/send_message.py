@@ -6,7 +6,7 @@ from typing import List, Tuple
 import logging
 
 import discord
-from discord import Message, Embed, Colour, Guild, TextChannel
+from discord import Message, Embed, Colour
 from discord.abc import Messageable
 
 from DiploGM import config
@@ -22,7 +22,7 @@ DISCORD_EMBED_DESCRIPTION_LIMIT = 4096
 DISCORD_EMBED_TOTAL_LIMIT = 6000
 
 
-class ErrorMessage(Enum):
+class ErrorMessage(str, Enum):
     """Enum that gives a common set of error messages for send_error()."""
 
     CHANNEL_NOT_GIVEN = "No channel given."
@@ -31,6 +31,7 @@ class ErrorMessage(Enum):
     IMPROPER_TIMESTAMP = "Did not give a proper timestamp."
     IMPROPER_TIME_LENGTH = "Did not give a proper time length."
     INVALID_MAPS_CHANNEL = "Maps channel is not a text channel."
+    NO_GM_CHANNEL = "No GM Channel found."
     NO_MAPS_CHANNEL = "Maps channel not found in server."
     NO_DEADLINES_CHANNEL = "Deadlines channel not found in server."
     MESSAGE_NOT_GIVEN = "No message given."
@@ -47,12 +48,14 @@ class ErrorMessage(Enum):
     UNKNOWN_ERROR = "Unknown Error: Please contact your local bot dev."
 
 
-async def send_error(channel: Messageable, error_message: ErrorMessage) -> Message:
+async def send_error(channel: Messageable, error_message: ErrorMessage | str) -> Message:
     """Sends an error message to the specified channel based on the provided ErrorMessage enum."""
+    if isinstance(error_message, ErrorMessage):
+        error_message = error_message.value
     return await send_message_and_file(
         channel=channel,
-        title=error_message.value,
-        message=error_message.value,
+        title=error_message,
+        message=error_message,
         embed_colour=config.ERROR_COLOUR,
     )
 
@@ -66,7 +69,6 @@ async def send_orders_locked_error(channel: Messageable) -> Message:
         embed_colour=config.ERROR_COLOUR,
     )
 
-
 async def send_message_and_file(
     *,
     channel: Messageable,
@@ -79,8 +81,7 @@ async def send_message_and_file(
     file_in_embed: bool | None = None,
     footer_content: str | None = None,
     footer_datetime: datetime.datetime | None = None,
-    fields: List[Tuple[str, str]] | None = None,
-    **_,
+    fields: List[Tuple[str, str]] | None = None
 ) -> Message:
 
     if not isinstance(channel, Messageable):

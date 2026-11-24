@@ -275,6 +275,7 @@ class AdminCog(commands.Cog):
     @perms.superuser_only("Uploads map to archive")
     async def archive_upload(self, ctx: commands.Context) -> None:
         """Uploads a map from a server to the map archive."""
+        assert isinstance(ctx.channel, TextChannel)
         if not MAP_ARCHIVE_SECRET_ACCESS_KEY:
             await send_message_and_file(
                 channel=ctx.channel,
@@ -295,12 +296,13 @@ class AdminCog(commands.Cog):
             draw_moves=draw_moves,
             turn=season,
         )
-        await upload_map_to_archive(ctx, server_id, board, file, season, draw_moves)
+        await upload_map_to_archive(ctx.channel, server_id, board, file, season, draw_moves)
 
     @commands.command(hidden=True)
     @perms.superuser_only("Uploads all maps to archive")
     async def archive_upload_all(self, ctx: commands.Context) -> None:
         """Uploads all maps from a server to the map archive."""
+        assert isinstance(ctx.channel, TextChannel)
         arguments = remove_prefix(ctx).lower().split()
         server_id = int(arguments[0])
         await manager.ensure_board_loaded(server_id)
@@ -312,7 +314,7 @@ class AdminCog(commands.Cog):
                 draw_moves=False,
                 turn=current_turn,
             )
-            await upload_map_to_archive(ctx, server_id, board, file, current_turn, False)
+            await upload_map_to_archive(ctx.channel, server_id, board, file, current_turn, False)
 
         while True:
             await sleep(0)
@@ -325,7 +327,7 @@ class AdminCog(commands.Cog):
                 )
             except NoGameError:
                 break
-            await upload_map_to_archive(ctx, server_id, board, file, current_turn, True)
+            await upload_map_to_archive(ctx.channel, server_id, board, file, current_turn, True)
 
     @commands.command(brief="Execute Arbitrary Python")
     @perms.superuser_only("Execute arbitrary python code")

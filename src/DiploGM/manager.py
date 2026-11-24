@@ -377,13 +377,28 @@ class Manager(metaclass=SingletonMeta):
                 self.last_activity[server_id] = {}
             self.last_activity[server_id][player.name] = time.time()
 
+    def get_ctx_parameter(
+        self, context_id: int, parameter_key: str | list[str]
+    ) -> str | dict[str, str | dict] | None:
+        """Fetches a context parameter. Returns None if it does not exist."""
+        keys = parameter_key.split("/") if isinstance(parameter_key, str) else parameter_key
+        data = self.ctx_parameters.get(context_id)
+        for key in keys:
+            if not isinstance(data, dict):
+                return None
+            data = data.get(key)
+            if data is None:
+                return None
+
+        return data
+
     def save_ctx_parameter(
         self, context_id: int, parameter_key: str, parameter_value: str
     ) -> None:
         """Saves a context parameter to the database."""
         self.ctx_parameters[context_id] = self.ctx_parameters.get(context_id, {})
         keys = parameter_key.split("/")
-        data = self.ctx_parameters[context_id]
+        data = self.ctx_parameters.get(context_id, {})
         for key in keys[:-1]:
             data = data.setdefault(key, {})
         data[keys[-1]] = parameter_value

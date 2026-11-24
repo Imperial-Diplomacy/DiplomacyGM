@@ -20,6 +20,7 @@ from DiploGM.models.player import (
 )
 from DiploGM.utils.image import svg_to_png
 from DiploGM.utils.send_message import ErrorMessage, send_error
+from DiploGM.utils.sanitise import find_discord_role
 
 logger = logging.getLogger(__name__)
 manager = Manager()
@@ -151,7 +152,6 @@ class FogOfWarCog(commands.Cog):
             message = get_orders(
                 board=board,
                 player_restriction=None,
-                ctx=ctx,
                 tags=tags,
                 fields=False,
                 fow_restriction=prev_player,
@@ -159,6 +159,10 @@ class FogOfWarCog(commands.Cog):
             if not isinstance(message, str) or not message:
                 continue
             title = f"{board.turn} Order Log"
+            for cur_player in board.players:
+                role = find_discord_role(cur_player, ctx.guild.roles)
+                replace = role.mention if role is not None else cur_player.name
+                message = message.replace(f"@{cur_player.name}", replace)
             await send_message_and_file(channel=channel, title=title, message=message)
 
         await send_message_and_file(

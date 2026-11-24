@@ -23,14 +23,12 @@ def _get_build_orders(
     board: Board,
     player: Player,
     player_restriction: Player | None,
-    ctx: Context,
     tags: ViewOrdersTags,
     visible_provinces: set[Province] | None = None,
 ) -> tuple[str | None, str | None]:
     """Returns a text representation of a player's build orders with the specific criteria.
     If no build orders match the criteria, returns (None, None) to indicate the player should be hidden.
     Tag options are currently Missing and Submitted."""
-    assert ctx.guild is not None
     if not player_restriction and (len(player.centers) + len(player.units) == 0):
         return None, None
 
@@ -58,11 +56,6 @@ def _get_build_orders(
     ):
         return None, None
 
-    if (player_role := find_discord_role(player, ctx.guild.roles)) is not None:
-        player_name = player_role.mention
-    else:
-        player_name = player.get_name()
-
     build_count = len(player.centers) - len(player.units)
     order_count = len(build_orders) + player.waived_orders
     open_core_count = sum(
@@ -83,7 +76,7 @@ def _get_build_orders(
 
     if visible_provinces is None:
         title = (
-            f"**{player_name}**: ({center_count_label}{len(player.centers)})"
+            f"**@{player.get_name()}**: ({center_count_label}{len(player.centers)})"
             + f"({entered_count_label}{order_count}/{build_count_label}{'+' if build_count >= 0 else ''}{build_count})"
             + (
                 f" ({open_core_count_label}{open_core_count} °)"
@@ -95,7 +88,7 @@ def _get_build_orders(
         if build_count == 0:
             return None, None
         title = (
-            f"**{player_name}** ({'+' if build_count >= 0 else '-'}{len(build_orders)})"
+            f"**@{player.get_name()}** ({'+' if build_count >= 0 else '-'}{len(build_orders)})"
         )
 
     body = ""
@@ -113,7 +106,6 @@ def _get_move_orders(
     board: Board,
     player: Player,
     player_restriction: Player | None,
-    ctx: Context,
     tags: ViewOrdersTags,
     is_retreats: bool,
     visible_provinces: set[Province] | None = None,
@@ -122,7 +114,6 @@ def _get_move_orders(
     If no move orders match the criteria, returns (None, None) to indicate the player should be hidden.
     Tag options are currently Missing, Submitted, as well as Force Disband options."""
 
-    assert ctx.guild is not None
     if not player_restriction and len(player.centers) + len(player.units) == 0:
         return None, None
 
@@ -148,11 +139,6 @@ def _get_move_orders(
             if not ordered and not dp_orders:
                 return (None, None)
 
-    if (player_role := find_discord_role(player, ctx.guild.roles)) is not None:
-        player_name = player_role.mention
-    else:
-        player_name = player.get_name()
-
     forced_disband_count = sum(
         unit.retreat_options is None or len(unit.retreat_options) == 0
         for unit in missing
@@ -168,7 +154,7 @@ def _get_move_orders(
     unit_count_label = "`Orders required=`" if tags.explain else ""
     forced_disband_count_label = "`Forced disband count=`" if tags.explain else ""
 
-    title = f"**{player_name}** ({ordered_count_label}{len(ordered)}/{unit_count_label}{total_unit_count})"
+    title = f"**@{player.get_name()}** ({ordered_count_label}{len(ordered)}/{unit_count_label}{total_unit_count})"
     if board.data.get("dp", "False").lower() in ("true", "enabled"):
         title += f" ({board.get_dp_spent(player)}/{player.dp_max} DP)"
 
@@ -205,7 +191,6 @@ def _get_move_orders(
 def get_orders(
     board: Board,
     player_restriction: Player | None,
-    ctx: Context,
     tags: ViewOrdersTags,
     fields: bool = False,
     fow_restriction: Player | None = None,
@@ -232,14 +217,13 @@ def get_orders(
             continue
         if board.turn.is_builds():
             title, body = _get_build_orders(
-                board, player, player_restriction, ctx, tags, visible_provinces
+                board, player, player_restriction, tags, visible_provinces
             )
         else:
             title, body = _get_move_orders(
                 board,
                 player,
                 player_restriction,
-                ctx,
                 tags,
                 board.turn.is_retreats(),
                 visible_provinces,

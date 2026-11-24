@@ -8,7 +8,7 @@ import logging
 from typing import TYPE_CHECKING
 import boto3
 from botocore.config import Config
-from discord.ext import commands
+from discord import TextChannel
 from DiploGM.utils.image import svg_to_png
 from DiploGM.config import MAP_ARCHIVE_ACCESS_KEY_ID, MAP_ARCHIVE_ACCOUNT_ID, MAP_ARCHIVE_BUCKET_NAME, MAP_ARCHIVE_SECRET_ACCESS_KEY
 from DiploGM.models.turn import Turn
@@ -32,7 +32,7 @@ if MAP_ARCHIVE_SECRET_ACCESS_KEY:
     )
 
 async def upload_map_to_archive(
-    ctx: commands.Context,
+    channel: TextChannel,
     server_id: int,
     board: Board,
     game_map: bytes,
@@ -64,6 +64,6 @@ async def upload_map_to_archive(
         ContentType="image/png",
     )
     await send_message_and_file(
-        channel=ctx.channel,
+        channel=channel,
         title=f"Uploaded {turn} {'moves' if draw_moves else 'results'} map to archive",
     )
