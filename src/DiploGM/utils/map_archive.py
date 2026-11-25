@@ -10,7 +10,12 @@ import boto3
 from botocore.config import Config
 from discord import TextChannel
 from DiploGM.utils.image import svg_to_png
-from DiploGM.config import MAP_ARCHIVE_ACCESS_KEY_ID, MAP_ARCHIVE_ACCOUNT_ID, MAP_ARCHIVE_BUCKET_NAME, MAP_ARCHIVE_SECRET_ACCESS_KEY
+from DiploGM.config import (
+    MAP_ARCHIVE_ACCESS_KEY_ID,
+    MAP_ARCHIVE_ACCOUNT_ID,
+    MAP_ARCHIVE_BUCKET_NAME,
+    MAP_ARCHIVE_SECRET_ACCESS_KEY
+)
 from DiploGM.models.turn import Turn
 from DiploGM.utils import send_message_and_file
 
@@ -20,7 +25,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 if MAP_ARCHIVE_SECRET_ACCESS_KEY:
-    s3 = boto3.client(
+    S3 = boto3.client(
         service_name="s3",
         endpoint_url=f"https://{MAP_ARCHIVE_ACCOUNT_ID}.r2.cloudflarestorage.com",
         aws_access_key_id=MAP_ARCHIVE_ACCESS_KEY_ID,
@@ -30,6 +35,8 @@ if MAP_ARCHIVE_SECRET_ACCESS_KEY:
             response_checksum_validation="WHEN_SUPPORTED"
         ),
     )
+else:
+    S3 = None
 
 async def upload_map_to_archive(
     channel: TextChannel,
@@ -40,7 +47,7 @@ async def upload_map_to_archive(
     draw_moves: bool = True,
 ) -> None:
     """Uploads a map to the archive given a server ID and the map as a PNG."""
-    if not MAP_ARCHIVE_SECRET_ACCESS_KEY:
+    if not MAP_ARCHIVE_SECRET_ACCESS_KEY or not S3:
         return
     if turn is None:
         turn = board.turn
@@ -57,7 +64,7 @@ async def upload_map_to_archive(
     if key is None:
         return
     png_map, _ = await svg_to_png(game_map, key, board.data["svg config"])
-    s3.put_object(
+    S3.put_object(
         Bucket=MAP_ARCHIVE_BUCKET_NAME,
         Key=key,
         Body=png_map,

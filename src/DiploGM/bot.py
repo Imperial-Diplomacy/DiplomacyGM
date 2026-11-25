@@ -31,6 +31,7 @@ from DiploGM.errors import CommandPermissionError
 from DiploGM.help import HelpCommand
 from DiploGM.utils import file_hexdigest, send_message_and_file
 from DiploGM.manager import Manager
+from DiploGM.scheduler import Scheduler
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,7 @@ class DiploGM(commands.Bot):
         self.tree.interaction_check = self.before_any_slash_command
 
         self.manager: Manager = Manager()
+        self.scheduler: Scheduler = Scheduler(self)
 
         # modularly load command modules
         for extension in EXTENSIONS_TO_LOAD_ON_STARTUP:
@@ -254,6 +256,7 @@ class DiploGM(commands.Bot):
             except Exception as e:
                 logger.warning("Failed to close Cog '%s' safely: %s", name, e)
 
+        self.scheduler.close()
         await super().close()
 
     async def before_any_command(self, ctx: commands.Context):

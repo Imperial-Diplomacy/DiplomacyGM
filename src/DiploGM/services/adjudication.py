@@ -6,12 +6,19 @@ import logging
 import discord
 from discord import Guild
 
-from DiploGM import config
+from DiploGM import config, perms
 from DiploGM.config import ChannelName, CHANNEL_DEFAULTS
 from DiploGM.db.database import get_connection
+
 from DiploGM.models.board import Board
-from DiploGM.utils.request import Request
-from DiploGM import perms
+from DiploGM.models.order import Disband, Build
+from DiploGM.models.player import (
+    ForcedDisbandOption,
+    OrdersSubsetOption,
+    ViewOrdersTags,
+)
+
+from DiploGM.manager import Manager
 from DiploGM.utils import (
     get_orders,
     send_message_and_file,
@@ -19,15 +26,9 @@ from DiploGM.utils import (
 )
 from DiploGM.utils.channels import get_guild_channel
 from DiploGM.utils.image import svg_to_png
-
-from DiploGM.models.order import Disband, Build
-from DiploGM.models.player import (
-    ForcedDisbandOption,
-    OrdersSubsetOption,
-    ViewOrdersTags,
-)
-from DiploGM.manager import Manager
+from DiploGM.utils.request import Request
 from DiploGM.utils.sanitise import find_discord_role
+from DiploGM.scheduler import Scheduler
 from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
@@ -62,7 +63,7 @@ async def _post_orders(request: Request, board: Board) -> tuple[bool, str]:
             for index, (title, body) in enumerate(order_text):
                 order_text[index] = (title, body.replace(f"@{cur_player.name}", replace))
     except RuntimeError as err:
-        logger.error(err, exc_info=True)
+        logger.exception(err, exc_info=True)
         return False, ErrorMessage.UNKNOWN_ERROR
     orders_log_channel = get_guild_channel(request.guild, manager, ChannelName.ORDERS_LOG_CHANNEL)
     if not orders_log_channel:
@@ -130,7 +131,7 @@ async def _ping_phase_change(guild: Guild, board: Board, log_url: str | None) ->
             )
 
 
-async def _update_deadline(request: Request) -> None:
+async def _update_deadline(request: Request, scheduler: Scheduler) -> None:
     board = manager.get_board(request.guild.id)
     if not (timestamp := board.data.get("deadline")):
         return
@@ -145,14 +146,14 @@ async def _update_deadline(request: Request) -> None:
         "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
         (board.board_id, "deadline", board.data["deadline"]),
     )
-        # await refresh_repeated_tasks(ctx) TODO: Get Scheduler working
+    await scheduler.refresh_repeated_tasks(request)
     await send_message_and_file(
         channel=request.channel,
         message=f"Updated deadline to <t:{board.data['deadline']}:f>.",
     )
 
 
-async def publish_orders(request: Request, *args) -> tuple[bool, str | None]:
+async def publish_orders(request: Request, scheduler: Scheduler, *args) -> tuple[bool, str | None]:
     """Publishes orders to the orders log channel, uploads the map to the archive,
     and informs players about the phase change."""
     arguments = [arg.lower() for arg in args]
@@ -259,7 +260,7 @@ async def _upload_maps(
         except discord.Forbidden:
             pass
 
-async def adjudicate(request: Request, args: dict) -> tuple[bool, str | None]:
+async def adjudicate(request: Request,  scheduler: Scheduler, args: dict) -> tuple[bool, str | None]:
     """Adjudicates the game, and publishes the orders and results maps."""
 
     board = manager.get_board(request.guild.id)
@@ -320,7 +321,7 @@ async def adjudicate(request: Request, args: dict) -> tuple[bool, str | None]:
         )
 
     if args["full"]:
-        success, response = await publish_orders(request)
+        success, response = await publish_orders(request, scheduler)
         if not success and response:
             await send_error(request.channel, response)
         lock_orders(request, lock=False)
