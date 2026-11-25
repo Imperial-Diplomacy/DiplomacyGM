@@ -19,6 +19,8 @@ from DiploGM.models.player import (
 )
 
 from DiploGM.manager import Manager
+from DiploGM.scheduler import Scheduler
+from DiploGM.services.deadline_management import post_deadline
 from DiploGM.utils import (
     get_orders,
     send_message_and_file,
@@ -28,7 +30,6 @@ from DiploGM.utils.channels import get_guild_channel
 from DiploGM.utils.image import svg_to_png
 from DiploGM.utils.request import Request
 from DiploGM.utils.sanitise import find_discord_role
-from DiploGM.scheduler import Scheduler
 from DiploGM.utils.send_message import ErrorMessage, send_error
 
 logger = logging.getLogger(__name__)
@@ -131,7 +132,7 @@ async def _ping_phase_change(guild: Guild, board: Board, log_url: str | None) ->
             )
 
 
-async def _update_deadline(request: Request, scheduler: Scheduler) -> None:
+async def _update_deadline(request: Request) -> None:
     board = manager.get_board(request.guild.id)
     if not (timestamp := board.data.get("deadline")):
         return
@@ -146,14 +147,14 @@ async def _update_deadline(request: Request, scheduler: Scheduler) -> None:
         "INSERT OR REPLACE INTO board_parameters (board_id, parameter_key, parameter_value) VALUES (?, ?, ?)",
         (board.board_id, "deadline", board.data["deadline"]),
     )
-    await scheduler.refresh_repeated_tasks(request)
+    await Scheduler().refresh_repeated_tasks(request)
     await send_message_and_file(
         channel=request.channel,
         message=f"Updated deadline to <t:{board.data['deadline']}:f>.",
     )
 
 
-async def publish_orders(request: Request, scheduler: Scheduler, *args) -> tuple[bool, str | None]:
+async def publish_orders(request: Request, *args) -> tuple[bool, str | None]:
     """Publishes orders to the orders log channel, uploads the map to the archive,
     and informs players about the phase change."""
     arguments = [arg.lower() for arg in args]
@@ -174,8 +175,8 @@ async def publish_orders(request: Request, scheduler: Scheduler, *args) -> tuple
 
     if board.data.get("deadline"):
         _ = asyncio.create_task(_update_deadline(request))
-        #if manager.ctx_parameters.get(guild.id, {}).get("post_deadlines", "true") == "true": TODO
-        #    _ = asyncio.create_task(deadline_management.post_deadline(ctx))
+        if manager.get_ctx_parameter(request.guild.id, "post_deadlines") == "true":
+            await post_deadline(request)
     return True, None
 
 
@@ -260,7 +261,7 @@ async def _upload_maps(
         except discord.Forbidden:
             pass
 
-async def adjudicate(request: Request,  scheduler: Scheduler, args: dict) -> tuple[bool, str | None]:
+async def adjudicate(request: Request, args: dict) -> tuple[bool, str | None]:
     """Adjudicates the game, and publishes the orders and results maps."""
 
     board = manager.get_board(request.guild.id)
@@ -321,7 +322,7 @@ async def adjudicate(request: Request,  scheduler: Scheduler, args: dict) -> tup
         )
 
     if args["full"]:
-        success, response = await publish_orders(request, scheduler)
+        success, response = await publish_orders(request)
         if not success and response:
             await send_error(request.channel, response)
         lock_orders(request, lock=False)

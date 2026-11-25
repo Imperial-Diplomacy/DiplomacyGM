@@ -187,9 +187,9 @@ class GameManagementCog(commands.Cog):
 
     @commands.command(brief="Sets the default phase length")
     @perms.gm_only("set phase length")
-    async def set_phase_length(self, ctx: commands.Context) -> None:
+    async def set_phase_length(self, ctx: commands.Context, move_str: str, retreat_str: str, build_str: str) -> None:
         """Manages the phase length for each phase."""
-        await deadline_management.set_phase_length(ctx)
+        await deadline_management.set_phase_length(ctx, move_str, retreat_str, build_str)
 
 
     @commands.command(

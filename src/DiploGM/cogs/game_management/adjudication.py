@@ -72,7 +72,7 @@ async def adjudicate(ctx: commands.Context) -> None:
         "movement": "movement" in arguments,
         "force": ({"force", "confirm"} & set(arguments)) and "test" not in arguments,
     }
-    success, response = await adjudication.adjudicate(request, ctx.bot.scheduler, args)
+    success, response = await adjudication.adjudicate(request, args)
     if success:
         log_command(logger, ctx, message="Adjudicated")
     else:

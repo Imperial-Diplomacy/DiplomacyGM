@@ -60,8 +60,7 @@ class Scheduler(metaclass=SingletonMeta):
     """The Scheduler singleton class. This stores tasks and will execute them at the given time."""
     bot: DiploGM
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         self.scheduled_storage = "assets/schedule.json"
         self.scheduled_tasks: dict[str, Task] = {}
 
@@ -84,7 +83,10 @@ class Scheduler(metaclass=SingletonMeta):
             logger.warning("Could not load previous store of scheduled tasks: %s", e)
             raise e
 
-        self.process_scheduled_tasks.start()
+    def start(self, bot: DiploGM) -> None:
+        self.bot = bot
+        if not self.process_scheduled_tasks.is_running():
+            self.process_scheduled_tasks.start()
 
     def close(self):
         """Saves the scheduled tasks on shutdown."""

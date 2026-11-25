@@ -20,6 +20,7 @@ class GMCogTestCase(CogTestCase):
 
     send_patch_targets = [
         "DiploGM.cogs.game_management.adjudication.send_message_and_file",
+        "DiploGM.services.adjudication.send_message_and_file",
         "DiploGM.cogs.game_management.game_creation.send_message_and_file",
         "DiploGM.cogs.game_management.game_editing.send_message_and_file",
         "DiploGM.cogs.game_management.deadline_management.send_message_and_file",
@@ -39,7 +40,7 @@ class GMCogTestCase(CogTestCase):
         self.db_patcher.start()
 
         self.db_patcher2 = mock.patch(
-            "DiploGM.cogs.game_management.deadline_management.get_connection",
+            "DiploGM.services.deadline_management.get_connection",
             return_value=self.mock_db,
         )
         self.db_patcher2.start()
@@ -269,10 +270,10 @@ class TestAdjudicate(GMCogTestCase):
         new_board = self.board  # just reuse the same board for simplicity
 
         for target, rv in [
-            ("DiploGM.cogs.game_management.adjudication.manager.adjudicate", (None, new_board)),
-            ("DiploGM.cogs.game_management.adjudication.manager.get_board_from_db", self.board),
-            ("DiploGM.cogs.game_management.adjudication.manager.apply_adjudication_results", None),
-            ("DiploGM.cogs.game_management.adjudication.manager.draw_map_for_board",
+            ("DiploGM.services.adjudication.manager.adjudicate", (None, new_board)),
+            ("DiploGM.services.adjudication.manager.get_board_from_db", self.board),
+            ("DiploGM.services.adjudication.manager.apply_adjudication_results", None),
+            ("DiploGM.services.adjudication.manager.draw_map_for_board",
              (b"<svg>fake</svg>", "map.svg")),
         ]:
             p = mock.patch(target, return_value=rv)
@@ -280,7 +281,7 @@ class TestAdjudicate(GMCogTestCase):
             self.adj_patches.append(p)
 
         p = mock.patch(
-            "DiploGM.cogs.game_management.adjudication.svg_to_png",
+            "DiploGM.services.adjudication.svg_to_png",
             return_value=(b"fake_png", "map.png"),
         )
         p.start()
@@ -297,6 +298,7 @@ class TestAdjudicate(GMCogTestCase):
         maps_channel = create_mock_channel("maps", category_name="gm channels")
         maps_channel.id = 123456789012
         ctx.guild.channels = [maps_channel]
+        ctx.guild.text_channels = [maps_channel]
         ctx.guild.get_channel = MagicMock(return_value=maps_channel)
 
     async def test_missing_orders_blocks(self):

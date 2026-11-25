@@ -72,7 +72,8 @@ class DiploGM(commands.Bot):
         self.tree.interaction_check = self.before_any_slash_command
 
         self.manager: Manager = Manager()
-        self.scheduler: Scheduler = Scheduler(self)
+        self.scheduler: Scheduler = Scheduler()
+        self.scheduler.start(self)
 
         # modularly load command modules
         for extension in EXTENSIONS_TO_LOAD_ON_STARTUP:
