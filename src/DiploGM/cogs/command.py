@@ -479,6 +479,8 @@ class CommandCog(commands.Cog):
 
         if not board.orders_enabled:
             perms.assert_gm_only(ctx, "call .all_province_data while orders are locked")
+        if  board.data.get("fow", "disabled") == "enabled":
+            perms.assert_gm_only(ctx, "call .all_province_data in fog of war games")
 
         province_by_owner = defaultdict(list)
         for province in board.provinces:
