@@ -64,6 +64,8 @@ class Mapper:
         self.player_restriction: str | None = restriction.name if restriction else None
         if map_modes is None:
             map_modes = []
+        if restriction and "oil" in map_modes:
+            map_modes.remove("oil") # Disable Oil Spill mode in FoW maps
 
         # different colors
         self.replacements: dict | None = self.board_svg_data.get("color replacements")
