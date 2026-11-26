@@ -97,6 +97,7 @@ class PlayerCog(commands.Cog):
             log_command(
                 logger, ctx, message=message["messages"][0][:100], level=logging.DEBUG
             )
+        message.pop("units", None)
         await send_message_and_file(channel=ctx.channel, **message)
 
     @commands.command(

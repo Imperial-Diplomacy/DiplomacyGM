@@ -69,7 +69,12 @@ class TreeToOrder(Transformer):
     def unit(self, s) -> Unit:
         """Gets the Unit located in a Province."""
         # ignore the fleet/army signifier, if exists
-        unit = s[-1][0].unit
+        province: Province = s[-1][0]
+        if (self.board.data.get("fow", "disabled") == "enabled" and
+            self.player_restriction is not None and
+            province not in self.board.get_visible_provinces(self.player_restriction)):
+            raise ValueError("You cannot order units in the Fog of War")
+        unit = province.unit
         if unit is None:
             raise ValueError(f"No unit in {s[-1][0]}")
 
@@ -290,13 +295,8 @@ class TreeToOrder(Transformer):
     def order(self, unit_order: tuple[Unit, order.UnitOrder]) -> Unit:
         """Processes orders done in Movement phases, taking in a tuple of what was returned by the above."""
         unit, movement_order = unit_order
-        if (
-            self.player_restriction is not None
-            and unit.player != self.player_restriction
-        ):
-            if (
-                unit.player is None or not unit.player.is_active
-            ) and movement_order is None:
+        if self.player_restriction is not None and unit.player != self.player_restriction:
+            if (unit.player is None or not unit.player.is_active) and movement_order is None:
                 return unit
             raise PermissionError(
                 f"{self.player_restriction.name} does not control the unit in {unit.province.name}, "
@@ -463,7 +463,6 @@ def parse_order(
     output = paginator.pages
     return_dict = {
         "messages": output,
-        "player": player_restriction,
         "units": movement,
     }
     if warnings:
